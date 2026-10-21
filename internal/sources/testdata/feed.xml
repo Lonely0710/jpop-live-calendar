@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Example News</title>
+    <item>
+      <title>Example Band、全国ツアー開催決定</title>
+      <description><![CDATA[<img src="/thumb.jpg" />]]></description>
+      <link>https://news.example/2026/10/example_band_tour.php</link>
+      <category>Example Band(エグザンプル・バンド)</category>
+      <pubDate>Tue, 20 Oct 2026 12:00:00 +0900</pubDate>
+    </item>
+    <item>
+      <title>Example Band、新曲リリース</title>
+      <description><![CDATA[<p>新曲を配信</p>]]></description>
+      <link>https://news.example/2026/10/example_band_single.php</link>
+      <pubDate>Mon, 19 Oct 2026 09:00:00 +0900</pubDate>
+    </item>
+  </channel>
+</rss>

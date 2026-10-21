@@ -1,0 +1,654 @@
+# Live Calendar — 公开数据源与艺人别名
+#
+# 读取顺序（找到即用）：
+#   1. 环境变量 LIVE_CALENDAR_CONFIG 指向的文件
+#   2. ~/Library/Application Support/Live Calendar/sources.yaml
+#   3. 当前目录下的 config/sources.yaml（开发时就是本文件）
+#   4. 编译进 App 的本文件副本
+#
+# 只接入公开、官方的信息源：不登录、不读会员页、遵守 robots.txt 与使用条款，
+# 每个站点请求间隔至少 delay（默认 2 秒）。不盲爬票务平台：票务链接只从
+# 官方公告里取得，并保留回到官方公告的来源。
+#
+# 两层来源（见 docs/jp_live_sources_and_crawling_guide.md）：
+#   layer: live   官方 LIVE / SCHEDULE 列表：发现新增演出与日程变更，每 12 小时
+#   layer: news   官方 NEWS / TICKET 公告：发现抽选受付、截止、追加与变更，每 4–6 小时
+#
+# kind: demo | rss | website | api
+#   rss      RSS 2.0 / RSS 1.0 / Atom。article.include（正则）只保留标题匹配的
+#            条目，适合厂牌 NEWS 这类混有多位艺人的 feed。article.title_only 为
+#            true 时先忽略 feed 自带摘要，只有打开原文页后才解析正文；max_age
+#            （如 30d）跳过旧条目。article.enabled 为 true 时，标题含 keywords 的
+#            条目会打开原文页，截取 body_start ~ body_end 之间的正文。
+#   website  艺人官网。没有 follow 时整页作为一条公告；有 follow（正则）时，
+#            该页是列表页：打开地址匹配 follow、且链接文字含 keywords
+#            （以 ^ 开头表示“以此开头”）、不含 exclude 的详情页，最多 max_per_sync 页。
+#            feature（正则）：从已读的页面里找到地址匹配的巡演专题页并一并读取
+#            （每次最多 3 页）——巡演专题由公告链接发现，不写死在配置里。
+#            artist 填写后，页面一律归属该艺人，并按“日程页”解析：
+#            每个带日期的行都是一场演出，其下几行是时间、都道府县与场馆。
+#   api      官网页面在浏览器里加载的公开 JSON。目前支持 Sony Music 艺人接口：
+#            …/json/v2/artist/<目录>/live/…（Live 列表，日程层）与
+#            …/json/v2/artist/<目录>/information/…（NEWS，公告层，可用 keywords / exclude 过滤）。
+# interval: 自动同步间隔（Go duration，如 30m、6h、12h）；0 或不写表示只手动同步。
+# note:     说明（显示在“数据源”页），例如为什么默认关闭。
+
+sources:
+  - id: demo
+    name: 演示数据（虚构）
+    kind: demo
+    enabled: false
+    interval: 0
+    note: 虚构的示例数据，用于体验界面；开启后与真实数据并列显示。
+
+  # ── 米津玄師 ──
+  - id: official-yonezu
+    name: 米津玄師 官网 LIVE
+    kind: website
+    layer: live
+    artist: 米津玄師
+    url: https://reissuerecords.net/live/
+    enabled: true
+    interval: 12h
+    follow: '^https://reissuerecords\.net/20\d\d/\d\d/\d\d/'
+    article:
+      keywords: [^LIVE]
+      max_per_sync: 3
+      delay: 2s
+
+  - id: official-yonezu-news
+    name: 米津玄師 官网 NEWS（全部资讯）
+    kind: website
+    layer: news
+    artist: 米津玄師
+    url: https://reissuerecords.net/all/
+    enabled: true
+    interval: 6h
+    follow: '^https://reissuerecords\.net/20\d\d/\d\d/\d\d/'
+    article:
+      keywords: [LIVE, チケット, 先行, 抽選, リセール, 公演, ツアー, TOUR]
+      exclude: [MV, GOODS]
+      max_per_sync: 3
+      delay: 2s
+
+  # ── Official髭男dism ──
+  - id: official-higedan
+    name: Official髭男dism 官网 LIVE
+    kind: website
+    layer: live
+    artist: Official髭男dism
+    url: https://higedan.com/news/7/?range=future_event_end_time&sort=asc
+    enabled: true
+    interval: 12h
+    follow: '^https://higedan\.com/news/detail/\d+$'
+    feature: '^https://event\.higedan\.com/feature/[A-Za-z0-9_]+$'
+    article:
+      max_per_sync: 8
+      delay: 2s
+
+  - id: official-higedan-news
+    name: Official髭男dism 官网 NEWS
+    kind: website
+    layer: news
+    artist: Official髭男dism
+    url: https://higedan.com/news/3/
+    enabled: true
+    interval: 6h
+    follow: '^https://event\.higedan\.com/feature/[A-Za-z0-9_]+$'
+    article:
+      max_per_sync: 3
+      delay: 2s
+
+  # 官方站维护 / 改版时的备用：只读厂牌 NEWS，不替代官方 LIVE 日程与抽选。
+  - id: official-higedan-label-news
+    name: Official髭男dism 厂牌 NEWS（备用）
+    kind: rss
+    layer: news
+    artist: Official髭男dism
+    url: https://news.ponycanyon.co.jp/tag/official%e9%ab%ad%e7%94%b7dism/feed/
+    enabled: false
+    interval: 6h
+    note: 官方站维护时可在数据源页打开；只含厂牌新闻，可能没有完整的 LIVE 日程与抽选。
+    article:
+      enabled: true
+      include: 'Official髭男dism|OFFICIAL HIGE DANDISM'
+      keywords: [ツアー, TOUR, 公演, チケット, 受付, 先行, 抽選, 開催決定, 出演決定]
+      exclude: [グッズ, GOODS, 特典, 応援店, 店舗, 販売, 予約, 配信, リリース, 放送, オンデマンド, 雑誌, 掲載, インタビュー, Blu-ray, DVD, 映像, 上映, 映画, 劇場, 公開, 完走, レポート, 振り返り, キャンペーン, アプリ]
+      title_only: true
+      max_age: 90d
+      max_per_sync: 3
+      delay: 2s
+
+  # ── Mrs. GREEN APPLE ──
+  - id: official-mga
+    name: Mrs. GREEN APPLE 官网 Schedule
+    kind: website
+    layer: live
+    artist: Mrs. GREEN APPLE
+    url: https://mrsgreenapple.com/schedule/list/
+    enabled: true
+    interval: 12h
+    follow: '/schedule/detail/\d+$'
+    article:
+      keywords: [^LIVE]
+      max_per_sync: 12
+      delay: 2s
+
+  # ── RADWIMPS ──
+  - id: official-radwimps
+    name: RADWIMPS 官网 LIVE
+    kind: website
+    layer: live
+    artist: RADWIMPS
+    url: https://radwimps.jp/live/
+    enabled: true
+    interval: 12h
+    follow: '^https://radwimps\.jp/live/\d+/$'
+    article:
+      max_per_sync: 4
+      delay: 2s
+
+  # ── back number ──
+  - id: official-backnumber
+    name: back number 官网 LIVE/EVENT
+    kind: website
+    layer: live
+    artist: back number
+    url: https://backnumber.info/news/list/7?range=future_event_end_time&sort=asc&tag=live/event
+    enabled: true
+    interval: 12h
+    follow: '^https://backnumber\.info/news/detail/\d+$'
+    article:
+      max_per_sync: 10
+      delay: 2s
+
+  - id: official-backnumber-news
+    name: back number 官网 NEWS
+    kind: website
+    layer: news
+    artist: back number
+    url: https://backnumber.info/
+    enabled: true
+    interval: 6h
+    follow: '^https://backnumber\.info/news/detail/\d+$'
+    article:
+      keywords: [ツアー, TOUR, ライブ, LIVE, 公演, 先行, 抽選, 受付, チケット, 一般発売, 追加, 開催決定, 出演決定, リセール]
+      exclude: [グッズ, GOODS, 特典, 配信リリース, リリース, 放送, オンエア, 雑誌, 掲載, インタビュー, Blu-ray, DVD, 映像, 上映, アイテム, store, 配信, キャンペーン, アプリ]
+      max_per_sync: 3
+      delay: 2s
+
+  # ── Sony Music 艺人：官网的 LIVE / NEWS 页由浏览器从 Sony Music 公开接口加载，这里直接读同一份 JSON ──
+  - id: official-ryokushaka
+    name: 緑黄色社会 官网 LIVE（Sony Music 接口）
+    kind: api
+    layer: live
+    artist: 緑黄色社会
+    url: https://www.sonymusic.co.jp/json/v2/artist/ryokusyaka/live/start/0/count/50
+    enabled: true
+    interval: 12h
+
+  - id: official-ryokushaka-news
+    name: 緑黄色社会 官网 NEWS（Sony Music 接口）
+    kind: api
+    layer: news
+    artist: 緑黄色社会
+    url: https://www.sonymusic.co.jp/json/v2/artist/ryokusyaka/information/start/0/count/30
+    enabled: true
+    interval: 6h
+    article:
+      keywords: [ツアー, TOUR, ライブ, LIVE, 公演, 先行, 抽選, 受付, チケット, 一般発売, 追加, 開催決定, 出演決定, リセール]
+      exclude: [グッズ, GOODS, 特典, 配信リリース, 放送, オンエア, 雑誌, 掲載, インタビュー, Blu-ray, DVD, 映像, 上映, キャンペーン, ドラマ, メディア情報, 生配信, リリース, アプリ, 返金受付]
+
+  - id: official-yoasobi
+    name: YOASOBI 官网 LIVE（Sony Music 接口）
+    kind: api
+    layer: live
+    artist: YOASOBI
+    url: https://www.sonymusic.co.jp/json/v2/artist/YOASOBI/live/start/0/count/50
+    enabled: true
+    interval: 12h
+
+  - id: official-yoasobi-news
+    name: YOASOBI 官网 NEWS（Sony Music 接口）
+    kind: api
+    layer: news
+    artist: YOASOBI
+    url: https://www.sonymusic.co.jp/json/v2/artist/YOASOBI/information/start/0/count/30
+    enabled: true
+    interval: 6h
+    article:
+      keywords: [ツアー, TOUR, ライブ, LIVE, 公演, 先行, 抽選, 受付, チケット, 一般発売, 追加, 開催決定, 出演決定, リセール]
+      exclude: [グッズ, GOODS, 特典, 配信リリース, 放送, オンエア, 雑誌, 掲載, インタビュー, Blu-ray, DVD, 映像, 上映, キャンペーン, ドラマ, メディア情報, 生配信, リリース, アプリ, 返金受付]
+
+  - id: official-yuuri
+    name: 優里 官网 LIVE（Sony Music 接口）
+    kind: api
+    layer: live
+    artist: 優里
+    url: https://www.sonymusic.co.jp/json/v2/artist/yuri/live/start/0/count/50
+    enabled: true
+    interval: 12h
+
+  - id: official-yuuri-news
+    name: 優里 官网 NEWS（Sony Music 接口）
+    kind: api
+    layer: news
+    artist: 優里
+    url: https://www.sonymusic.co.jp/json/v2/artist/yuri/information/start/0/count/30
+    enabled: true
+    interval: 6h
+    article:
+      keywords: [ツアー, TOUR, ライブ, LIVE, 公演, 先行, 抽選, 受付, チケット, 一般発売, 追加, 開催決定, 出演決定, リセール]
+      exclude: [グッズ, GOODS, 特典, 配信リリース, 放送, オンエア, 雑誌, 掲載, インタビュー, Blu-ray, DVD, 映像, 上映, キャンペーン, ドラマ, メディア情報, 生配信, リリース, アプリ, 返金受付]
+
+  - id: official-aimer
+    name: Aimer 官网 LIVE（Sony Music 接口）
+    kind: api
+    layer: live
+    artist: Aimer
+    url: https://www.sonymusic.co.jp/json/v2/artist/aimer/live/start/0/count/50
+    enabled: true
+    interval: 12h
+
+  - id: official-aimer-news
+    name: Aimer 官网 NEWS（Sony Music 接口）
+    kind: api
+    layer: news
+    artist: Aimer
+    url: https://www.sonymusic.co.jp/json/v2/artist/aimer/information/start/0/count/30
+    enabled: true
+    interval: 6h
+    article:
+      keywords: [ツアー, TOUR, ライブ, LIVE, 公演, 先行, 抽選, 受付, チケット, 一般発売, 追加, 開催決定, 出演決定, リセール]
+      exclude: [グッズ, GOODS, 特典, 配信リリース, 放送, オンエア, 雑誌, 掲載, インタビュー, Blu-ray, DVD, 映像, 上映, キャンペーン, ドラマ, メディア情報, 生配信, リリース, アプリ, 返金受付]
+
+  - id: official-natori
+    name: なとり LIVE/EVENT（Sony Music 接口）
+    kind: api
+    layer: live
+    artist: なとり
+    url: https://www.sonymusic.co.jp/json/v2/artist/natori/live/start/0/count/50
+    enabled: true
+    interval: 12h
+
+  - id: official-natori-news
+    name: なとり NEWS（Sony Music 接口）
+    kind: api
+    layer: news
+    artist: なとり
+    url: https://www.sonymusic.co.jp/json/v2/artist/natori/information/start/0/count/30
+    enabled: true
+    interval: 6h
+    article:
+      keywords: [ツアー, TOUR, ライブ, LIVE, 公演, 先行, 抽選, 受付, チケット, 一般発売, 追加, 開催決定, 出演決定, リセール]
+      exclude: [グッズ, GOODS, 特典, 配信リリース, 放送, オンエア, 雑誌, 掲載, インタビュー, Blu-ray, DVD, 映像, 上映, キャンペーン, ドラマ, メディア情報, 生配信, リリース, アプリ, 返金受付]
+
+  - id: official-milet
+    name: milet 官网 LIVE（Sony Music 接口）
+    kind: api
+    layer: live
+    artist: milet
+    url: https://www.sonymusic.co.jp/json/v2/artist/milet_music/live/start/0/count/50
+    enabled: true
+    interval: 12h
+
+  - id: official-milet-news
+    name: milet 官网 NEWS（Sony Music 接口）
+    kind: api
+    layer: news
+    artist: milet
+    url: https://www.sonymusic.co.jp/json/v2/artist/milet_music/information/start/0/count/30
+    enabled: true
+    interval: 6h
+    article:
+      keywords: [ツアー, TOUR, ライブ, LIVE, 公演, 先行, 抽選, 受付, チケット, 一般発売, 追加, 開催決定, 出演決定, リセール]
+      exclude: [グッズ, GOODS, 特典, 配信リリース, 放送, オンエア, 雑誌, 掲載, インタビュー, Blu-ray, DVD, 映像, 上映, キャンペーン, ドラマ, メディア情報, 生配信, リリース, アプリ, 返金受付]
+
+  - id: official-kinggnu
+    name: King Gnu 官网 LIVE（Sony Music 接口）
+    kind: api
+    layer: live
+    artist: King Gnu
+    url: https://www.sonymusic.co.jp/json/v2/artist/kinggnu/live/start/0/count/50
+    enabled: true
+    interval: 12h
+
+  - id: official-kinggnu-news
+    name: King Gnu 官网 NEWS（Sony Music 接口）
+    kind: api
+    layer: news
+    artist: King Gnu
+    url: https://www.sonymusic.co.jp/json/v2/artist/kinggnu/information/start/0/count/30
+    enabled: true
+    interval: 6h
+    article:
+      keywords: [ツアー, TOUR, ライブ, LIVE, 公演, 先行, 抽選, 受付, チケット, 一般発売, 追加, 開催決定, 出演決定, リセール]
+      exclude: [グッズ, GOODS, 特典, 配信リリース, 放送, オンエア, 雑誌, 掲載, インタビュー, Blu-ray, DVD, 映像, 上映, キャンペーン, ドラマ, メディア情報, 生配信, リリース, アプリ, 返金受付]
+
+  # ── Aimer 15 周年项目 ──
+  - id: official-aimer-15th
+    name: Aimer 15th “NORANEKO” LIVE
+    kind: website
+    layer: live
+    artist: Aimer
+    url: https://15th-noraneko.aimer-official.com/live/
+    enabled: true
+    interval: 12h
+    article:
+      delay: 2s
+
+  # ── 藤井風 ──
+  - id: official-fujiikaze
+    name: 藤井風 官网 TOUR
+    kind: website
+    layer: live
+    artist: 藤井風
+    url: https://fujiikaze.com/tour/
+    enabled: true
+    interval: 12h
+    follow: '^https://fujiikaze\.com/tour/[a-z0-9-]+/$'
+    article:
+      max_per_sync: 3
+      delay: 2s
+
+  - id: official-fujiikaze-news
+    name: 藤井風 官网 NEWS
+    kind: website
+    layer: news
+    artist: 藤井風
+    url: https://fujiikaze.com/news-article/
+    enabled: true
+    interval: 6h
+    follow: '^https://fujiikaze\.com/news-article/news\d+/$'
+    feature: '^https://fujiikaze\.com/tour/[a-z0-9-]+/$'
+    article:
+      keywords: [ツアー, TOUR, ライブ, LIVE, 公演, 先行, 抽選, 受付, チケット, 一般発売, 追加, 開催決定, 出演決定, リセール, リサイタル, Tour]
+      exclude: [グッズ, GOODS, 特典, 配信リリース, 放送, オンエア, 雑誌, 掲載, インタビュー, Blu-ray, DVD, 映像, 上映, キャンペーン, ドラマ, メディア情報, 生配信, リリース, アプリ, 返金受付]
+      max_per_sync: 3
+      delay: 2s
+
+  # ── 星野源 ──
+  - id: official-hoshinogen
+    name: 星野源 官网 TICKET
+    kind: website
+    layer: news
+    artist: 星野源
+    url: https://www.hoshinogen.com/ticket/
+    enabled: true
+    interval: 6h
+    note: 官网没有公开的 LIVE / SCHEDULE 列表（WORKS 里是影像作品），改读 TICKET 公告列表：官方受付、直前抽选、一般发售与公演信息都在这里。
+    follow: '^https://www\.hoshinogen\.com/ticket/detail/\?id=\d+$'
+    article:
+      exclude: [グッズ, GOODS, Live in Cinemas, 上映]
+      max_per_sync: 4
+      delay: 2s
+
+  - id: official-hoshinogen-news
+    name: 星野源 官网 NEWS
+    kind: website
+    layer: news
+    artist: 星野源
+    url: https://www.hoshinogen.com/news/
+    enabled: true
+    interval: 6h
+    follow: '^https://www\.hoshinogen\.com/news/detail/\?id=\d+$'
+    article:
+      keywords: [ツアー, TOUR, ライブ, LIVE, 公演, 先行, 抽選, 受付, チケット, 一般発売, 追加, 開催決定, 出演決定, リセール]
+      exclude: [グッズ, GOODS, 特典, 配信リリース, 放送, オンエア, 雑誌, 掲載, インタビュー, Blu-ray, DVD, 映像, 上映, キャンペーン, ドラマ, メディア情報, 生配信, リリース, アプリ, 返金受付]
+      max_per_sync: 3
+      delay: 2s
+
+  # ── Vaundy ──
+  - id: official-vaundy
+    name: Vaundy 官网 LIVE
+    kind: website
+    layer: live
+    artist: Vaundy
+    url: https://vaundy.jp/news/2
+    enabled: true
+    interval: 12h
+    follow: '^https://vaundy\.jp/news/detail/\d+$'
+    feature: '^https://member\.vaundy\.jp/feature/[A-Za-z0-9_]*(?i:tour)'
+    article:
+      exclude: [CANCELLED, 中止]
+      max_per_sync: 10
+      delay: 2s
+
+  - id: official-vaundy-news
+    name: Vaundy 官网 NEWS
+    kind: website
+    layer: news
+    artist: Vaundy
+    url: https://vaundy.jp/news/1
+    enabled: true
+    interval: 6h
+    follow: '^https://vaundy\.jp/news/detail/\d+$'
+    feature: '^https://member\.vaundy\.jp/feature/[A-Za-z0-9_]*(?i:tour)'
+    article:
+      keywords: [ツアー, TOUR, ライブ, LIVE, 公演, 先行, 抽選, 受付, チケット, 一般発売, 追加, 開催決定, 出演決定, リセール]
+      exclude: [グッズ, GOODS, 特典, 配信リリース, 放送, オンエア, 雑誌, 掲載, インタビュー, Blu-ray, DVD, 映像, 上映, キャンペーン, ドラマ, メディア情報, 生配信, リリース, アプリ, 返金受付]
+      max_per_sync: 3
+      delay: 2s
+
+  # ── Ado ──
+  - id: official-ado
+    name: Ado 官方站点
+    kind: website
+    layer: live
+    artist: Ado
+    url: https://ado-dokidokihimitsukichi-daigakuimo.com/
+    enabled: false
+    interval: 12h
+    note: 新官网是由 JavaScript 渲染的会员平台（Sheeta）页面，服务端 HTML 里没有内容；改用下面的 Universal Music 官方艺人页 NEWS。
+    article:
+      delay: 2s
+
+  - id: official-ado-news
+    name: Ado NEWS（Universal Music 官方艺人页）
+    kind: website
+    layer: news
+    artist: Ado
+    url: https://www.universal-music.co.jp/ado/
+    enabled: true
+    interval: 6h
+    follow: '/ado/news/20\d\d-\d\d-\d\d'
+    article:
+      keywords: [ツアー, TOUR, ライブ, LIVE, 公演, 先行, 抽選, チケット, 開催決定, 出演]
+      exclude: [グッズ, GOODS, 特典, 配信リリース, 放送, オンエア, 雑誌, 掲載, インタビュー, Blu-ray, DVD, 映像, 上映, キャンペーン, ドラマ, メディア情報, 生配信, リリース, アプリ, 返金受付]
+      max_per_sync: 3
+      delay: 2s
+
+  # ── ZUTOMAYO ──
+  - id: official-zutomayo
+    name: ZUTOMAYO 官网 LIVE
+    kind: website
+    layer: live
+    artist: ZUTOMAYO
+    url: https://zutomayo.net/live/
+    enabled: true
+    interval: 12h
+    follow: '^https://zutomayo\.net/live/\d+$'
+    article:
+      max_per_sync: 4
+      delay: 2s
+
+  # ── ヨルシカ ──
+  # 只读 LIVE 分类（/news/11/）：/news/ 还包含上映会、媒体掲載、Blu-ray
+  # 等与 Live 无关的公告，按日程解析会生成假场次，因此不再接入。
+  # 详情页已含完整日程与 OPEN/START，不再读 feature 专题页：旧专题页的
+  # 场馆与时间分散在多行，会覆盖正确的开演时间。
+  - id: official-yorushika
+    name: ヨルシカ 官网 LIVE
+    kind: website
+    layer: live
+    artist: ヨルシカ
+    url: https://yorushika.com/news/11/
+    enabled: true
+    interval: 12h
+    follow: '^https://yorushika\.com/news/detail/\d+$'
+    article:
+      max_per_sync: 2
+      delay: 2s
+
+  # 官方站维护 / 改版时的备用：只读 Universal 厂牌 NEWS，不替代官方 LIVE 日程与抽选。
+  - id: official-yorushika-label-news
+    name: ヨルシカ 厂牌 NEWS（备用）
+    kind: rss
+    layer: news
+    artist: ヨルシカ
+    url: https://www.universal-music.co.jp/yorushika/feed/
+    enabled: false
+    interval: 6h
+    note: 官方站维护时可在数据源页打开；只含 Universal 厂牌新闻，可能没有完整的 LIVE 日程与抽选。
+    article:
+      enabled: true
+      include: 'ヨルシカ|Yorushika'
+      keywords: [ツアー, TOUR, 公演, チケット, 受付, 先行, 抽選, 開催決定, 出演決定]
+      exclude: [グッズ, GOODS, 特典, 応援店, 店舗, 販売, 予約, 配信, リリース, 放送, オンデマンド, 雑誌, 掲載, インタビュー, Blu-ray, DVD, 映像, 上映, 映画, 劇場, 公開, 完走, レポート, 振り返り, キャンペーン, アプリ]
+      title_only: true
+      max_age: 90d
+      max_per_sync: 3
+      delay: 2s
+
+  # ── あたらよ ──
+  - id: official-atarayo
+    name: あたらよ 官网 LIVE
+    kind: website
+    layer: live
+    artist: あたらよ
+    url: https://atarayo-jp.com/contents/live
+    enabled: true
+    interval: 12h
+    follow: '^https://atarayo-jp\.com/contents/\d+'
+    article:
+      max_per_sync: 8
+      delay: 2s
+
+  # ── 『ユイカ』 ──
+  - id: official-yuika
+    name: 『ユイカ』官网 LIVE/EVENT
+    kind: website
+    layer: news
+    artist: 『ユイカ』
+    url: https://yuika-official.jp/mob/news/diarKiji.php?cd=YI_NEWS&ct=LIVE_EVENT&ima=2939&site=YI
+    enabled: false
+    interval: 6h
+    follow: 'diarKijiShw\.php'
+    note: 整个官网位于 /mob/ 下。robots.txt 目前返回 403（RFC 9309 视为无限制），但此前曾声明 “Disallow /mob/”，因此默认关闭；已验证开启后可解析（TOUR「Anemone」11 场、活动出演、FC / 官方先行）。确认可以抓取后，在「数据源」页打开即可。
+    article:
+      keywords: [TOUR, LIVE, ライブ, ワンマン, 先行, 公演]
+      max_per_sync: 4
+      delay: 2s
+
+  # ── 美波 ──
+  - id: official-minami
+    name: 美波 官网 LIVE SCHEDULE
+    kind: website
+    layer: live
+    artist: 美波
+    url: https://www.373official.com/pages/937733/schedule
+    enabled: true
+    interval: 12h
+    article:
+      delay: 2s
+
+# 头像：deezer（默认）= 按艺人名与别名调用 Deezer 公开搜索接口（api.deezer.com，
+#   无需账号，每个艺人最多 3 次请求、每秒至多 1 次）取得头像；off = 不联网查找头像，
+#   只用下面配置的 avatar_url / color，其余艺人按名字生成颜色。
+avatars: deezer
+
+# 艺人名与别名：同一艺人的不同写法会合并为一个艺人。
+#   avatar_url  头像地址（可选）。不填时按 avatars 的设置查找；填 none 表示不要头像。
+#   color       主题色（可选，#RRGGBB）。不填时取头像中面积最大的色块。
+artists:
+  - name: Official髭男dism
+    aliases: [ヒゲダン, Official HIGE DANdism, OFFICIAL HIGE DANDISM, Official Hige Dandism]
+    official_url: https://higedan.com/
+  - name: Mrs. GREEN APPLE
+    aliases: [ミセス, Mrs.GREEN APPLE, ミセスグリーンアップル]
+    official_url: https://mrsgreenapple.com/
+  - name: RADWIMPS
+    aliases: [ラッドウィンプス]
+    official_url: https://radwimps.jp/
+  - name: back number
+    aliases: [バックナンバー]
+    official_url: https://backnumber.info/
+  - name: 緑黄色社会
+    aliases: [リョクシャカ, Ryokuoushoku Shakai, Ryokushaka]
+    official_url: https://www.ryokushaka.com/
+  - name: YOASOBI
+    aliases: [ヨアソビ]
+    official_url: https://www.yoasobi-music.jp/
+  - name: 藤井風
+    aliases: [Fujii Kaze, 藤井 風]
+    official_url: https://fujiikaze.com/
+  - name: 星野源
+    aliases: [Gen Hoshino, 星野 源]
+    official_url: https://www.hoshinogen.com/
+  - name: Vaundy
+    aliases: [バウンディ]
+    official_url: https://vaundy.jp/
+  - name: Ado
+    aliases: [アド]
+    official_url: https://ado-dokidokihimitsukichi-daigakuimo.com/
+  - name: 優里
+    aliases: [Yuuri]
+    official_url: https://www.yuuriweb.com/
+  - name: Aimer
+    aliases: [エメ]
+    official_url: https://www.aimer-web.jp/
+  - name: ZUTOMAYO
+    aliases: [ずっと真夜中でいいのに。, ずっと真夜中でいいのに, ずとまよ]
+    official_url: https://zutomayo.net/
+  - name: ヨルシカ
+    aliases: [Yorushika]
+    official_url: https://yorushika.com/
+    avatar_url: https://yorushika.com/apple-touch-icon.png
+  - name: あたらよ
+    aliases: [atarayo]
+    official_url: https://atarayo-jp.com/
+  - name: なとり
+    aliases: [natori, Natori]
+    official_url: https://www.sonymusic.co.jp/artist/natori/
+  - name: 『ユイカ』
+    aliases: [ユイカ, yuika]
+    official_url: https://yuika-official.jp/
+  - name: milet
+    aliases: [ミレイ]
+    official_url: https://www.milet.jp/
+  - name: King Gnu
+    aliases: [キングヌー]
+    official_url: https://kinggnu.jp/
+  - name: 美波
+    aliases: [Minami]
+    official_url: https://www.373official.com/
+  - name: 米津玄師
+    aliases: [Kenshi Yonezu, ハチ]
+    official_url: https://reissuerecords.net/
+
+  # 演示数据里的虚构艺人（follow: false = 只用于合并别名，不在「艺人」页常驻）
+  - name: ステラリウム
+    aliases: [Stellarium]
+    avatar_url: none
+    color: "#5B6CCF"
+    follow: false
+  - name: 夜光クラゲ
+    aliases: [Yakou Kurage]
+    avatar_url: none
+    color: "#2E9C9A"
+    follow: false
+  - name: Neon Orchard
+    aliases: [ネオンオーチャード]
+    avatar_url: none
+    color: "#C2457A"
+    follow: false
+  - name: 白昼夢ポスト
+    aliases: [Hakuchumu Post]
+    avatar_url: none
+    color: "#D98A2B"
+    follow: false
+  - name: ザ・クロマニヨンズ
+    aliases: [THE CRO-MAGNONS, クロマニヨンズ]
+    avatar_url: none
+    color: "#B8432F"
+    follow: false

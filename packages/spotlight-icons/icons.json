@@ -1,0 +1,242 @@
+[
+  {
+    "name": "add",
+    "group": "actions"
+  },
+  {
+    "name": "remove",
+    "group": "actions"
+  },
+  {
+    "name": "edit",
+    "group": "actions"
+  },
+  {
+    "name": "delete",
+    "group": "actions"
+  },
+  {
+    "name": "view",
+    "group": "actions"
+  },
+  {
+    "name": "flag",
+    "group": "actions"
+  },
+  {
+    "name": "more",
+    "group": "actions"
+  },
+  {
+    "name": "help",
+    "group": "actions"
+  },
+  {
+    "name": "clear",
+    "group": "actions"
+  },
+  {
+    "name": "open",
+    "group": "actions"
+  },
+  {
+    "name": "account",
+    "group": "actions"
+  },
+  {
+    "name": "rss",
+    "group": "sources"
+  },
+  {
+    "name": "link",
+    "group": "sources"
+  },
+  {
+    "name": "api",
+    "group": "sources"
+  },
+  {
+    "name": "data-status",
+    "group": "sources"
+  },
+  {
+    "name": "sync",
+    "group": "sources"
+  },
+  {
+    "name": "synced",
+    "group": "sources"
+  },
+  {
+    "name": "sync-failed",
+    "group": "sources"
+  },
+  {
+    "name": "update-log",
+    "group": "sources"
+  },
+  {
+    "name": "parse-error",
+    "group": "sources"
+  },
+  {
+    "name": "crawl-error",
+    "group": "sources"
+  },
+  {
+    "name": "time",
+    "group": "details"
+  },
+  {
+    "name": "show-time",
+    "group": "details"
+  },
+  {
+    "name": "venue",
+    "group": "details"
+  },
+  {
+    "name": "artist",
+    "group": "details"
+  },
+  {
+    "name": "category",
+    "group": "details"
+  },
+  {
+    "name": "official-info",
+    "group": "details"
+  },
+  {
+    "name": "price",
+    "group": "details"
+  },
+  {
+    "name": "info",
+    "group": "details"
+  },
+  {
+    "name": "source-site",
+    "group": "details"
+  },
+  {
+    "name": "live",
+    "group": "status"
+  },
+  {
+    "name": "preorder-start",
+    "group": "status"
+  },
+  {
+    "name": "preorder-end",
+    "group": "status"
+  },
+  {
+    "name": "result",
+    "group": "status"
+  },
+  {
+    "name": "general-sale",
+    "group": "status"
+  },
+  {
+    "name": "announcement",
+    "group": "status"
+  },
+  {
+    "name": "postponed",
+    "group": "status"
+  },
+  {
+    "name": "cancelled",
+    "group": "status"
+  },
+  {
+    "name": "suspended",
+    "group": "status"
+  },
+  {
+    "name": "previous",
+    "group": "navigation"
+  },
+  {
+    "name": "next",
+    "group": "navigation"
+  },
+  {
+    "name": "today",
+    "group": "navigation"
+  },
+  {
+    "name": "add-to-calendar",
+    "group": "navigation"
+  },
+  {
+    "name": "view-switch",
+    "group": "navigation"
+  },
+  {
+    "name": "download",
+    "group": "navigation"
+  },
+  {
+    "name": "share",
+    "group": "navigation"
+  },
+  {
+    "name": "home",
+    "group": "views"
+  },
+  {
+    "name": "calendar",
+    "group": "views"
+  },
+  {
+    "name": "month",
+    "group": "views"
+  },
+  {
+    "name": "week",
+    "group": "views"
+  },
+  {
+    "name": "day",
+    "group": "views"
+  },
+  {
+    "name": "list",
+    "group": "views"
+  },
+  {
+    "name": "search",
+    "group": "views"
+  },
+  {
+    "name": "filter",
+    "group": "views"
+  },
+  {
+    "name": "sort",
+    "group": "views"
+  },
+  {
+    "name": "settings",
+    "group": "views"
+  },
+  {
+    "name": "sidebar-left",
+    "group": "views"
+  },
+  {
+    "name": "sidebar-right",
+    "group": "views"
+  },
+  {
+    "name": "pin",
+    "group": "actions"
+  },
+  {
+    "name": "pin-active",
+    "group": "actions"
+  }
+]
