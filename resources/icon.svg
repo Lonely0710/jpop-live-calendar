@@ -2,7 +2,7 @@
 <rect x="100" y="100" width="824" height="824" rx="185" fill="#F7F3EA"/>
 <rect x="100.5" y="100.5" width="823" height="823" rx="185" fill="none" stroke="#D8D1C7" stroke-width="3"/>
 <circle cx="512" cy="512" r="300" fill="#FFD9A8" opacity="0.5"/>
-<g transform="translate(110.72 128.32) scale(0.64)">
+<g transform="translate(60.56 80.36) scale(0.72)">
 <rect x="280" y="296" width="694" height="685" rx="95" fill="#F7F3EB"/>
 <path fill="#FC9073" d="M280 452V391a95 95 0 0 1 95-95H879a95 95 0 0 1 95 95V452Z"/>
 <rect x="357" y="530" width="106" height="97" rx="22" fill="#E9DDD6"/><rect x="502" y="530" width="106" height="97" rx="22" fill="#E9DDD6"/><rect x="648" y="530" width="106" height="97" rx="22" fill="#E9DDD6"/><rect x="793" y="530" width="106" height="97" rx="22" fill="#E9DDD6"/><rect x="357" y="662" width="106" height="97" rx="22" fill="#E9DDD6"/><rect x="648" y="662" width="106" height="97" rx="22" fill="#E9DDD6"/><rect x="793" y="662" width="106" height="97" rx="22" fill="#E9DDD6"/><rect x="357" y="795" width="106" height="97" rx="22" fill="#E9DDD6"/><rect x="502" y="795" width="106" height="97" rx="22" fill="#E9DDD6"/><rect x="648" y="795" width="106" height="97" rx="22" fill="#E9DDD6"/><rect x="793" y="795" width="106" height="97" rx="22" fill="#E9DDD6"/>

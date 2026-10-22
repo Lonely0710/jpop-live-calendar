@@ -39,7 +39,7 @@ sources:
     kind: demo
     enabled: false
     interval: 0
-    note: 虚构的示例数据，用于体验界面；开启后与真实数据并列显示。
+    note: 虚构示例数据，用于体验界面；与真实数据并列显示。
 
   # ── 米津玄師 ──
   - id: official-yonezu
@@ -108,7 +108,7 @@ sources:
     url: https://news.ponycanyon.co.jp/tag/official%e9%ab%ad%e7%94%b7dism/feed/
     enabled: false
     interval: 6h
-    note: 官方站维护时可在数据源页打开；只含厂牌新闻，可能没有完整的 LIVE 日程与抽选。
+    note: 仅厂牌新闻，可能缺少完整的 LIVE 日程与抽选；官方站维护时可启用。
     article:
       enabled: true
       include: 'Official髭男dism|OFFICIAL HIGE DANDISM'
@@ -376,7 +376,7 @@ sources:
     url: https://www.hoshinogen.com/ticket/
     enabled: true
     interval: 6h
-    note: 官网没有公开的 LIVE / SCHEDULE 列表（WORKS 里是影像作品），改读 TICKET 公告列表：官方受付、直前抽选、一般发售与公演信息都在这里。
+    note: 官网没有 LIVE 日程，改读 TICKET 公告：受付、抽选、一般发售与公演信息。
     follow: '^https://www\.hoshinogen\.com/ticket/detail/\?id=\d+$'
     article:
       exclude: [グッズ, GOODS, Live in Cinemas, 上映]
@@ -439,7 +439,7 @@ sources:
     url: https://ado-dokidokihimitsukichi-daigakuimo.com/
     enabled: false
     interval: 12h
-    note: 新官网是由 JavaScript 渲染的会员平台（Sheeta）页面，服务端 HTML 里没有内容；改用下面的 Universal Music 官方艺人页 NEWS。
+    note: 新官网由 JavaScript 渲染（Sheeta），服务端 HTML 无内容；改用下面的官方 NEWS。
     article:
       delay: 2s
 
@@ -499,7 +499,7 @@ sources:
     url: https://www.universal-music.co.jp/yorushika/feed/
     enabled: false
     interval: 6h
-    note: 官方站维护时可在数据源页打开；只含 Universal 厂牌新闻，可能没有完整的 LIVE 日程与抽选。
+    note: 仅 Universal 厂牌新闻，可能缺少完整的 LIVE 日程与抽选；官方站维护时可启用。
     article:
       enabled: true
       include: 'ヨルシカ|Yorushika'
@@ -534,7 +534,7 @@ sources:
     enabled: false
     interval: 6h
     follow: 'diarKijiShw\.php'
-    note: 整个官网位于 /mob/ 下。robots.txt 目前返回 403（RFC 9309 视为无限制），但此前曾声明 “Disallow /mob/”，因此默认关闭；已验证开启后可解析（TOUR「Anemone」11 场、活动出演、FC / 官方先行）。确认可以抓取后，在「数据源」页打开即可。
+    note: 官网位于 /mob/，robots.txt 曾声明 Disallow /mob/（现返回 403），默认关闭；已验证可解析，确认允许抓取后可开启。
     article:
       keywords: [TOUR, LIVE, ライブ, ワンマン, 先行, 公演]
       max_per_sync: 4

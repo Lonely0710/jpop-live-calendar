@@ -20,6 +20,10 @@
     "group": "actions"
   },
   {
+    "name": "view-disabled",
+    "group": "actions"
+  },
+  {
     "name": "flag",
     "group": "actions"
   },
@@ -181,6 +185,14 @@
   },
   {
     "name": "share",
+    "group": "navigation"
+  },
+  {
+    "name": "map-route",
+    "group": "navigation"
+  },
+  {
+    "name": "map-japan",
     "group": "navigation"
   },
   {

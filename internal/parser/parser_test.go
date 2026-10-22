@@ -227,6 +227,18 @@ func TestScheduleDateAsOfIsNotAShow(t *testing.T) {
 	}
 }
 
+func TestScheduleNewsBadgeIsNotAShow(t *testing.T) {
+	res := Parse(Input{
+		Title: "ZUTOMAYO Hall Tour 2027 「アピクラ電機」LÚ.NIM.LÀL", Published: published, Schedule: true, ArtistHints: []string{"ZUTOMAYO"},
+		Text: `2026.10.16new
+HALL TOUR 2027 「アピクラ電機」LÚ.NIM.LÀL 開催決定
+01.15(FRI) 広島県 広島文化学園HBGホール OPEN 17:00 / START 18:00`,
+	})
+	if len(res.Events) != 1 || res.Events[0].Date.String() != "2027-01-15" || res.Events[0].Venue != "広島文化学園HBGホール" {
+		t.Fatalf("events = %+v", res.Events)
+	}
+}
+
 func TestScheduleYearDaysAndDuplicates(t *testing.T) {
 	res := Parse(Input{
 		Title: "ZEPP TOUR 2027", Published: published, Schedule: true, ArtistHints: []string{"X"},

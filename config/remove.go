@@ -11,16 +11,6 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// UserPath is the configuration file of the user, which Load reads
-// before the one of the project and the built-in copy.
-func UserPath() (string, error) {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return "", err
-	}
-	return filepath.Join(home, "Library", "Application Support", "Live Calendar", "sources.yaml"), nil
-}
-
 // RemoveSource deletes the source id from the configuration file at
 // path, keeping the rest of the file, its comments included, as it was,
 // and returns the file it wrote. A configuration read from the built-in

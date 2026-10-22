@@ -9,6 +9,7 @@ const (
 	Edit          Name = "edit"
 	Delete        Name = "delete"
 	View          Name = "view"
+	ViewDisabled  Name = "view-disabled"
 	Flag          Name = "flag"
 	More          Name = "more"
 	Help          Name = "help"
@@ -50,6 +51,8 @@ const (
 	ViewSwitch    Name = "view-switch"
 	Download      Name = "download"
 	Share         Name = "share"
+	MapRoute      Name = "map-route"
+	MapJapan      Name = "map-japan"
 	Home          Name = "home"
 	Calendar      Name = "calendar"
 	Month         Name = "month"
@@ -73,6 +76,7 @@ var All = []Name{
 	Edit,
 	Delete,
 	View,
+	ViewDisabled,
 	Flag,
 	More,
 	Help,
@@ -114,6 +118,8 @@ var All = []Name{
 	ViewSwitch,
 	Download,
 	Share,
+	MapRoute,
+	MapJapan,
 	Home,
 	Calendar,
 	Month,
@@ -136,6 +142,7 @@ var groups = map[Name]Group{
 	Edit:          "actions",
 	Delete:        "actions",
 	View:          "actions",
+	ViewDisabled:  "actions",
 	Flag:          "actions",
 	More:          "actions",
 	Help:          "actions",
@@ -177,6 +184,8 @@ var groups = map[Name]Group{
 	ViewSwitch:    "navigation",
 	Download:      "navigation",
 	Share:         "navigation",
+	MapRoute:      "navigation",
+	MapJapan:      "navigation",
 	Home:          "views",
 	Calendar:      "views",
 	Month:         "views",

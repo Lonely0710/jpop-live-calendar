@@ -210,6 +210,7 @@ func clockOr(cl *domain.Clock) string {
 // opens the round.
 func (a *App) roundCard(c *ui.Context, r domain.PublicTicketRound) {
 	now := a.opt.Now()
+	ended := a.endedRound(r)
 	b := ui.ButtonBase(c).Column().FillWidth().AlignItems(ui.Stretch).Padding(10, 12).Gap(4).Radius(theme.Radius).
 		Border(1, theme.MistGray).Label("票务 " + r.Name)
 	if b.Hovered() {
@@ -237,6 +238,9 @@ func (a *App) roundCard(c *ui.Context, r domain.PublicTicketRound) {
 				break
 			}
 		}
+	}
+	if ended {
+		b.Children(func() { endedVeil(c, theme.Radius) })
 	}
 }
 
@@ -308,6 +312,7 @@ func (a *App) showRow(c *ui.Context, ev domain.PublicEvent, withTitle bool) {
 	if ev.Status == domain.StatusPostponed || ev.Status == domain.StatusCancelled {
 		col = theme.StatusError
 	}
+	ended := a.endedEvent(ev)
 	when := fmt.Sprintf("%s %s", shortDay(ev.StartDate), weekdayName(ev.StartDate.Weekday()))
 	if ev.StartAt != nil {
 		when += " " + ev.StartAt.String()
@@ -339,6 +344,9 @@ func (a *App) showRow(c *ui.Context, ev domain.PublicEvent, withTitle bool) {
 		}
 	}).Clicked() {
 		a.showEntry("live:" + ev.ID)
+	}
+	if ended {
+		b.Children(func() { endedVeil(c, 5) })
 	}
 }
 

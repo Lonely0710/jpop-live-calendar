@@ -1,14 +1,14 @@
 # spotlight-icons
 
-Live Calendar 的 Spotlight 图标库：58 个 24×24 SVG，线宽 1.75–2、圆头，配色严格限制在 Spotlight 色板内（测试会检查）。
+Live Calendar 的 Spotlight 图标库：63 个 24×24 SVG，线宽 1.75–2、圆头，配色严格限制在 Spotlight 色板内（测试会检查）。
 
 | 分组 | 图标 |
 | --- | --- |
-| actions | add, remove, edit, delete, view, flag, more, help, clear, open, account |
+| actions | add, remove, edit, delete, view, view-disabled, flag, more, help, clear, open, account |
 | sources | rss, link, api, data-status, sync, synced, sync-failed, update-log, parse-error, crawl-error |
 | details | time, show-time, venue, artist, category, official-info, price, info, source-site |
 | status | live, preorder-start, preorder-end, result, general-sale, announcement, postponed, cancelled, suspended |
-| navigation | previous, next, today, add-to-calendar, view-switch, download, share |
+| navigation | previous, next, today, add-to-calendar, view-switch, download, share, map-route, map-japan |
 | views | home, calendar, month, week, day, list, search, filter, sort, settings, sidebar-left, sidebar-right |
 
 **一图一名**：每个图标只有一个名字、一种含义（测试会检查没有两个相同的图形）。0.5.0 合并了重复的图标：

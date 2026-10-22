@@ -107,6 +107,7 @@ var (
 	quoteRe       = regexp.MustCompile(`^(?:「([^「」]+)」|『([^『』]+)』|“([^“”]+)”|"([^"]+)")$`)
 	venueHeadRe   = regexp.MustCompile(`^[<＜〈]\s*([^<>＜＞〈〉]{2,5})\s*[>＞〉]\s*(\S.{1,60})$`)
 	postStampRe   = regexp.MustCompile(`^\d{4}\.\d{1,2}\.\d{1,2}\s+\d{1,2}:\d{2}$`)
+	newsBadgeRe   = regexp.MustCompile(`(?i)^new[!！]*$`)
 	weekdayLineRe = regexp.MustCompile(`^[(（]?(?:(?i:sun|mon|tue|wed|thu|fri|sat)[a-z]*\.?|[月火水木金土日](?:[・/][祝休])?)[)）]?$`)
 	kagiRe        = regexp.MustCompile(`「([^「」]{3,80})」`)
 	tourWordRe    = regexp.MustCompile(`(?i)tour|live|ツアー|ライブ|ライヴ|ワンマン|公演|fes`)
@@ -539,6 +540,9 @@ func (p *state) eventLine(l string) ([]Event, bool) {
 		return nil, false
 	}
 	rest := m[5]
+	if newsBadgeRe.MatchString(strings.TrimSpace(rest)) {
+		return nil, false // an information list's date followed by its "new" badge, not a show
+	}
 	if p.schedule && (strings.HasPrefix(rest, "現在") || strings.HasPrefix(rest, "時点")) {
 		return nil, false // "2026年3月3日現在の…": a page's date, not a show
 	}

@@ -84,8 +84,8 @@ func Candidates() []string {
 	if p := os.Getenv("LIVE_CALENDAR_CONFIG"); p != "" {
 		out = append(out, p)
 	}
-	if home, err := os.UserHomeDir(); err == nil {
-		out = append(out, filepath.Join(home, "Library", "Application Support", "Live Calendar", "sources.yaml"))
+	if p, err := UserPath(); err == nil {
+		out = append(out, p)
 	}
 	return append(out, filepath.Join("config", "sources.yaml"))
 }

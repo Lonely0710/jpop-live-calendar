@@ -33,30 +33,13 @@ func (a *App) calendar(c *ui.Context) {
 	})
 }
 
-// summaryBar is the line above the calendar: a monospaced overview of the
-// visible counts, the zone and the legend.
+// summaryBar is the line above the calendar: the legend, and, in a window
+// too narrow to keep the counts beside the title, the counts too.
 func (a *App) summaryBar(c *ui.Context) {
-	first, last := a.visibleRange()
-	evs := a.entries(first, last)
-	lives := 0
-	for _, e := range evs {
-		if e.Kind == domain.EntryLive {
-			lives++
-		}
-	}
 	ui.Row(c).Gap(14).AlignItems(ui.Center).Children(func() {
-		ui.Row(c).Gap(10).Shrink(0).AlignItems(ui.Center).Tooltip("当前视图范围内的公开事件统计").Children(func() {
-			stat(c, fmt.Sprint(lives), "场 Live")
-			divider(c)
-			stat(c, fmt.Sprint(len(evs)-lives), "个票务节点")
-			divider(c)
-			ui.Text(c, "Asia/Tokyo 时间").Font("monospace").FontSize(theme.CaptionSize).
-				TextColor(theme.TextSecondary).SingleLine().Shrink(0)
-		})
-		if a.filtersActive() {
-			tag(c, "已筛选", theme.StatusInfo)
+		if !a.statsInToolbar(c) {
+			a.statsLine(c)
 		}
-		ui.Spacer(c)
 		ui.Row(c).Gap(5).Shrink(0).AlignItems(ui.Center).Tooltip("Live 以艺人主题色显示：取自头像中面积最大的色块").Children(func() {
 			liveSwatch(c)
 			caption(c, "Live（艺人主题色）").SingleLine()
@@ -68,6 +51,74 @@ func (a *App) summaryBar(c *ui.Context) {
 			})
 		}
 	})
+}
+
+// statsLine is the monospaced overview of the visible counts, the zone and
+// the filter state.
+func (a *App) statsLine(c *ui.Context) ui.Element {
+	lives, tickets := a.visibleCounts()
+	return ui.Row(c).Gap(8).Shrink(0).AlignItems(ui.Center).Tooltip("当前视图范围内的公开事件统计 · Asia/Tokyo 时间").Children(func() {
+		stat(c, fmt.Sprint(lives), "Live")
+		divider(c)
+		stat(c, fmt.Sprint(tickets), "票务")
+		divider(c)
+		zone(c)
+		if a.filtersActive() {
+			tag(c, "已筛选", theme.StatusInfo)
+		}
+	})
+}
+
+func (a *App) visibleCounts() (lives, tickets int) {
+	first, last := a.visibleRange()
+	evs := a.entries(first, last)
+	for _, e := range evs {
+		if e.Kind == domain.EntryLive {
+			lives++
+		}
+	}
+	return lives, len(evs) - lives
+}
+
+func zone(c *ui.Context) ui.Element {
+	return ui.Text(c, "Tokyo").Font("monospace").FontSize(theme.CaptionSize).
+		TextColor(theme.TextSecondary).SingleLine().Shrink(0)
+}
+
+// toolbarStatsChrome is the room the toolbar's other parts take beside the
+// title: the navigation, view switch, search, actions, padding and gaps.
+const toolbarStatsChrome = 724
+
+// statsInToolbar reports whether the counts fit beside the calendar's
+// title, left of the view switch.
+func (a *App) statsInToolbar(c *ui.Context) bool {
+	if a.query != "" {
+		return false
+	}
+	w, _ := c.Size()
+	side := a.sideWidth
+	if side <= 0 {
+		side = theme.SidebarWidth
+	}
+	side = theme.RailWidth + (side-theme.RailWidth)*a.sideShown
+	tw, _ := c.MeasureText(0, ui.Span{Text: a.title(), Size: theme.TitleSize, Weight: 700})
+	return w-side-tw-toolbarStatsChrome >= a.statsWidth(c)
+}
+
+// statsWidth measures the counts line, with room kept for the filter tag
+// so that turning a filter on does not change where the line sits.
+func (a *App) statsWidth(c *ui.Context) float32 {
+	lives, tickets := a.visibleCounts()
+	measure := func(text string, size float32, weight int) float32 {
+		w, _ := c.MeasureText(0, ui.Span{Text: text, Font: "monospace", Size: size, Weight: weight})
+		return w
+	}
+	statW := func(n int, unit string) float32 {
+		return measure(fmt.Sprint(n), 13, 700) + 4 + measure(unit, float32(theme.CaptionSize), 400)
+	}
+	tagText := measure("已筛选", 10, 700) + 8 // tag's padding
+	return statW(lives, "Live") + statW(tickets, "票务") +
+		measure("Tokyo", float32(theme.CaptionSize), 400) + 1 + 1 + tagText + 8*5
 }
 
 // stat is a count in the summary: a monospaced number and its unit.
@@ -300,6 +351,7 @@ func (a *App) chip(c *ui.Context, e domain.Entry, compact bool) {
 		return
 	}
 	col := theme.KindColor(e.Kind, e.Status)
+	ended := a.endedEntry(e)
 	selected := a.entryID == e.ID
 	tip := e.Title + " · " + e.Detail
 	if e.Changed {
@@ -347,6 +399,9 @@ func (a *App) chip(c *ui.Context, e domain.Entry, compact bool) {
 	}).Clicked() {
 		a.selectEntry(e)
 	}
+	if ended {
+		b.Children(func() { endedVeil(c, 5) })
+	}
 }
 
 // liveChip is a Live show on the calendar, in its artist's colors.
@@ -357,9 +412,10 @@ func (a *App) liveChip(c *ui.Context, e domain.Entry, compact bool) {
 	if name == "" {
 		name = e.Title
 	}
+	ended := a.endedEntry(e)
 	selected := a.entryID == e.ID
 	off := e.Status == domain.StatusPostponed || e.Status == domain.StatusCancelled
-	tip := name + " · " + e.Title + " · " + liveLine(e)
+	tip := e.Title + "\n" + liveLine(e)
 	if off {
 		tip += " · " + e.Status.Label()
 	} else if e.Changed {
@@ -426,6 +482,9 @@ func (a *App) liveChip(c *ui.Context, e domain.Entry, compact bool) {
 		})
 	}).Clicked() {
 		a.selectEntry(e)
+	}
+	if ended {
+		b.Children(func() { endedVeil(c, 6) })
 	}
 }
 
@@ -539,6 +598,7 @@ type hourKey struct {
 // entryRow is an entry in a list: time, kind, title, detail.
 func (a *App) entryRow(c *ui.Context, e domain.Entry) {
 	col := theme.KindColor(e.Kind, e.Status)
+	ended := a.endedEntry(e)
 	b := ui.ButtonBase(c).FillWidth().Padding(10, 12).Gap(12).Radius(theme.Radius).Justify(ui.Start).
 		Label(chipLabel(e)).Border(1, theme.MistGray)
 	switch {
@@ -588,6 +648,9 @@ func (a *App) entryRow(c *ui.Context, e domain.Entry) {
 		}
 	}).Clicked() {
 		a.selectEntry(e)
+	}
+	if ended {
+		b.Children(func() { endedVeil(c, theme.Radius) })
 	}
 }
 

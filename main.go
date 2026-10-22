@@ -1,4 +1,4 @@
-// Live Calendar — 日本音乐 Live 情报日历（macOS 原生，MyGo + Go）。
+// Live Calendar — 日本音乐 Live 情报日历（macOS / Windows 原生，MyGo + Go）。
 package main
 
 import (
@@ -6,6 +6,7 @@ import (
 	_ "embed"
 	"errors"
 	"log"
+	"runtime"
 
 	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/ui"
@@ -18,12 +19,18 @@ import (
 	"jpop-live-calendar/internal/views"
 )
 
-const version = "1.0.0"
+const version = "1.0.1"
 
 // trayIcon is the black-and-transparent menu bar icon; macOS tints it.
 //
 //go:embed resources/tray.png
 var trayIcon []byte
+
+// trayIconWindows is the coral icon for the Windows notification area,
+// where template icons are not tinted.
+//
+//go:embed resources/tray-win.png
+var trayIconWindows []byte
 
 // pacificoFont is the script face of the JPOP wordmark. It is embedded so
 // the app shows it even on a Mac without the font installed.
@@ -74,7 +81,7 @@ func main() {
 		SavePins: config.SavePins,
 		// 上次同步的公告快照：启动时先显示，之后每次同步完成再写回。
 		CachePath: cachePath,
-		// 抽选截止提醒：macOS 系统通知；同一截止只提醒一次（notified.json）。
+		// 抽选截止提醒：系统通知；同一截止只提醒一次（notified.json）。
 		Notified:     notified,
 		SaveNotified: config.SaveNotified,
 		Notify: func(r views.Reminder) error {
@@ -140,21 +147,25 @@ func main() {
 		win.Update(func() { app.OpenEntry(entry) })
 	})
 	mygo.App.WhenReady(func() {
-		win = mygo.NewWindow(mygo.WindowOptions{
-			Title:          "Live Calendar",
-			Width:          theme.WindowWidth,
-			Height:         theme.WindowHeight,
-			MinWidth:       theme.MinWidth,
-			MinHeight:      theme.MinHeight,
-			TitleBarStyle:  mygo.TitleBarHiddenInset,
-			TitleBarHeight: theme.TitleBarHeight,
+		opts := mygo.WindowOptions{
+			Title:           "Live Calendar",
+			Width:           theme.WindowWidth,
+			Height:          theme.WindowHeight,
+			MinWidth:        theme.MinWidth,
+			MinHeight:       theme.MinHeight,
+			TitleBarStyle:   mygo.TitleBarHidden,
+			TitleBarHeight:  theme.TitleBarHeight,
+			BackgroundColor: "#F3E9D8",
+			StateKey:        "main",
+			Content:         ui.View(app.View),
+		}
+		if runtime.GOOS == "darwin" {
 			// The traffic lights centered in the 52-pt top band, on one line
 			// with the toolbar: c.TitleBar().Height is then 52 too.
-			TrafficLightPosition: &mygo.Point{X: theme.TrafficLightX, Y: theme.TrafficLightY},
-			BackgroundColor:      "#F3E9D8",
-			StateKey:             "main",
-			Content:              ui.View(app.View),
-		})
+			opts.TitleBarStyle = mygo.TitleBarHiddenInset
+			opts.TrafficLightPosition = &mygo.Point{X: theme.TrafficLightX, Y: theme.TrafficLightY}
+		}
+		win = mygo.NewWindow(opts)
 		// Sync every enabled source now, then on each one's interval.
 		app.Start(ctx)
 		setupMenuBar(app, win)
@@ -171,14 +182,13 @@ func main() {
 	}
 }
 
-// tray is the menu bar icon; it must stay referenced for as long as the
-// application runs.
+// tray is the menu bar / notification-area icon; it must stay referenced
+// for as long as the application runs.
 var tray *mygo.Tray
 
-// setupMenuBar adds the menu bar icon and keeps the app alive when the
-// window is closed: closing hides the window, and the sync, the deadlines
-// and the tray stay. The Dock icon and the tray's first item bring it back;
-// 退出 (or ⌘Q) is the only way to quit.
+// setupMenuBar adds the tray icon and keeps the app alive when the window is
+// closed: closing hides the window, and the sync, the deadlines and the tray
+// stay. The tray's first item brings it back; 退出 is the only way to quit.
 func setupMenuBar(app *views.App, win *mygo.Window) {
 	quitting := false
 	mygo.App.OnBeforeQuit(func(*mygo.QuitEvent) { quitting = true })
@@ -193,9 +203,13 @@ func setupMenuBar(app *views.App, win *mygo.Window) {
 		{Type: mygo.MenuItemSeparator},
 		{Label: "退出 Live Calendar", Role: mygo.RoleQuit, Click: func(*mygo.MenuItem, *mygo.Window) { mygo.App.Quit() }},
 	})
+	icon := trayIcon
+	if runtime.GOOS == "windows" {
+		icon = trayIconWindows
+	}
 	t, err := mygo.NewTray(mygo.TrayOptions{
-		Icon:           trayIcon,
-		IconIsTemplate: true,
+		Icon:           icon,
+		IconIsTemplate: runtime.GOOS == "darwin",
 		ToolTip:        "Live Calendar · 日本音乐 Live 情报日历",
 		Menu:           menu,
 	})

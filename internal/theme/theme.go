@@ -100,6 +100,8 @@ func Spotlight() *ui.Theme {
 	t.Inverse = InkCharcoal
 	t.InverseText = CloudWhite
 	t.Scrollbar = SoftAsh
+	// MyGo's 6 DIP bars read heavy against the app's 1 DIP rules.
+	t.ScrollbarWidth = 4
 	t.Radius = Radius
 	// The sidebar's item metrics and the icon the app repaints over a
 	// focused item assume MyGo's 4 DIP spacing unit.
@@ -169,6 +171,10 @@ var (
 	GlassPressed   = InkCharcoal.Alpha(0.12)
 	GlassSelected  = WarmSpotlight.Alpha(0.7)
 	GlassLine      = InkCharcoal.Alpha(0.08)
+	// EndedVeil is the light gray laid over a show or round that is over:
+	// it washes the card's colors out, as an inactive layer instead of a
+	// darker one.
+	EndedVeil = SoftAsh.Alpha(0.55)
 )
 
 // ArtistPalette is how an artist's theme color shows on the calendar.

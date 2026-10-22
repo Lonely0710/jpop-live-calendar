@@ -117,7 +117,8 @@ type App struct {
 	entryID      string // selected entry; "" shows the selected day
 	query        string
 	inspector    bool
-	sideHide     bool // the sidebar is collapsed
+	sideHide     bool    // the sidebar is collapsed
+	sideShown    float32 // how far the sidebar is shown this frame, 0 to 1
 	userOpen     bool
 	sideWidth    float32 // expanded sidebar width, dragged by its edge
 	inspectWidth float32 // inspector width, dragged by its edge
@@ -131,15 +132,19 @@ type App struct {
 	region      string // allRegions or a japanRegions label
 	city        string // allCities or a region capital label
 
-	showChanges bool
-	showSources bool
-	scrollHours bool
-	artistID    string
-	pins        map[string]bool
-	srcOn       map[string]*bool
-	rawOpen     map[string]*bool
-	deleteOpen  map[string]*bool // the delete dialogs of the sources
-	sourceForm  sourceDraft      // the 数据源 page's "新增数据源" form
+	showChanges  bool
+	showSources  bool
+	scrollHours  bool
+	artistID     string
+	pins         map[string]bool
+	srcOn        map[string]*bool
+	rawOpen      map[string]*bool
+	tourOpen     map[string]*bool  // the artist page's tours, by artist and name
+	tourPick     map[string]string // the artist page's tour filter, by artist ID; "" shows all
+	tourPickOpen bool              // the artist page's tour filter popover is open
+	hideEnded    bool              // the artist page hides tours whose shows have all ended
+	deleteOpen   map[string]*bool  // the delete dialogs of the sources
+	sourceForm   sourceDraft       // the 数据源 page's "新增数据源" form
 
 	bitmaps     map[string]*ui.Bitmap // avatar pictures, made once
 	avatarSVGs  map[string]*ui.SVG    // default avatars, recolored and parsed once
@@ -176,7 +181,7 @@ func New(opt Options) *App {
 		opt.Scheduler.Now = opt.Now
 	}
 	if opt.Version == "" {
-		opt.Version = "1.0.0"
+		opt.Version = "1.0.1"
 	}
 	if opt.Avatars == nil {
 		opt.Avatars = avatar.NewStore()
@@ -203,7 +208,7 @@ func New(opt Options) *App {
 		notified[id] = at
 	}
 	a := &App{opt: opt, cursor: today, selected: today, inspector: true,
-		sourceOff: map[string]*bool{}, srcOn: map[string]*bool{}, rawOpen: map[string]*bool{}, deleteOpen: map[string]*bool{}, showSources: true, showChanges: true,
+		sourceOff: map[string]*bool{}, srcOn: map[string]*bool{}, rawOpen: map[string]*bool{}, tourOpen: map[string]*bool{}, tourPick: map[string]string{}, deleteOpen: map[string]*bool{}, showSources: true, showChanges: true,
 		bitmaps: map[string]*ui.Bitmap{}, avatarSVGs: map[string]*ui.SVG{}, colors: map[string]ui.Color{}, pins: map[string]bool{},
 		notified: notified, sourceForm: newSourceDraft(), region: allRegions, city: allCities,
 		sideWidth: theme.SidebarWidth, inspectWidth: theme.InspectorWidth}
@@ -506,7 +511,7 @@ func (a *App) shortcuts(c *ui.Context) {
 		a.Refresh()
 	case c.Shortcut(ui.Cmd|ui.Alt, ui.KeyI):
 		a.inspector = !a.inspector
-	case c.Shortcut(ui.Cmd|ui.Ctrl, ui.KeyS):
+	case c.Shortcut(sidebarModifiers, ui.KeyS):
 		a.sideHide = !a.sideHide
 	case c.Shortcut(0, ui.KeyEscape) && a.entryID != "":
 		a.entryID = ""
@@ -541,6 +546,7 @@ func (a *App) View(c *ui.Context) {
 		a.backdrop(c)
 		col := ui.Column(c).Absolute().Left(0).Top(0).Right(0).Bottom(0)
 		shown := col.Animate("sidebar", b2f(!a.sideHide), 250*time.Millisecond)
+		a.sideShown = shown
 		inspect := col.Animate("inspector", b2f(a.inspectorShown()), 220*time.Millisecond)
 		// The sidebar narrows to the rail of icons as it collapses.
 		sideW := theme.RailWidth + (a.sideWidth-theme.RailWidth)*shown

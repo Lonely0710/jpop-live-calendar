@@ -104,9 +104,6 @@ func card(c *ui.Context) ui.Element {
 }
 
 // pageHeader is the heading of the non-calendar pages.
-func pageHeader(c *ui.Context, title, sub string) {
-	ui.Column(c).Gap(4).Children(func() {
-		ui.Text(c, title).FontSize(20).Bold()
-		caption(c, sub)
-	})
+func pageHeader(c *ui.Context, title string) {
+	ui.Text(c, title).FontSize(20).Bold()
 }

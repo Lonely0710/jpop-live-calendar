@@ -61,6 +61,7 @@ func (a *App) navigate(id string) {
 			continue
 		}
 		a.section = it.section
+		a.tourPickOpen = false
 		if it.section == SectionCalendar {
 			if it.mode == ModeAgenda {
 				a.setMode(ModeAgenda)
@@ -341,7 +342,7 @@ func (a *App) toolbar(c *ui.Context, bar ui.TitleBar, sheetLeft float32) {
 	}
 	toggleW := float32(theme.ToggleButton + 4)
 	start := max(sheetLeft+6, lead+toggleW+12)
-	ui.Row(c).Height(h).Shrink(0).Padding(0, theme.PaneInset+4, 0, 0).AlignItems(ui.Center).
+	ui.Row(c).Height(h).Shrink(0).Padding(0, theme.PaneInset+4+bar.Right, 0, 0).AlignItems(ui.Center).
 		DragWindow().Children(func() {
 		ui.Box(c).Width(lead).Shrink(0)
 		a.sidebarToggle(c)
@@ -360,7 +361,7 @@ func (a *App) toolbarItems(c *ui.Context) {
 				a.step(-1)
 			}
 			today := ui.ButtonBase(c).Height(theme.CapsuleH-4).Padding(0, 10).Radius((theme.CapsuleH - 4) / 2).
-				Label("今天").Tooltip("回到今天 (⌘T)")
+				Label("今天").Tooltip("回到今天 (" + todayShortcut + ")")
 			if today.Hovered() {
 				today.Background(theme.GlassHover)
 			}
@@ -377,6 +378,9 @@ func (a *App) toolbarItems(c *ui.Context) {
 	// would show it twice.
 	if cal {
 		ui.Text(c, a.title()).FontSize(theme.TitleSize).Bold().SingleLine().Shrink(1).Margin(0, 0, 0, 4)
+		if a.statsInToolbar(c) {
+			a.statsLine(c)
+		}
 	}
 	ui.Spacer(c).DragWindow()
 	if cal {
@@ -391,14 +395,14 @@ func (a *App) toolbarItems(c *ui.Context) {
 		ui.Popover(c, f, &a.filterOpen, func() { a.filterPanel(c) })
 		icon, status, _ := a.syncSummary()
 		running := a.opt.Scheduler.Running()
-		r := capsuleGlyph(c, "立即同步 (⌘R) · "+status, running, func() { a.syncGlyph(c, icon, 17) })
+		r := capsuleGlyph(c, "立即同步 ("+syncShortcut+") · "+status, running, func() { a.syncGlyph(c, icon, 17) })
 		if r.Clicked() {
 			a.Refresh()
 		}
 		if cal {
-			label := "显示详情面板 (⌥⌘I)"
+			label := "显示详情面板 (" + inspectorShortcut + ")"
 			if a.inspector {
-				label = "隐藏详情面板 (⌥⌘I)"
+				label = "隐藏详情面板 (" + inspectorShortcut + ")"
 			}
 			capsuleToggle(c, icons.SidebarRight, label, &a.inspector)
 		}
@@ -417,7 +421,7 @@ func (a *App) viewSwitch(c *ui.Context) {
 		Material(glass.Glass{}).Shrink(0).Label("视图").Children(func() {
 		for i, text := range modeLabels {
 			s := float32(theme.CapsuleH - 4)
-			label := fmt.Sprintf("%s视图 (⌘%d)", text, i+1)
+			label := fmt.Sprintf("%s视图 (%s)", text, viewShortcut(i))
 			seg := seg.Segment(i).Height(s).Padding(0, 11, 0, 9).Gap(5).Radius(s / 2).AlignItems(ui.Center).
 				Label(label).Tooltip(label)
 			switch {
@@ -441,9 +445,9 @@ func (a *App) viewSwitch(c *ui.Context) {
 // the sidebar shows; it stays in the top band, next to the traffic
 // lights, whether the sidebar shows or not.
 func (a *App) sidebarToggle(c *ui.Context) {
-	label := "隐藏侧边栏 (⌃⌘S)"
+	label := "隐藏侧边栏 (" + sidebarShortcut + ")"
 	if a.sideHide {
-		label = "显示侧边栏 (⌃⌘S)"
+		label = "显示侧边栏 (" + sidebarShortcut + ")"
 	}
 	shown := !a.sideHide
 	b := ui.ToggleBase(c.Key("sidebar-toggle"), &shown).Size(theme.ToggleButton+4, theme.ToggleButton).Shrink(0).
