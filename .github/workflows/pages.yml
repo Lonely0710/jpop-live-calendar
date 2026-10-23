@@ -1,0 +1,64 @@
+# Publishes the website (docs/index.html) to GitHub Pages with live data:
+# every 6 hours it syncs the official sources of config/sources.yaml once
+# (robots.txt and the per-site delay kept) and writes data/events.json.
+# Settings → Pages → Source: GitHub Actions.
+name: Pages
+
+on:
+  push:
+    branches: [main]
+    paths: [docs/**, assets/screenshots/**, cmd/export/**, config/**, internal/**, .github/workflows/pages.yml]
+  schedule:
+    - cron: "17 */6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      # Announcements read by earlier runs: news pages list only the latest
+      # articles, so the deadlines found before stay on the site.
+      - uses: actions/cache/restore@v4
+        with:
+          path: .cache
+          key: crawl-${{ github.run_id }}
+          restore-keys: crawl-
+      - name: Sync official sources
+        run: go run ./cmd/export -o _site/data/events.json -cache .cache/cache.json
+      - uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: .cache
+          key: crawl-${{ github.run_id }}
+      - name: Assemble site
+        run: |
+          cp docs/index.html _site/
+          mkdir -p _site/assets
+          cp -r assets/screenshots _site/assets/
+          touch _site/.nojekyll
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
