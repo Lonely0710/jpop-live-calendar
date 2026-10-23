@@ -37,6 +37,7 @@ const (
 	SectionArtists
 	SectionSources
 	SectionSettings
+	SectionMap
 )
 
 // Mode is the calendar's view; its order is the toolbar's segmented control.
@@ -132,6 +133,10 @@ type App struct {
 	region      string // allRegions or a japanRegions label
 	city        string // allCities or a region capital label
 
+	mapScope int     // MapUpcoming, MapAll or MapPast
+	mapPref  string  // the map's chosen prefecture, mapUnknown, or "" for all Japan
+	mapCam   mapView // the map's camera
+
 	showChanges  bool
 	showSources  bool
 	scrollHours  bool
@@ -181,7 +186,7 @@ func New(opt Options) *App {
 		opt.Scheduler.Now = opt.Now
 	}
 	if opt.Version == "" {
-		opt.Version = "1.0.1"
+		opt.Version = "1.0.2"
 	}
 	if opt.Avatars == nil {
 		opt.Avatars = avatar.NewStore()
@@ -211,7 +216,7 @@ func New(opt Options) *App {
 		sourceOff: map[string]*bool{}, srcOn: map[string]*bool{}, rawOpen: map[string]*bool{}, tourOpen: map[string]*bool{}, tourPick: map[string]string{}, deleteOpen: map[string]*bool{}, showSources: true, showChanges: true,
 		bitmaps: map[string]*ui.Bitmap{}, avatarSVGs: map[string]*ui.SVG{}, colors: map[string]ui.Color{}, pins: map[string]bool{},
 		notified: notified, sourceForm: newSourceDraft(), region: allRegions, city: allCities,
-		sideWidth: theme.SidebarWidth, inspectWidth: theme.InspectorWidth}
+		sideWidth: theme.SidebarWidth, inspectWidth: theme.InspectorWidth, mapCam: mapView{zoom: mapMinZoom, hover: -1}}
 	for _, id := range opt.Pinned {
 		a.pins[id] = true
 	}
@@ -573,10 +578,12 @@ func (a *App) View(c *ui.Context) {
 						a.sourcesPage(c)
 					case SectionSettings:
 						a.settingsPage(c)
+					case SectionMap:
+						a.mapPage(c)
 					}
 				})
-				// The inspector slides in from the right, on the calendar only:
-				// the other pages fill the window's width.
+				// The inspector slides in from the right, on the calendar and
+				// the map only: the other pages fill the window's width.
 				if slot := (a.inspectWidth + theme.PaneGap) * inspect; slot > 0.5 {
 					// The row's gap is the slot's own, so it closes with it.
 					ui.Row(c).Width(slot).Shrink(0).AlignItems(ui.Stretch).Margin(0, 0, 0, -theme.PaneGap).
@@ -597,7 +604,10 @@ func (a *App) View(c *ui.Context) {
 	}
 }
 
-func (a *App) inspectorShown() bool { return a.inspector && a.section == SectionCalendar }
+func (a *App) inspectorShown() bool { return a.inspector && a.hasInspector() }
+
+// hasInspector reports whether the page has the inspector on its right.
+func (a *App) hasInspector() bool { return a.section == SectionCalendar || a.section == SectionMap }
 
 // sideResizer is the sidebar's right edge: drag it, or focus it and use the
 // arrows, to change the expanded sidebar's width. It is hidden while the

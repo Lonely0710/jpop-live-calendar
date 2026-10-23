@@ -18,9 +18,19 @@ func (a *App) inspectorPanel(c *ui.Context) {
 	e, ok := a.snap.Entry(a.entryID)
 	ui.Column(c).Grow(1).Shrink(1).MinHeight(0).Children(func() {
 		ui.Row(c).Padding(10, 8, 6, 16).AlignItems(ui.Center).Gap(4).Children(func() {
-			if ok {
-				if capsuleIcon(c, icons.Previous, "返回当天列表", false).Clicked() {
+			onMap := a.section == SectionMap
+			switch {
+			case ok:
+				back := "返回当天列表"
+				if onMap {
+					back = "返回地区列表"
+				}
+				if capsuleIcon(c, icons.Previous, back, false).Clicked() {
 					a.entryID = ""
+				}
+			case onMap && a.mapPref != "":
+				if capsuleIcon(c, icons.Previous, "返回日本全国", false).Clicked() {
+					a.mapPref = ""
 				}
 			}
 			ui.Row(c).Gap(6).AlignItems(ui.Center).Height(theme.CapsuleH - 4).Children(func() {
@@ -29,7 +39,11 @@ func (a *App) inspectorPanel(c *ui.Context) {
 			})
 		})
 		if !ok {
-			a.dayInspector(c)
+			if a.section == SectionMap {
+				a.mapInspector(c)
+			} else {
+				a.dayInspector(c)
+			}
 			return
 		}
 		ui.Scroll(c).Grow(1).Shrink(1).Children(func() {

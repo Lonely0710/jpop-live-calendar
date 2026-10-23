@@ -36,6 +36,7 @@ var (
 var (
 	TextSecondary = InkCharcoal.Mix(SoftAsh, 0.45)
 	TextDisabled  = SoftAsh
+	StatNumber    = LiveCoral.Mix(InkCharcoal, 0.3) // 统计数字：与标题区分，且 ≥ 4.5:1
 	SidebarBg     = PaperIvory.Mix(MistGray, 0.22)
 	Hover         = PaperIvory.Mix(MistGray, 0.45)
 	Pressed       = PaperIvory.Mix(MistGray, 0.7)

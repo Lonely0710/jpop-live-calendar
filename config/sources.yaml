@@ -524,22 +524,6 @@ sources:
       max_per_sync: 8
       delay: 2s
 
-  # ── 『ユイカ』 ──
-  - id: official-yuika
-    name: 『ユイカ』官网 LIVE/EVENT
-    kind: website
-    layer: news
-    artist: 『ユイカ』
-    url: https://yuika-official.jp/mob/news/diarKiji.php?cd=YI_NEWS&ct=LIVE_EVENT&ima=2939&site=YI
-    enabled: false
-    interval: 6h
-    follow: 'diarKijiShw\.php'
-    note: 官网位于 /mob/，robots.txt 曾声明 Disallow /mob/（现返回 403），默认关闭；已验证可解析，确认允许抓取后可开启。
-    article:
-      keywords: [TOUR, LIVE, ライブ, ワンマン, 先行, 公演]
-      max_per_sync: 4
-      delay: 2s
-
   # ── 美波 ──
   - id: official-minami
     name: 美波 官网 LIVE SCHEDULE

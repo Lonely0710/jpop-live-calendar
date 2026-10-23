@@ -15,25 +15,27 @@ import (
 )
 
 type navItem struct {
-	id      string // the item's ID in the ui.Sidebar
-	icon    icons.Name
-	label   string
-	section Section
-	mode    Mode // for calendar items
+	id        string // the item's ID in the ui.Sidebar
+	icon      icons.Name
+	label     string
+	section   Section
+	mode      Mode // for calendar items
+	ownColors bool // the icon keeps its own colors instead of the sidebar's tint
 }
 
 var navItems = []navItem{
-	{"calendar", icons.Calendar, "日历", SectionCalendar, ModeMonth},
-	{"list", icons.List, "列表", SectionCalendar, ModeAgenda},
-	{"artists", icons.Artist, "艺人", SectionArtists, 0},
-	{"sources", icons.DataStatus, "数据", SectionSources, 0},
+	{"calendar", icons.Calendar, "日历", SectionCalendar, ModeMonth, false},
+	{"list", icons.List, "列表", SectionCalendar, ModeAgenda, false},
+	{"map", icons.MapRoute, "地图", SectionMap, 0, true},
+	{"artists", icons.Artist, "艺人", SectionArtists, 0, false},
+	{"sources", icons.DataStatus, "数据", SectionSources, 0, false},
 }
 
-var settingsItem = navItem{"settings", icons.Settings, "设置", SectionSettings, 0}
+var settingsItem = navItem{"settings", icons.Settings, "设置", SectionSettings, 0, false}
 
 // accountItem is the user's entry at the bottom of the sidebar, above the
 // settings: it opens the account's popover instead of a page.
-var accountItem = navItem{"account", icons.Account, "用户", -1, 0}
+var accountItem = navItem{"account", icons.Account, "用户", -1, 0, false}
 
 // footerItems are the items at the bottom of the sidebar and the rail.
 var footerItems = []navItem{accountItem, settingsItem}
@@ -50,6 +52,8 @@ func (a *App) navID() string {
 		return "artists"
 	case SectionSources:
 		return "sources"
+	case SectionMap:
+		return "map"
 	}
 	return "settings"
 }
@@ -59,6 +63,11 @@ func (a *App) navigate(id string) {
 	for _, it := range append(navItems, settingsItem) {
 		if it.id != id {
 			continue
+		}
+		if it.section == SectionMap && a.section != SectionMap {
+			// The calendar's chosen show stays with the calendar: the map's
+			// inspector opens on the prefecture chosen last.
+			a.entryID = ""
 		}
 		a.section = it.section
 		a.tourPickOpen = false
@@ -79,6 +88,7 @@ func (a *App) navList(c *ui.Context, items []navItem, title string, compact bool
 	sel := a.navID()
 	var chosen ui.Element
 	chosenIcon := icons.Calendar
+	chosenOwn := false
 	hasChosen := false
 	sb := ui.Sidebar(c, &sel, func() {
 		build := func() {
@@ -88,8 +98,14 @@ func (a *App) navList(c *ui.Context, items []navItem, title string, compact bool
 					label = ""
 				}
 				item := ui.SidebarItem(c, it.id, mygoicons.Get(it.icon), label).Height(32)
+				if it.ownColors {
+					icon := mygoicons.Get(it.icon)
+					item.DrawOver(func(p *ui.Painter, r ui.Rect) {
+						p.Image(icon, sidebarIconRect(r), ui.Contain)
+					})
+				}
 				if it.id == sel {
-					chosen, chosenIcon, hasChosen = item, it.icon, true
+					chosen, chosenIcon, chosenOwn, hasChosen = item, it.icon, it.ownColors, true
 				}
 				if compact {
 					item.Label(it.label).Tooltip(it.label)
@@ -133,7 +149,11 @@ func (a *App) navList(c *ui.Context, items []navItem, title string, compact bool
 			chosen.DrawOver(func(p *ui.Painter, r ui.Rect) {
 				ir := sidebarIconRect(r)
 				p.Fill(ir, theme.SelectedBg, 0)
-				p.Icon(icon, ir, theme.LiveCoral)
+				if chosenOwn {
+					p.Image(icon, ir, ui.Contain)
+				} else {
+					p.Icon(icon, ir, theme.LiveCoral)
+				}
 				if sb.FocusVisible() {
 					p.FocusRing(r, [4]float32{theme.Radius, theme.Radius, theme.Radius, theme.Radius})
 				}
@@ -399,7 +419,7 @@ func (a *App) toolbarItems(c *ui.Context) {
 		if r.Clicked() {
 			a.Refresh()
 		}
-		if cal {
+		if a.hasInspector() {
 			label := "显示详情面板 (" + inspectorShortcut + ")"
 			if a.inspector {
 				label = "隐藏详情面板 (" + inspectorShortcut + ")"

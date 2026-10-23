@@ -63,6 +63,10 @@ var prefectures = []string{
 	"佐賀", "長崎", "熊本", "大分", "宮崎", "鹿児島", "沖縄",
 }
 
+// Prefectures returns the 47 prefectures without their suffix, in the
+// order of their JIS codes (北海道 first, 沖縄 last).
+func Prefectures() []string { return append([]string(nil), prefectures...) }
+
 // Prefecture returns the prefecture a token names ("東京", "東京都",
 // "大阪府"), or "".
 func Prefecture(tok string) string {

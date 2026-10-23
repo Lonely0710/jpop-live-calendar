@@ -1,154 +1,167 @@
-# Live Calendar · 日本音乐 Live 情报日历
+<p align="center">
+  <img src="assets/readme/hero.svg" width="100%" alt="Live Calendar · 日本音楽ライブ情報暦">
+</p>
 
 <p align="center">
-  <a href="#更新记录"><img src="https://img.shields.io/badge/version-1.0.1-E85A3A?style=flat-square&labelColor=2E2A28" alt="版本 1.0.1"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-2E2A28?style=flat-square" alt="许可证 MIT"></a>
+  <a href="#更新记录"><img src="https://img.shields.io/badge/version-1.0.2-E85A3A?style=flat-square&labelColor=2E2A28" alt="版本 1.0.2"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-2E2A28?style=flat-square" alt="MIT"></a>
+  <a href="https://go.dev"><img src="https://img.shields.io/badge/Go-1.27+-00ADD8?style=flat-square&logo=go&logoColor=white" alt="Go 1.27+"></a>
   <a href="https://github.com/egoist/mygo"><img src="https://img.shields.io/badge/MyGo-v0.5.5-3D86F5?style=flat-square&labelColor=2E2A28&logo=go&logoColor=white" alt="MyGo v0.5.5"></a>
+  <a href="#快速开始"><img src="https://img.shields.io/badge/macOS-13+-000000?style=flat-square&logo=apple&logoColor=white" alt="macOS 13+"></a>
+  <a href="#快速开始"><img src="https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4?style=flat-square" alt="Windows 10 / 11"></a>
+  <a href="https://github.com/Lonely0710/jpop-live-calendar/commits"><img src="https://img.shields.io/github/last-commit/Lonely0710/jpop-live-calendar?style=flat-square&color=22B05E" alt="最近提交"></a>
+  <a href="https://github.com/Lonely0710/jpop-live-calendar"><img src="https://img.shields.io/github/languages/top/Lonely0710/jpop-live-calendar?style=flat-square&color=00ADD8" alt="主要语言"></a>
+  <a href="#数据原则"><img src="https://img.shields.io/badge/robots.txt-RFC%209309-22B05E?style=flat-square" alt="robots.txt RFC 9309"></a>
+  <a href="#spotlight-icons"><img src="https://img.shields.io/badge/Spotlight%20Icons-63-E85A3A?style=flat-square&labelColor=2E2A28" alt="Spotlight Icons 63"></a>
+  <a href="https://github.com/Lonely0710/jpop-live-calendar/pulls"><img src="https://img.shields.io/badge/PRs-welcome-22B05E?style=flat-square" alt="PRs welcome"></a>
 </p>
 
 <p align="center">
   <b>简体中文</b> · <a href="README.ja.md">日本語</a> · <a href="README.en.md">English</a>
 </p>
 
-<p align="center">
-  <img src="resources/icon.png" width="112" alt="Live Calendar 应用图标">
-</p>
+Live Calendar 是一款 macOS / Windows 原生桌面应用，把日本音乐的 Live 场次、抽选 / 先行受付、结果公布和一般发售，从官方公告整理成一张日历。
 
-macOS / Windows 原生桌面应用（**MyGo Native UI + Go**），把日本音乐的 Live、抽选 / 先行受付、结果公布、一般发售等**公开信息**整理成日历。无数据库、无登录。
-
-![月视图（真实数据）](assets/screenshots/month-live.png)
+![月视图](assets/screenshots/month-live.png)
 
 ## 功能
 
-- **四种视图**：月 / 周 / 日 / 列表；⌘← / ⌘→ 翻页，⌘T 回到今天。Live 是带色条的实心条，受付开始 / 截止、结果公布、一般发售是带圆点的描边胶囊，截止加粗，延期 / 中止标红。
-- **一眼看清票务**：同一场演出的各轮受付、结果公布与一般发售独立成节点，各自出现在日历上，各自有倒计时与购票 / 受付链接。
-- **每一条都可追溯**：每个场次和票务节点都能回到来源公告，看到发布时间、抓取时间、第几版与解析用文本，并可打开原文。
-- **只抓公开信息**：默认关注 21 位艺人，启用 34 个官方 / 公开源（官网、RSS、Sony Music 公开 JSON）；不登录、不读会员页、不抓票务平台，遵守 robots.txt，同一站点请求串行且间隔 ≥ 1 秒。
-- **缺失字段不猜测**：没公布的时间显示「时间未公布」，没公布的场地显示「场地未公布」，不确定的推断标「需确认」；延期、中止、截止时间变化写入变更记录，不静默覆盖。
-- **本地快照 + 后台同步**：公开公告与头像分别缓存在 `cache.json` / `avatars.json`，重启先显示上次结果；单个数据源失败只记录到它自己，不影响其他源，也不会清空已有数据。
-- **常驻与提醒**：关闭窗口只是隐藏，菜单栏（macOS）/ 系统托盘（Windows）继续同步；抽选截止前 3 天提醒一次（`notified.json`），截止延长后按新时间再提醒。
-- **只读、无账号**：不做登录、收藏、个人购票状态或云同步；侧边栏底部的账号入口只是占位。
+<table>
+<tr>
+<td width="50%" valign="top"><img src="packages/spotlight-icons/svg/calendar.svg" width="20" height="20" align="absmiddle">&nbsp;&nbsp;<code>01</code>&nbsp;<b>日历</b><br><sub>月 / 周 / 日 / 列表四种视图，支持搜索，按类型、数据源、地区和日期筛选。</sub></td>
+<td width="50%" valign="top"><img src="packages/spotlight-icons/svg/preorder-start.svg" width="20" height="20" align="absmiddle">&nbsp;&nbsp;<code>02</code>&nbsp;<b>票务节点</b><br><sub>各轮受付、结果公布和一般发售分别显示，附倒计时和官方链接。</sub></td>
+</tr>
+<tr>
+<td width="50%" valign="top"><img src="packages/spotlight-icons/svg/venue.svg" width="20" height="20" align="absmiddle">&nbsp;&nbsp;<code>03</code>&nbsp;<b>地图</b><br><sub>按都道府县统计 Live，点选地区后在右侧列出场次。</sub></td>
+<td width="50%" valign="top"><img src="packages/spotlight-icons/svg/artist.svg" width="20" height="20" align="absmiddle">&nbsp;&nbsp;<code>04</code>&nbsp;<b>艺人</b><br><sub>按巡演和月份整理场次，可置顶、筛选巡演、隐藏已结束的巡演。</sub></td>
+</tr>
+<tr>
+<td width="50%" valign="top"><img src="packages/spotlight-icons/svg/official-info.svg" width="20" height="20" align="absmiddle">&nbsp;&nbsp;<code>05</code>&nbsp;<b>来源追溯</b><br><sub>查看来源公告、发布时间、抓取时间、版本和解析用文本。</sub></td>
+<td width="50%" valign="top"><img src="packages/spotlight-icons/svg/update-log.svg" width="20" height="20" align="absmiddle">&nbsp;&nbsp;<code>06</code>&nbsp;<b>变更记录</b><br><sub>延期、中止和截止时间变更都会留痕，不直接覆盖旧数据。</sub></td>
+</tr>
+<tr>
+<td width="50%" valign="top"><img src="packages/spotlight-icons/svg/sync.svg" width="20" height="20" align="absmiddle">&nbsp;&nbsp;<code>07</code>&nbsp;<b>后台运行</b><br><sub>菜单栏（macOS）/ 系统托盘（Windows）常驻同步，抽选截止前 3 天通知。</sub></td>
+<td width="50%" valign="top"><img src="packages/spotlight-icons/svg/download.svg" width="20" height="20" align="absmiddle">&nbsp;&nbsp;<code>08</code>&nbsp;<b>本地快照</b><br><sub>启动时先显示上次结果再后台更新；单个数据源出错互不影响。</sub></td>
+</tr>
+</table>
 
-| 详情与票务节点 | 数据源 |
-| --- | --- |
-| ![详情面板：日期、开场 / 开演、场馆、票务节点与变更记录](assets/screenshots/inspector.png) | ![数据源：按艺人分组，可单独同步、停用或删除](assets/screenshots/sources.png) |
+<p align="center">
+  <img src="assets/readme/board.svg" width="100%" alt="近期截止：抽选截止、结果公布与一般发售（示例数据）">
+</p>
+
+<p align="center">
+  <img src="assets/readme/map.svg" width="100%" alt="点阵日本地图：按都道府县统计 Live（示例数据）">
+</p>
+
+<p align="center"><sub>以上两图为示例数据，仅作展示。</sub></p>
+
+## 界面
+
+<table width="100%">
+  <tr>
+    <td width="50%" align="center" valign="top"><b><small>FIG. 1</small> 详情面板</b><br><img src="assets/screenshots/inspector.png" width="100%" alt="详情面板：场次、票务节点与变更记录"></td>
+    <td width="50%" align="center" valign="top"><b><small>FIG. 2</small> 地图</b><br><img src="assets/screenshots/map.png" width="100%" alt="地图：按都道府县统计 Live"></td>
+  </tr>
+  <tr>
+    <td width="50%" align="center" valign="top"><b><small>FIG. 3</small> 艺人</b><br><img src="assets/screenshots/artists-live.png" width="100%" alt="艺人页：按巡演整理场次"></td>
+    <td width="50%" align="center" valign="top"><b><small>FIG. 4</small> 数据源</b><br><img src="assets/screenshots/sources.png" width="100%" alt="数据源页：按艺人分组的同步状态"></td>
+  </tr>
+</table>
+
+## 数据原则
+
+- **只用公开信息**：数据来自官网、RSS 和 Sony Music 公开 JSON；不登录，不读取会员页，不爬取票务平台，票务链接只从官方公告中获取。
+- **礼貌抓取**：遵守 robots.txt（RFC 9309）；对同一站点串行请求，间隔至少 1 秒。
+- **不猜测**：未公布的时间或场地如实显示为「时间未公布」或「场地未公布」，没有把握的解析结果标为「需确认」。
+
+默认关注 21 位艺人，启用 34 个数据源。
 
 ## 快速开始
 
-### 环境要求
-
-| 项目 | 版本 |
+| 依赖 | 版本 |
 | --- | --- |
-| macOS | 13+（Apple Silicon / Intel 均可） |
-| Windows | 10 / 11 x64（可以在 macOS / Linux 上交叉编译） |
-| Go | **1.27 或更高**（MyGo v0.5.5 要求 go 1.27） |
-| Xcode Command Line Tools | 在 macOS 上打包 `.app` / `.dmg` 时需要：`xcode-select --install` |
-| NSIS（可选） | 在 Windows 上生成安装包时需要 `makensis`；没有时仍会生成便携 zip |
+| Go | 1.27+ |
+| macOS | 13+（Apple Silicon / Intel） |
+| Windows | 10 / 11 x64，可在 macOS / Linux 上交叉编译 |
+| Xcode Command Line Tools | 在 macOS 上打包时需要 |
+| NSIS | 可选，用于生成 Windows 安装程序 |
 
 ```bash
-brew install go        # 或从 https://go.dev/dl/ 安装
-go version             # 需显示 go1.27.x 或更高
-```
-
-### 运行
-
-```bash
-go mod download        # 首次：下载 MyGo 等依赖
-go tool mygo dev       # 编译并打开原生窗口，保存代码后自动重启
-go run .               # 或直接运行
-```
-
-### 测试
-
-```bash
-go test ./...
+go mod download
+go tool mygo dev                  # 开发模式，保存后自动重启
+go test ./...                     # 测试
 go vet ./... && go tool mygo vet .
+
+scripts/package.sh darwin/arm64   # → build/jpop-live-calendar-darwin-arm64-<版本>.dmg
+scripts/package.sh windows/amd64  # → build/jpop-live-calendar-windows-amd64-<版本>.zip
 ```
 
-### 打包
-
-`scripts/package.sh` 会从 `mygo.json` 读取版本号，调用 MyGo 构建，并把产物命名为 `jpop-live-calendar-{平台}-{版本}`：
-
-```bash
-scripts/package.sh windows/amd64   # → build/jpop-live-calendar-windows-amd64-1.0.1.zip
-scripts/package.sh darwin/arm64    # → build/jpop-live-calendar-darwin-arm64-1.0.1.dmg（或 .zip）
-scripts/package.sh darwin/universal
-```
-
-Windows 的 zip 解开后是完整目录，双击里面的 `Live Calendar.exe` 运行；不要只取出 exe，旁边的资源文件也要保留。装了 NSIS 时还会输出 `...-setup.exe`。也可以直接 `go tool mygo build -platform windows/amd64`，产物在 `build/windows-amd64/`（文件名是 MyGo 默认格式）。
+Windows 安装包解压后运行 `Live Calendar.exe`，同目录下的资源文件需一并保留。
 
 ## 快捷键
 
-macOS 使用 ⌘，Windows 使用 Ctrl：
-
-| 功能 | macOS | Windows |
+| 操作 | macOS | Windows |
 | --- | --- | --- |
-| 上一 / 下一个月（周、天） | ⌘← / ⌘→ | Ctrl+← / Ctrl+→ |
+| 上一页 / 下一页 | ⌘← / ⌘→ | Ctrl+← / Ctrl+→ |
 | 回到今天 | ⌘T | Ctrl+T |
-| 月 / 周 / 日 / 列表视图 | ⌘1 – ⌘4 | Ctrl+1 – Ctrl+4 |
-| 立即同步全部已启用的数据源 | ⌘R | Ctrl+R |
-| 详情面板从事件返回当天列表 | Esc | Esc |
-| 显示 / 隐藏左侧边栏 | ⌃⌘S | Ctrl+Shift+S |
-| 显示 / 隐藏右侧详情面板 | ⌥⌘I | Ctrl+Alt+I |
-| 清空搜索 | Esc（搜索框内） | Esc（搜索框内） |
+| 切换月 / 周 / 日 / 列表 | ⌘1 – ⌘4 | Ctrl+1 – Ctrl+4 |
+| 立即同步 | ⌘R | Ctrl+R |
+| 显示 / 隐藏侧边栏 | ⌃⌘S | Ctrl+Shift+S |
+| 显示 / 隐藏详情面板 | ⌥⌘I | Ctrl+Alt+I |
+| 返回上一级 / 清空搜索 | Esc | Esc |
 
-## 数据源配置
+地图获得焦点时：←/→ 切换地区，+/− 缩放，0 显示全国。也可以用鼠标拖动、滚轮缩放、双击放大。
 
-读取顺序（找到即用）：环境变量 `LIVE_CALENDAR_CONFIG` → 用户配置目录（macOS 为 `~/Library/Application Support/Live Calendar/sources.yaml`，Windows 为 `%AppData%\Live Calendar\sources.yaml`）→ 当前目录 `config/sources.yaml` → 编译进 App 的默认副本。配置有误时 App 仍会用内置默认配置启动，并在「数据源」页显示错误。
+## 配置
+
+数据源和艺人在 `sources.yaml` 中定义，按以下顺序读取：
+
+1. 环境变量 `LIVE_CALENDAR_CONFIG`
+2. 用户目录：macOS 为 `~/Library/Application Support/Live Calendar/`，Windows 为 `%AppData%\Live Calendar\`
+3. 当前目录下的 `config/sources.yaml`
+4. 编译进应用的默认配置
 
 ```yaml
 sources:
-  - id: my-band-live            # 唯一 ID
-    name: 某乐队官网 LIVE        # 显示名
-    kind: website               # demo | rss | website | api（Sony Music 公开 JSON）
-    layer: live                 # live = LIVE/SCHEDULE 日程层；news = NEWS/TICKET 公告层
+  - id: my-band-live
+    name: 某乐队官网 LIVE
+    kind: website        # demo | rss | website | api
+    layer: live          # live：日程页；news：公告页
     url: https://example.com/live/
-    enabled: true
-    interval: 12h               # 自动同步间隔，最小 10m；0 = 只手动同步
-    artist: 某乐队              # 可选：页面一律归属该艺人（官网源）
+    interval: 12h        # 0 表示只手动同步
+    artist: 某乐队        # 可选：将页面固定归属到该艺人
 
 artists:
   - name: ステラリウム
-    aliases: [Stellarium]       # 不同写法会合并成一个艺人
-    official_url: https://example.com/
-    avatar_url: https://example.com/a.jpg  # 可选；填 none = 不用头像
-    color: "#3975AB"            # 可选：指定主题色，优先于从头像取的颜色
-    follow: true                # 默认 true：常驻「艺人」页；false = 只用于合并别名
-
-avatars: deezer                 # deezer（默认）| off：不联网获取头像
+    aliases: [Stellarium]
+    color: "#3975AB"     # 可选：主题色
 ```
 
-- **头像与主题色**：通过 Deezer 公开 API 在后台查找，限速每秒 1 个请求；主题色取头像中面积最大的色块，文字对比度保证 ≥ 4.5:1。取不到时用默认插画 + 固定配色。
-- **进一步过滤**：`article:` 段支持 `keywords` / `exclude` / `include` / `title_only` / `max_age` / `body_start` / `body_end` / `max_per_sync` / `delay`；`follow` 和 `feature` 用正则从列表页 / 公告中发现详情页与巡演专题页。写法见 `config/sources.yaml` 的注释。
-- **默认覆盖**：米津玄師、Official髭男dism、Mrs. GREEN APPLE、RADWIMPS、back number、緑黄色社会、YOASOBI、優里、Aimer、なとり、milet、King Gnu、藤井風、星野源、Vaundy、Ado、ZUTOMAYO、ヨルシカ、あたらよ、『ユイカ』、美波。默认启用 34 个源，另有 5 个默认关闭的备用源（演示数据、两个厂牌 NEWS、Ado SPA 官网、『ユイカ』官网）。
-- **界面内管理**：可在「数据源」页新增、停用、删除来源；写回配置文件时保留原有注释。新增只接受公开、允许访问的来源。
-- **robots.txt**：遵守 RFC 9309，被禁止的路径不抓取；票务链接只从官方公告中取得，不盲爬票务平台。
+完整字段（`article` 过滤、`follow` / `feature` 正则、头像设置等）见 [`config/sources.yaml`](config/sources.yaml) 的注释。也可以在应用的「数据源」页新增、停用或删除来源，写回文件时会保留注释。
 
-## 目录结构
+## 项目结构
 
 ```
-jpop-live-calendar/
-├── main.go                 # 入口：窗口、菜单栏 / 系统托盘、后台同步
-├── mygo.json               # 应用名、Bundle ID、版本、输出目录
-├── resources/              # 应用图标、托盘图标、内嵌 Pacifico 字体
-├── config/                 # sources.yaml + 加载 / 校验 / 写回
-├── internal/
-│   ├── domain/             # 公开数据模型（场次、票务轮次、公告、艺人、场馆）
-│   ├── sources/ crawler/   # 数据源适配器 + 礼貌抓取器 / 每源隔离的调度器
-│   ├── parser/ normalize/  # 日文公告解析、日期 / 时刻 / 都道府县 / 别名规范化
-│   ├── dedup/ catalog/     # 去重合并、变更记录、线程安全的内存快照
-│   ├── views/ theme/       # MyGo 界面与 Spotlight 主题、配色、尺寸
-│   └── avatar/ cache/      # 艺人头像 / 主题色、本地 JSON 快照
-├── packages/spotlight-icons/  # 图标库（主 module 内的普通包）
-├── scripts/package.sh      # 按 jpop-live-calendar-{平台}-{版本} 打包
-├── assets/screenshots/     # README 预览图
-├── LICENSE                 # MIT 许可证
-└── AGENTS.md               # 编码代理的工作说明（数据源 / 解析 / 界面各有子文件）
+main.go              入口：窗口、菜单栏 / 托盘、后台同步
+config/              sources.yaml 的加载、校验和写回
+internal/
+  sources/ crawler/  数据源适配器，以及遵守 robots.txt 的抓取器
+  parser/ normalize/ 日文公告解析与规范化
+  dedup/ catalog/    合并、变更记录、内存快照
+  views/ theme/      界面与主题
+  avatar/ cache/     艺人头像、本地 JSON 快照
+  geo/               内嵌的都道府县地图数据
+packages/spotlight-icons/  图标库（63 个 SVG）
+scripts/package.sh   打包脚本
 ```
 
-## 图标库
+## Spotlight Icons
 
-Spotlight Icons 是本项目**主 module 里的普通包**，直接 import，不需要额外下载或发布。63 个 24×24 SVG，6 个分组，线宽 1.75–2，配色严格限定在 Spotlight 三色中。
+项目自带的图标库：63 个 24×24 SVG，分 6 组，线宽 1.75–2，只使用 Spotlight 主题的三种颜色。它是主 module 中的普通包，直接 import 即可使用。
+
+<p align="center">
+  <img src="assets/readme/icons.svg" width="100%" alt="Spotlight Icons：63 个图标">
+</p>
 
 ```go
 import (
@@ -160,37 +173,41 @@ mygoicons.Image(c, icons.Calendar, 18) // 保留原色（Ink Charcoal + Live Cor
 mygoicons.Mono(c, icons.Calendar, 18)  // 单色，跟随文字颜色
 ```
 
-<p align="center">
-  <a href="assets/spotlight-icons-overview.png">
-    <img src="assets/spotlight-icons-overview.png" width="820" alt="Spotlight Icons 总览：63 个图标、6 个分组">
-  </a>
-</p>
-
-新增 / 替换图标、重新生成常量与测试的步骤见 [packages/spotlight-icons/README.md](packages/spotlight-icons/README.md)。
+新增或替换图标、重新生成常量的步骤见 [packages/spotlight-icons](packages/spotlight-icons/README.md)。
 
 ## 已知限制
 
-- 解析基于规则，覆盖日文新闻稿的常见写法；没把握的内容一律标「需确认」，请以原文为准。
-- 数据只保存在本地 JSON 快照：macOS 在 `~/Library/Application Support/Live Calendar/`，Windows 在 `%AppData%\Live Calendar\`；删除它们只会让下次启动重新同步 / 重新下载，不影响数据源配置。
-- Windows 版已交叉编译通过，但快捷键、托盘、通知和标题栏按钮的实际显示仍建议在 Windows 10 / 11 上人工检查一次。
-- 界面已通过截图验证；首次在 Mac 上运行时如有显示问题，欢迎反馈截图。
+- 解析规则只覆盖日文公告的常见写法，结果以原文为准。
+- 地图只精确到都道府县，场次标在县厅所在地，而非场馆的实际位置。
+- Windows 版的托盘、通知和标题栏尚未在真机上完整验证。
 
-## 后续（Phase 5 之后）
+## 路线图
 
-- （可选）日历格子里显示中国 / 日本节假日（如「中·休 国庆节」「日·祝 スポーツの日」）。
-- 票务轮次解析继续加强（如「●エントリー期間」下一行才写日期的写法）。
-- 新增数据源表单支持 `article` 过滤与 `follow` 正则（现在这些仍可直接编辑 `sources.yaml`）。
+- 改进票务轮次的解析，例如日期写在「●エントリー期間」下一行的公告。
+- 在「数据源」页直接编辑 `article` 过滤和 `follow` 规则。
+- 在日历中显示中国和日本的节假日（可选）。
 
 ## 更新记录
 
-- **1.0.1**（2026-10-22）
-  - Windows 10 / 11 x64 支持：系统托盘彩色图标、Ctrl 快捷键、`%AppData%` 数据目录，`scripts/package.sh` 统一命名 zip / 安装包。
-  - 艺人页按巡演 / 月份分组，可折叠、按巡演筛选、隐藏已结束的巡演；已结束的场次和票务轮次淡出，列表与详情各自滚动。
-  - 窄窗口时把统计收进工具栏，滚动条改为 4 DIP；修正公告列表的日期 +「NEW」徽标被误解析成场次。
-  - 图标库增至 63 个（新增 `view-disabled`、`map-route`、`map-japan`）。
-- **1.0.0** — Phase 5：菜单栏常驻、抽选截止提醒、界面内新增数据源、默认头像与头像缓存。
-- **0.7.0** — 本地 JSON 快照缓存，重启不再从空日历开始。
-- **0.6.0** — 数据源重做：日程层 / 公告层、Sony 公开 JSON、巡演专题页与解析修正。
-- **0.5.0** — 改用 MyGo 原生控件，侧边栏可折叠为图标栏，数据源可在界面内删除。
-- **0.4.0** — Liquid Glass 面板、可折叠侧栏、艺人头像与主题色。
-- **Phase 1–3** — 日历界面、真实公开数据源、多公告合并与票务节点。
+- **1.0.2**（2026-10-23）：新增地图页，按都道府县统计 Live。
+- **1.0.1**（2026-10-22）：支持 Windows；艺人页按巡演分组；修正若干解析问题；图标增至 63 个。
+- **1.0.0**：菜单栏常驻、截止提醒、在应用内新增数据源、头像缓存。
+- **0.7.0**：本地 JSON 快照。
+- **0.6.0**：数据源分为日程层和公告层；接入 Sony Music 公开 JSON。
+- **0.5.0**：改用 MyGo 原生控件；侧边栏可折叠。
+- **0.4.0**：Liquid Glass 界面；艺人头像与主题色。
+
+## 许可与致谢
+
+代码以 [MIT](LICENSE) 许可证发布。地图数据商业用途须向国土地理院报告。
+
+<table align="center">
+<tr><td align="right"><sub>作者</sub></td><td><img src="https://github.com/Lonely0710.png?size=64" width="24" height="24"></td><td><a href="https://github.com/Lonely0710"><b>Lonely Yang</b></a></td></tr>
+<tr><td align="right"><sub>原生 UI 框架</sub></td><td><img src="assets/credits/mygo.png" width="24" height="24"></td><td><a href="https://github.com/egoist/mygo"><b>MyGo</b></a></td></tr>
+<tr><td align="right"><sub>编程语言</sub></td><td><img src="assets/credits/go.svg" width="24" height="24"></td><td><a href="https://go.dev"><b>Go</b></a></td></tr>
+<tr><td align="right"><sub>地图数据</sub></td><td><img src="assets/credits/gsi.png" width="24" height="24"></td><td><a href="https://www.gsi.go.jp/kankyochiri/gm_jpn.html"><b>地球地图日本（国土地理院）</b></a></td></tr>
+<tr><td align="right"><sub>GeoJSON 转换</sub></td><td><img src="assets/credits/dataofjapan.png" width="24" height="24"></td><td><a href="https://github.com/dataofjapan/land"><b>dataofjapan/land</b></a></td></tr>
+<tr><td align="right"><sub>公开 JSON 数据源</sub></td><td><img src="assets/credits/sony.png" width="24" height="24"></td><td><a href="https://www.sonymusic.co.jp"><b>Sony Music</b></a></td></tr>
+<tr><td align="right"><sub>艺人头像</sub></td><td><img src="assets/credits/deezer.png" width="24" height="24"></td><td><a href="https://www.deezer.com"><b>Deezer API</b></a></td></tr>
+<tr><td align="right"><sub>代码托管</sub></td><td><img src="assets/credits/github.svg" width="24" height="24"></td><td><a href="https://github.com"><b>GitHub</b></a></td></tr>
+</table>

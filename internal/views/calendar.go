@@ -124,7 +124,7 @@ func (a *App) statsWidth(c *ui.Context) float32 {
 // stat is a count in the summary: a monospaced number and its unit.
 func stat(c *ui.Context, value, unit string) ui.Element {
 	return ui.Row(c).Gap(4).Shrink(0).AlignItems(ui.Center).Children(func() {
-		ui.Text(c, value).Font("monospace").FontSize(13).Bold()
+		ui.Text(c, value).Font("monospace").FontSize(13).Bold().TextColor(theme.StatNumber)
 		ui.Text(c, unit).Font("monospace").FontSize(theme.CaptionSize).TextColor(theme.TextSecondary).SingleLine()
 	})
 }

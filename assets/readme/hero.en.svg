@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 500" width="1200" height="500">
+<defs><filter id="n"><feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="2" stitchTiles="stitch"/><feColorMatrix values="0 0 0 0 .45 0 0 0 0 .38 0 0 0 0 .3 0 0 0 .22 0"/></filter></defs>
+<style>
+.stamp{transform-box:fill-box;transform-origin:center;animation:thump 3.6s ease-in-out infinite}
+@keyframes thump{0%,78%,100%{transform:rotate(8deg) scale(1)}84%{transform:rotate(8deg) scale(1.2)}}
+.shine{animation:shine 5s ease-in-out infinite}
+@keyframes shine{0%,60%{transform:translateX(-260px)}90%,100%{transform:translateX(760px)}}
+.tk{animation:bob 6s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-6px)}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
+<rect width="1200" height="500" rx="18" fill="#F3ECDF"/><rect width="1200" height="500" rx="18" filter="url(#n)"/>
+<g font-family="'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" letter-spacing="2" fill="#2E2A28">
+<text x="48" y="46">VOL. 1.0.2 · MACOS / WINDOWS · MIT</text><text x="1152" y="46" text-anchor="end">JAPANESE MUSIC LIVE CALENDAR</text></g>
+<line x1="48" y1="60" x2="1152" y2="60" stroke="#2E2A28"/>
+<g font-family="'Hiragino Mincho ProN','Yu Mincho','Songti SC','Noto Serif CJK SC','Noto Serif SC',serif" font-weight="800">
+<text x="44" y="205" font-size="118" fill="#2E2A28" letter-spacing="-3">Live</text>
+<text x="44" y="330" font-size="118" font-style="italic" fill="#E85A3A" letter-spacing="-3">Calendar</text></g>
+<g font-family="'Hiragino Mincho ProN','Yu Mincho','Songti SC','Noto Serif CJK SC','Noto Serif SC',serif" font-size="19" fill="#2E2A28"><text x="676" y="106" text-anchor="middle">日</text><text x="676" y="133" text-anchor="middle">本</text><text x="676" y="160" text-anchor="middle">音</text><text x="676" y="187" text-anchor="middle">楽</text><text x="676" y="214" text-anchor="middle">ラ</text><text x="676" y="241" text-anchor="middle">イ</text><text x="676" y="268" text-anchor="middle">ブ</text><text x="676" y="295" text-anchor="middle">情</text><text x="676" y="322" text-anchor="middle">報</text><text x="676" y="349" text-anchor="middle">暦</text></g>
+<line x1="698" y1="86" x2="698" y2="356" stroke="#2E2A28"/>
+<text x="48" y="392" font-family="-apple-system,BlinkMacSystemFont,'Hiragino Sans','PingFang SC','Microsoft YaHei','Noto Sans CJK SC',sans-serif" font-size="20" fill="#5B544F">Live shows · lotteries &amp; presales · results · general sales — in one native calendar.</text>
+<line x1="48" y1="430" x2="1152" y2="430" stroke="#2E2A28"/><line x1="48" y1="435" x2="1152" y2="435" stroke="#2E2A28"/>
+<g font-family="'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="11" letter-spacing="1.5" fill="#8C847B"><text x="48" y="462">© 2026 LONELY YANG</text><text x="600.0" y="462" text-anchor="middle">BUILT WITH GO &amp; MYGO</text><text x="1152" y="462" text-anchor="end">MADE FOR J-POP FANS</text></g>
+<g class="tk"><g transform="translate(722 128) rotate(-3) scale(.88)">
+ <g filter="drop-shadow(0 16px 18px rgba(80,50,30,.25))">
+ <rect width="360" height="210" rx="14" fill="#FFFDF8"/><rect x="364" width="120" height="210" rx="14" fill="#FFFDF8"/></g>
+ <circle cx="362" cy="0" r="13" fill="#F3ECDF"/><circle cx="362" cy="210" r="13" fill="#F3ECDF"/>
+ <line x1="362" y1="16" x2="362" y2="194" stroke="#D8D1C7" stroke-width="2" stroke-dasharray="5 5"/>
+ <rect x="10" y="10" width="340" height="190" rx="8" fill="none" stroke="#D8D1C7" stroke-dasharray="3 3"/>
+ <clipPath id="tc"><rect width="360" height="210" rx="14"/></clipPath>
+ <g clip-path="url(#tc)"><rect class="shine" x="0" y="-40" width="70" height="300" fill="#FFF" opacity=".55" transform="skewX(-20)"/></g>
+ <g font-family="'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="9.5" letter-spacing="1.8" fill="#8C847B"><text x="26" y="36">ADMIT ONE · FIRST LOTTERY</text><text x="26" y="128">DATE</text><text x="132" y="128">OPEN / START</text><text x="262" y="128">VENUE</text><text x="380" y="36">NO.</text><text x="380" y="164">CLOSES IN</text></g>
+ <text x="24" y="78" font-family="'Hiragino Mincho ProN','Yu Mincho','Songti SC','Noto Serif CJK SC','Noto Serif SC',serif" font-size="32" font-weight="800" fill="#2E2A28">米津玄師</text>
+ <text x="26" y="100" font-family="'Hiragino Mincho ProN','Yu Mincho','Songti SC','Noto Serif CJK SC','Noto Serif SC',serif" font-size="15" fill="#E85A3A">LIVE TOUR 2026</text>
+ <g font-family="'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="14" font-weight="700" fill="#2E2A28"><text x="26" y="148">11.11 WED</text><text x="132" y="148">17:00 / 18:00</text><text x="380" y="56">LC-0101</text><text x="380" y="184">2d 14:32</text></g>
+ <text x="262" y="148" font-family="-apple-system,BlinkMacSystemFont,'Hiragino Sans','PingFang SC','Microsoft YaHei','Noto Sans CJK SC',sans-serif" font-size="14" font-weight="700" fill="#2E2A28">東京ドーム</text>
+ <text x="26" y="182" font-family="-apple-system,BlinkMacSystemFont,'Hiragino Sans','PingFang SC','Microsoft YaHei','Noto Sans CJK SC',sans-serif" font-size="10" fill="#8C847B">* Sample data</text>
+ <g transform="translate(380 66)"><rect x="0" y="0" width="1" height="86" fill="#2E2A28"/><rect x="2" y="0" width="3" height="86" fill="#2E2A28"/><rect x="6" y="0" width="2" height="86" fill="#2E2A28"/><rect x="11" y="0" width="1" height="86" fill="#2E2A28"/><rect x="13" y="0" width="3" height="86" fill="#2E2A28"/><rect x="20" y="0" width="1" height="86" fill="#2E2A28"/><rect x="24" y="0" width="3" height="86" fill="#2E2A28"/><rect x="33" y="0" width="1" height="86" fill="#2E2A28"/><rect x="35" y="0" width="3" height="86" fill="#2E2A28"/><rect x="39" y="0" width="2" height="86" fill="#2E2A28"/><rect x="42" y="0" width="1" height="86" fill="#2E2A28"/><rect x="44" y="0" width="1" height="86" fill="#2E2A28"/><rect x="46" y="0" width="3" height="86" fill="#2E2A28"/><rect x="50" y="0" width="2" height="86" fill="#2E2A28"/><rect x="53" y="0" width="1" height="86" fill="#2E2A28"/><rect x="55" y="0" width="1" height="86" fill="#2E2A28"/><rect x="61" y="0" width="2" height="86" fill="#2E2A28"/><rect x="64" y="0" width="1" height="86" fill="#2E2A28"/><rect x="66" y="0" width="1" height="86" fill="#2E2A28"/><rect x="72" y="0" width="2" height="86" fill="#2E2A28"/><rect x="75" y="0" width="1" height="86" fill="#2E2A28"/><rect x="77" y="0" width="1" height="86" fill="#2E2A28"/><rect x="79" y="0" width="3" height="86" fill="#2E2A28"/><rect x="83" y="0" width="2" height="86" fill="#2E2A28"/><rect x="86" y="0" width="1" height="86" fill="#2E2A28"/><rect x="88" y="0" width="1" height="86" fill="#2E2A28"/><rect x="97" y="0" width="1" height="86" fill="#2E2A28"/></g>
+ <g class="stamp" transform="rotate(8)"><rect x="268" y="18" width="70" height="30" rx="4" fill="none" stroke="#E85A3A" stroke-width="2"/><text x="303" y="38" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,'Hiragino Sans','PingFang SC','Microsoft YaHei','Noto Sans CJK SC',sans-serif" font-size="13" font-weight="700" fill="#E85A3A">OPEN</text></g>
+</g></g>
+</svg>

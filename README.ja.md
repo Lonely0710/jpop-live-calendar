@@ -1,154 +1,167 @@
-# Live Calendar · 日本音楽 Live 情報カレンダー
+<p align="center">
+  <img src="assets/readme/hero.ja.svg" width="100%" alt="Live Calendar · 日本音楽ライブ情報暦">
+</p>
 
 <p align="center">
-  <a href="#更新履歴"><img src="https://img.shields.io/badge/version-1.0.1-E85A3A?style=flat-square&labelColor=2E2A28" alt="バージョン 1.0.1"></a>
+  <a href="#更新履歴"><img src="https://img.shields.io/badge/version-1.0.2-E85A3A?style=flat-square&labelColor=2E2A28" alt="バージョン 1.0.2"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-2E2A28?style=flat-square" alt="ライセンス MIT"></a>
+  <a href="https://go.dev"><img src="https://img.shields.io/badge/Go-1.27+-00ADD8?style=flat-square&logo=go&logoColor=white" alt="Go 1.27+"></a>
   <a href="https://github.com/egoist/mygo"><img src="https://img.shields.io/badge/MyGo-v0.5.5-3D86F5?style=flat-square&labelColor=2E2A28&logo=go&logoColor=white" alt="MyGo v0.5.5"></a>
+  <a href="#はじめに"><img src="https://img.shields.io/badge/macOS-13+-000000?style=flat-square&logo=apple&logoColor=white" alt="macOS 13+"></a>
+  <a href="#はじめに"><img src="https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4?style=flat-square" alt="Windows 10 / 11"></a>
+  <a href="https://github.com/Lonely0710/jpop-live-calendar/commits"><img src="https://img.shields.io/github/last-commit/Lonely0710/jpop-live-calendar?style=flat-square&color=22B05E" alt="最終コミット"></a>
+  <a href="https://github.com/Lonely0710/jpop-live-calendar"><img src="https://img.shields.io/github/languages/top/Lonely0710/jpop-live-calendar?style=flat-square&color=00ADD8" alt="主な言語"></a>
+  <a href="#データの方針"><img src="https://img.shields.io/badge/robots.txt-RFC%209309-22B05E?style=flat-square" alt="robots.txt RFC 9309"></a>
+  <a href="#spotlight-icons"><img src="https://img.shields.io/badge/Spotlight%20Icons-63-E85A3A?style=flat-square&labelColor=2E2A28" alt="Spotlight Icons 63"></a>
+  <a href="https://github.com/Lonely0710/jpop-live-calendar/pulls"><img src="https://img.shields.io/badge/PRs-welcome-22B05E?style=flat-square" alt="PRs welcome"></a>
 </p>
 
 <p align="center">
   <a href="README.md">简体中文</a> · <b>日本語</b> · <a href="README.en.md">English</a>
 </p>
 
-<p align="center">
-  <img src="resources/icon.png" width="112" alt="Live Calendar アプリのアイコン">
-</p>
+Live Calendar は、日本の音楽ライブの公演、抽選・先行受付、結果発表、一般発売を公式の告知からひとつのカレンダーにまとめる、macOS / Windows 向けのネイティブデスクトップアプリです。
 
-macOS / Windows ネイティブデスクトップアプリ（**MyGo Native UI + Go**）。日本音楽の Live、抽選・先行受付、結果発表、一般発売などの**公開情報**をカレンダーに整理します。データベースなし、ログインなし。
-
-![月表示（実際のデータ）](assets/screenshots/month-live.png)
+![月表示](assets/screenshots/month-live.png)
 
 ## 機能
 
-- **4 つのビュー**：月 / 週 / 日 / リスト。⌘← / ⌘→ でページを移動、⌘T で今日へ。Live はカラーバー付きの塗りつぶしバー、受付開始・締切、結果発表、一般発売はドット付きの枠線ピルで表示します。締切は太字、延期・中止は赤。
-- **チケット日程が一目でわかる**：同じ公演の各受付ラウンド、結果発表、一般発売を独立したノードとしてカレンダーに表示し、それぞれにカウントダウンと申込 / 購入リンクを持たせます。
-- **すべて追跡できる**：各公演・チケットノードから元の告知へ戻れます。公開日時、取得日時、リビジョン、解析に使ったテキストを確認でき、原文も開けます。
-- **公開情報だけを取得**：既定で 21 組のアーティスト、34 件の公式 / 公開ソース（公式サイト、RSS、Sony Music の公開 JSON）。ログインせず、会員ページやチケット販売サイトを直接クロールしません。robots.txt を守り、同一サイトへのリクエストは直列で 1 秒以上空けます。
-- **欠けた項目は推測しない**：未発表の時間は「時間未発表」、会場は「会場未発表」、不確かな推測は「要確認」と表示します。延期・中止・締切の変更は黙って上書きせず、変更履歴に残します。
-- **ローカルスナップショット + バックグラウンド同期**：公開された告知とアバターは `cache.json` / `avatars.json` にキャッシュし、再起動時は前回の結果を先に表示します。1 つのデータソースが失敗してもその記録だけに留まり、他のソースや既存データを消しません。
-- **常駐とリマインダー**：ウィンドウを閉じても非表示になるだけで、メニューバー（macOS）/ システムトレイ（Windows）で同期を継続します。抽選受付の締切 3 日前に 1 回通知し（`notified.json`）、締切が延長されたら新しい時刻で再度通知します。
-- **読み取り専用・アカウントなし**：ログイン、お気に入り、個人の購入状態、クラウド同期はありません。サイドバー下部のアカウント入口はプレースホルダーです。
+<table>
+<tr>
+<td width="50%" valign="top"><img src="packages/spotlight-icons/svg/calendar.svg" width="20" height="20" align="absmiddle">&nbsp;&nbsp;<code>01</code>&nbsp;<b>カレンダー</b><br><sub>月・週・日・リストの 4 表示。検索に加え、種類・ソース・地域・期間で絞り込めます。</sub></td>
+<td width="50%" valign="top"><img src="packages/spotlight-icons/svg/preorder-start.svg" width="20" height="20" align="absmiddle">&nbsp;&nbsp;<code>02</code>&nbsp;<b>チケット日程</b><br><sub>各受付、結果発表、一般発売を個別に表示し、カウントダウンと公式リンクを添えます。</sub></td>
+</tr>
+<tr>
+<td width="50%" valign="top"><img src="packages/spotlight-icons/svg/venue.svg" width="20" height="20" align="absmiddle">&nbsp;&nbsp;<code>03</code>&nbsp;<b>地図</b><br><sub>都道府県ごとに公演数を集計。地域を選ぶと右側に公演を一覧表示します。</sub></td>
+<td width="50%" valign="top"><img src="packages/spotlight-icons/svg/artist.svg" width="20" height="20" align="absmiddle">&nbsp;&nbsp;<code>04</code>&nbsp;<b>アーティスト</b><br><sub>ツアー・月別に公演を整理。ピン留め、ツアーの絞り込み、終了ツアーの非表示に対応。</sub></td>
+</tr>
+<tr>
+<td width="50%" valign="top"><img src="packages/spotlight-icons/svg/official-info.svg" width="20" height="20" align="absmiddle">&nbsp;&nbsp;<code>05</code>&nbsp;<b>出典の追跡</b><br><sub>出典の告知、公開日時、取得日時、版、解析に使ったテキストを確認できます。</sub></td>
+<td width="50%" valign="top"><img src="packages/spotlight-icons/svg/update-log.svg" width="20" height="20" align="absmiddle">&nbsp;&nbsp;<code>06</code>&nbsp;<b>変更履歴</b><br><sub>延期・中止・締切変更は履歴として残し、古いデータを上書きしません。</sub></td>
+</tr>
+<tr>
+<td width="50%" valign="top"><img src="packages/spotlight-icons/svg/sync.svg" width="20" height="20" align="absmiddle">&nbsp;&nbsp;<code>07</code>&nbsp;<b>バックグラウンド動作</b><br><sub>メニューバー（macOS）/ タスクトレイ（Windows）で同期を続け、抽選締切の 3 日前に通知します。</sub></td>
+<td width="50%" valign="top"><img src="packages/spotlight-icons/svg/download.svg" width="20" height="20" align="absmiddle">&nbsp;&nbsp;<code>08</code>&nbsp;<b>ローカルスナップショット</b><br><sub>起動時は前回の結果を表示し、裏で更新。一部のソースが失敗しても他に影響しません。</sub></td>
+</tr>
+</table>
 
-| 詳細とチケット日程 | データソース |
-| --- | --- |
-| ![詳細パネル：日付、開場 / 開演、会場、チケット日程、変更履歴](assets/screenshots/inspector.png) | ![データソース：アーティストごとにグループ化し、個別に同期・無効化・削除が可能](assets/screenshots/sources.png) |
+<p align="center">
+  <img src="assets/readme/board.ja.svg" width="100%" alt="締切間近：抽選締切、結果発表、一般発売（サンプルデータ）">
+</p>
+
+<p align="center">
+  <img src="assets/readme/map.ja.svg" width="100%" alt="ドットで描いた日本地図：都道府県別の公演数（サンプルデータ）">
+</p>
+
+<p align="center"><sub>上の 2 枚はサンプルデータです。</sub></p>
+
+## 画面
+
+<table width="100%">
+  <tr>
+    <td width="50%" align="center" valign="top"><b><small>FIG. 1</small> 詳細パネル</b><br><img src="assets/screenshots/inspector.png" width="100%" alt="詳細パネル：公演、チケット日程、変更履歴"></td>
+    <td width="50%" align="center" valign="top"><b><small>FIG. 2</small> 地図</b><br><img src="assets/screenshots/map.png" width="100%" alt="地図：都道府県別の公演数"></td>
+  </tr>
+  <tr>
+    <td width="50%" align="center" valign="top"><b><small>FIG. 3</small> アーティスト</b><br><img src="assets/screenshots/artists-live.png" width="100%" alt="アーティスト：ツアー別に整理した公演"></td>
+    <td width="50%" align="center" valign="top"><b><small>FIG. 4</small> ソース</b><br><img src="assets/screenshots/sources.png" width="100%" alt="ソース：アーティスト別の同期状況"></td>
+  </tr>
+</table>
+
+## データの方針
+
+- **公開情報のみ**：公式サイト、RSS、Sony Music の公開 JSON から取得します。ログインせず、会員ページを読まず、チケットサイトもクロールしません。チケットのリンクは公式告知からのみ取得します。
+- **節度あるクロール**：robots.txt（RFC 9309）に従い、同じサイトへは直列に、1 秒以上の間隔を空けてリクエストします。
+- **推測しない**：未発表の時間や会場は「時間未発表」「会場未発表」と表示し、確信の持てない解析結果には「要確認」を付けます。
+
+初期設定では 21 組のアーティストをフォローし、34 のソースが有効です。
 
 ## はじめに
 
-### 動作環境
-
-| 項目 | バージョン |
+| 必要なもの | バージョン |
 | --- | --- |
-| macOS | 13 以上（Apple Silicon / Intel のどちらも可） |
-| Windows | 10 / 11 x64（macOS / Linux からのクロスコンパイル可） |
-| Go | **1.27 以上**（MyGo v0.5.5 は go 1.27 が必要） |
-| Xcode Command Line Tools | macOS で `.app` / `.dmg` をパッケージする場合に必要：`xcode-select --install` |
-| NSIS（任意） | Windows のインストーラーを作る場合に `makensis` が必要。なくてもポータブル zip は生成されます |
+| Go | 1.27 以上 |
+| macOS | 13 以上（Apple Silicon / Intel） |
+| Windows | 10 / 11 x64（macOS / Linux からクロスコンパイル可） |
+| Xcode Command Line Tools | macOS でのパッケージ作成時 |
+| NSIS | 任意（Windows インストーラー作成用） |
 
 ```bash
-brew install go        # または https://go.dev/dl/ からインストール
-go version             # go1.27.x 以上が表示されること
-```
-
-### 起動
-
-```bash
-go mod download        # 初回：MyGo などの依存関係を取得
-go tool mygo dev       # ビルドしてネイティブウィンドウを開く。保存すると自動で再起動
-go run .               # または直接実行
-```
-
-### テスト
-
-```bash
-go test ./...
+go mod download
+go tool mygo dev                  # 開発モード（保存すると自動で再起動）
+go test ./...                     # テスト
 go vet ./... && go tool mygo vet .
+
+scripts/package.sh darwin/arm64   # → build/jpop-live-calendar-darwin-arm64-<バージョン>.dmg
+scripts/package.sh windows/amd64  # → build/jpop-live-calendar-windows-amd64-<バージョン>.zip
 ```
 
-### パッケージ
-
-`scripts/package.sh` は `mygo.json` からバージョンを読み取り、MyGo でビルドして、生成物を `jpop-live-calendar-{プラットフォーム}-{バージョン}` と命名します：
-
-```bash
-scripts/package.sh windows/amd64   # → build/jpop-live-calendar-windows-amd64-1.0.1.zip
-scripts/package.sh darwin/arm64    # → build/jpop-live-calendar-darwin-arm64-1.0.1.dmg（または .zip）
-scripts/package.sh darwin/universal
-```
-
-Windows の zip を展開すると、同名のフォルダーができます。中の `Live Calendar.exe` をダブルクリックして実行してください。exe だけを取り出さず、隣のリソースファイルも残してください。NSIS があれば `...-setup.exe` も生成されます。`go tool mygo build -platform windows/amd64` を直接使うこともでき、生成物は `build/windows-amd64/` に置かれます（ファイル名は MyGo の既定形式）。
+Windows ではパッケージを展開して `Live Calendar.exe` を実行します。同じフォルダーのリソースファイルも残しておいてください。
 
 ## ショートカット
 
-macOS は ⌘、Windows は Ctrl を使用します：
-
-| 機能 | macOS | Windows |
+| 操作 | macOS | Windows |
 | --- | --- | --- |
-| 前 / 次の月（週、日） | ⌘← / ⌘→ | Ctrl+← / Ctrl+→ |
-| 今日へ戻る | ⌘T | Ctrl+T |
-| 月 / 週 / 日 / リスト表示 | ⌘1 – ⌘4 | Ctrl+1 – Ctrl+4 |
-| 有効なデータソースをすべて今すぐ同期 | ⌘R | Ctrl+R |
-| 詳細パネルからイベントを閉じて当日の一覧へ | Esc | Esc |
-| 左サイドバーの表示 / 非表示 | ⌃⌘S | Ctrl+Shift+S |
-| 右詳細パネルの表示 / 非表示 | ⌥⌘I | Ctrl+Alt+I |
-| 検索をクリア | Esc（検索欄内） | Esc（検索欄内） |
+| 前へ / 次へ | ⌘← / ⌘→ | Ctrl+← / Ctrl+→ |
+| 今日へ移動 | ⌘T | Ctrl+T |
+| 月 / 週 / 日 / リスト | ⌘1 – ⌘4 | Ctrl+1 – Ctrl+4 |
+| 今すぐ同期 | ⌘R | Ctrl+R |
+| サイドバーの表示切替 | ⌃⌘S | Ctrl+Shift+S |
+| 詳細パネルの表示切替 | ⌥⌘I | Ctrl+Alt+I |
+| 戻る / 検索をクリア | Esc | Esc |
 
-## データソース設定
+地図にフォーカスがあるとき：←/→ で地域を切り替え、+/− でズーム、0 で全国を表示します。ドラッグで移動、スクロールでズーム、ダブルクリックで拡大もできます。
 
-読み込み順（最初に見つかったものを使用）：環境変数 `LIVE_CALENDAR_CONFIG` → ユーザー設定ディレクトリ（macOS は `~/Library/Application Support/Live Calendar/sources.yaml`、Windows は `%AppData%\Live Calendar\sources.yaml`）→ カレントディレクトリの `config/sources.yaml` → アプリに埋め込まれた既定コピー。設定に誤りがあっても内蔵の既定設定で起動し、「データソース」ページにエラーを表示します。
+## 設定
+
+ソースとアーティストは `sources.yaml` で定義し、次の順に読み込みます。
+
+1. 環境変数 `LIVE_CALENDAR_CONFIG`
+2. ユーザーディレクトリ：macOS は `~/Library/Application Support/Live Calendar/`、Windows は `%AppData%\Live Calendar\`
+3. カレントディレクトリの `config/sources.yaml`
+4. アプリに組み込まれた初期設定
 
 ```yaml
 sources:
-  - id: my-band-live            # 一意の ID
-    name: サンプルバンド公式 LIVE  # 表示名
-    kind: website               # demo | rss | website | api（Sony Music の公開 JSON）
-    layer: live                 # live = LIVE/SCHEDULE の日程レイヤー；news = NEWS/TICKET の告知レイヤー
+  - id: my-band-live
+    name: あるバンド公式 LIVE
+    kind: website        # demo | rss | website | api
+    layer: live          # live：スケジュールページ、news：告知ページ
     url: https://example.com/live/
-    enabled: true
-    interval: 12h               # 自動同期の間隔。最小 10m；0 = 手動同期のみ
-    artist: サンプルバンド      # 任意：ページ内の公演をすべてこのアーティストに帰属（公式サイト用）
+    interval: 12h        # 0 は手動同期のみ
+    artist: あるバンド    # 任意：ページをこのアーティストに紐付け
 
 artists:
   - name: ステラリウム
-    aliases: [Stellarium]       # 表記違いを 1 人のアーティストにまとめる
-    official_url: https://example.com/
-    avatar_url: https://example.com/a.jpg  # 任意；none = アバターを使わない
-    color: "#3975AB"            # 任意：テーマカラーを指定。アバターから取る色より優先
-    follow: true                # 既定 true：「アーティスト」ページに常時表示；false = 別名の統合のみ
-
-avatars: deezer                 # deezer（既定）| off：アバターをネットから取得しない
+    aliases: [Stellarium]
+    color: "#3975AB"     # 任意：テーマカラー
 ```
 
-- **アバターとテーマカラー**：Deezer の公開 API でバックグラウンド取得し、毎秒 1 リクエストに制限。テーマカラーはアバターで最も面積の大きい色のクラスタから取り、文字のコントラストは 4.5:1 以上を確保します。取得できない場合は既定のイラストと固定パレットを使います。
-- **さらに絞り込む**：`article:` は `keywords` / `exclude` / `include` / `title_only` / `max_age` / `body_start` / `body_end` / `max_per_sync` / `delay` に対応。`follow` と `feature` は正規表現で、一覧ページ / 告知から詳細ページやツアー特設ページを見つけます。書き方は `config/sources.yaml` のコメントを参照してください。
-- **既定のカバレッジ**：米津玄師、Official髭男dism、Mrs. GREEN APPLE、RADWIMPS、back number、緑黄色社会、YOASOBI、優里、Aimer、なとり、milet、King Gnu、藤井風、星野源、Vaundy、Ado、ZUTOMAYO、ヨルシカ、あたらよ、『ユイカ』、美波。既定で 34 件のソースを有効化し、5 つの予備ソース（デモデータ、レーベル NEWS 2 件、Ado の SPA サイト、『ユイカ』公式サイト）は既定で無効です。
-- **アプリ内で管理**：「データソース」ページで追加・無効化・削除ができます。設定ファイルへ書き戻す際は既存のコメントを保持します。追加できるのは公開され、アクセスが許可されたソースのみです。
-- **robots.txt**：RFC 9309 を守り、禁止されたパスは取得しません。チケットリンクは公式の告知からのみ取得し、チケット販売サイトを直接クロールしません。
+すべての項目（`article` フィルター、`follow` / `feature` の正規表現、アバター設定など）は [`config/sources.yaml`](config/sources.yaml) のコメントを参照してください。アプリの「ソース」ページからも追加・無効化・削除でき、ファイルへ書き戻す際にコメントは保持されます。
 
 ## ディレクトリ構成
 
 ```
-jpop-live-calendar/
-├── main.go                 # エントリーポイント：ウィンドウ、メニューバー / システムトレイ、バックグラウンド同期
-├── mygo.json               # アプリ名、Bundle ID、バージョン、出力先
-├── resources/              # アプリアイコン、トレイアイコン、埋め込み Pacifico フォント
-├── config/                 # sources.yaml + 読み込み / 検証 / 書き戻し
-├── internal/
-│   ├── domain/             # 公開データモデル（公演、チケットラウンド、告知、アーティスト、会場）
-│   ├── sources/ crawler/   # データソースアダプター + マナーを守るクローラー / ソースごとに分離したスケジューラー
-│   ├── parser/ normalize/  # 日本語の告知の解析、日付 / 時刻 / 都道府県 / 別名の正規化
-│   ├── dedup/ catalog/     # 重複排除とマージ、変更履歴、スレッドセーフなメモリスナップショット
-│   ├── views/ theme/       # MyGo の UI と Spotlight テーマ、配色、サイズ
-│   └── avatar/ cache/      # アーティストのアバター / テーマカラー、ローカル JSON スナップショット
-├── packages/spotlight-icons/  # アイコンライブラリ（メインモジュール内の通常パッケージ）
-├── scripts/package.sh      # jpop-live-calendar-{プラットフォーム}-{バージョン} でパッケージ
-├── assets/screenshots/     # README 用のプレビュー画像
-├── LICENSE                 # MIT ライセンス
-└── AGENTS.md               # コーディングエージェント向けの作業説明（データソース / 解析 / UI ごとに子ファイルあり）
+main.go              エントリーポイント：ウィンドウ、メニューバー / トレイ、バックグラウンド同期
+config/              sources.yaml の読み込み・検証・書き戻し
+internal/
+  sources/ crawler/  ソースアダプターと robots.txt 対応クローラー
+  parser/ normalize/ 日本語告知の解析と正規化
+  dedup/ catalog/    統合、変更履歴、メモリ上のスナップショット
+  views/ theme/      UI とテーマ
+  avatar/ cache/     アーティストのアバター、ローカル JSON スナップショット
+  geo/               組み込みの都道府県地図データ
+packages/spotlight-icons/  アイコンライブラリ（SVG 63 個）
+scripts/package.sh   パッケージ作成スクリプト
 ```
 
-## アイコンライブラリ
+## Spotlight Icons
 
-Spotlight Icons はこのプロジェクトの**メインモジュール内の通常パッケージ**です。import するだけで使え、追加のダウンロードや公開は不要です。24×24 SVG を 63 個、6 グループ、線幅 1.75–2、配色は Spotlight の 3 色に限定しています。
+本プロジェクト独自のアイコンセットです。24×24 の SVG を 63 個、6 グループに分け、線幅は 1.75–2、色は Spotlight テーマの 3 色のみ。メインモジュール内の通常パッケージなので、import するだけで使えます。
+
+<p align="center">
+  <img src="assets/readme/icons.svg" width="100%" alt="Spotlight Icons：63 個のアイコン">
+</p>
 
 ```go
 import (
@@ -160,37 +173,41 @@ mygoicons.Image(c, icons.Calendar, 18) // 元の色を保持（Ink Charcoal + Li
 mygoicons.Mono(c, icons.Calendar, 18)  // 単色。文字色に追従
 ```
 
-<p align="center">
-  <a href="assets/spotlight-icons-overview.png">
-    <img src="assets/spotlight-icons-overview.png" width="820" alt="Spotlight Icons 一覧：63 個のアイコン、6 グループ">
-  </a>
-</p>
-
-アイコンの追加 / 差し替え、定数の再生成、テストの手順は [packages/spotlight-icons/README.md](packages/spotlight-icons/README.md) を参照してください。
+アイコンの追加・差し替え、定数の再生成の手順は [packages/spotlight-icons](packages/spotlight-icons/README.md) を参照してください。
 
 ## 既知の制限
 
-- 解析はルールベースで、日本語プレスリリースの一般的な表現をカバーします。自信のない内容は必ず「要確認」と表示されるため、原文を確認してください。
-- データはローカルの JSON スナップショットのみ：macOS は `~/Library/Application Support/Live Calendar/`、Windows は `%AppData%\Live Calendar\`。削除しても次回起動時に再同期 / 再ダウンロードされるだけで、データソース設定には影響しません。
-- Windows 版はクロスコンパイル済みですが、ショートカット、トレイ、通知、タイトルバーのボタンの実際の表示は Windows 10 / 11 で一度手動確認することをおすすめします。
-- UI はスクリーンショットで確認済みです。Mac で初回起動時に表示の問題があれば、スクリーンショットを送ってください。
+- 解析ルールは日本語告知のよくある書き方のみに対応しています。正確な情報は原文を確認してください。
+- 地図の精度は都道府県単位です。公演は会場の実際の位置ではなく、県庁所在地に表示されます。
+- Windows 版のトレイ、通知、タイトルバーは実機で十分に検証できていません。
 
-## 今後の予定（Phase 5 以降）
+## 今後の予定
 
-- （任意）カレンダーのセルに中国 / 日本の祝日を表示（例：「中·休 国慶節」「日·祝 スポーツの日」）。
-- チケットラウンドの解析を強化（例：「●エントリー期間」の次の行に日付がある書き方）。
-- データソース追加フォームで `article` フィルターと `follow` 正規表現に対応（現在は `sources.yaml` を直接編集）。
+- チケット受付の解析を改善（例：「●エントリー期間」の次の行に日付がある告知）。
+- 「ソース」ページで `article` フィルターと `follow` ルールを直接編集。
+- カレンダーに中国・日本の祝日を表示（任意）。
 
 ## 更新履歴
 
-- **1.0.1**（2026-10-22）
-  - Windows 10 / 11 x64 対応：カラーのトレイアイコン、Ctrl ショートカット、`%AppData%` データディレクトリ、`scripts/package.sh` による zip / インストーラーの命名統一。
-  - アーティストページで公演をツアー / 月ごとにグループ化。ツアーの折りたたみ、ツアーフィルター、終了したツアーの非表示に対応。終了した公演とチケットラウンドは薄く表示し、一覧と詳細はそれぞれ独立してスクロールします。
-  - 狭いウィンドウでは統計をツールバーに移動。スクロールバーを 4 DIP に変更。告知一覧の「日付 + NEW バッジ」が公演として誤解析される問題を修正。
-  - アイコンライブラリを 63 個に拡張（`view-disabled`、`map-route`、`map-japan` を追加）。
-- **1.0.0** — Phase 5：メニューバー常駐、抽選受付の締切リマインダー、アプリ内でのデータソース追加、既定アバターとアバターキャッシュ。
-- **0.7.0** — ローカル JSON スナップショットキャッシュ。再起動しても空のカレンダーから始まらない。
-- **0.6.0** — データソースを刷新：日程レイヤー / 告知レイヤー、Sony の公開 JSON、ツアー特設ページ、解析の修正。
-- **0.5.0** — MyGo のネイティブコントロールへ移行。サイドバーをアイコンレールへ折りたたみ可能に。データソースをアプリ内で削除。
-- **0.4.0** — Liquid Glass パネル、折りたたみサイドバー、アーティストのアバターとテーマカラー。
-- **Phase 1–3** — カレンダー UI、実際の公開データソース、複数の告知のマージとチケットラウンド。
+- **1.0.2**（2026-10-23）：地図ページを追加。都道府県別に公演数を集計。
+- **1.0.1**（2026-10-22）：Windows に対応。アーティストページをツアー別に整理。解析の不具合をいくつか修正。アイコンを 63 個に拡充。
+- **1.0.0**：メニューバー常駐、締切通知、アプリ内でのソース追加、アバターのキャッシュ。
+- **0.7.0**：ローカル JSON スナップショット。
+- **0.6.0**：ソースをスケジュール層と告知層に分離。Sony Music の公開 JSON に対応。
+- **0.5.0**：MyGo のネイティブコントロールに移行。サイドバーを折りたたみ可能に。
+- **0.4.0**：Liquid Glass UI。アーティストのアバターとテーマカラー。
+
+## ライセンスとクレジット
+
+コードは [MIT](LICENSE) ライセンスで公開しています。地図データを商用利用する場合は国土地理院への報告が必要です。
+
+<table align="center">
+<tr><td align="right"><sub>作者</sub></td><td><img src="https://github.com/Lonely0710.png?size=64" width="24" height="24"></td><td><a href="https://github.com/Lonely0710"><b>Lonely Yang</b></a></td></tr>
+<tr><td align="right"><sub>ネイティブ UI フレームワーク</sub></td><td><img src="assets/credits/mygo.png" width="24" height="24"></td><td><a href="https://github.com/egoist/mygo"><b>MyGo</b></a></td></tr>
+<tr><td align="right"><sub>言語</sub></td><td><img src="assets/credits/go.svg" width="24" height="24"></td><td><a href="https://go.dev"><b>Go</b></a></td></tr>
+<tr><td align="right"><sub>地図データ</sub></td><td><img src="assets/credits/gsi.png" width="24" height="24"></td><td><a href="https://www.gsi.go.jp/kankyochiri/gm_jpn.html"><b>地球地図日本（国土地理院）</b></a></td></tr>
+<tr><td align="right"><sub>GeoJSON 変換</sub></td><td><img src="assets/credits/dataofjapan.png" width="24" height="24"></td><td><a href="https://github.com/dataofjapan/land"><b>dataofjapan/land</b></a></td></tr>
+<tr><td align="right"><sub>公開 JSON ソース</sub></td><td><img src="assets/credits/sony.png" width="24" height="24"></td><td><a href="https://www.sonymusic.co.jp"><b>Sony Music</b></a></td></tr>
+<tr><td align="right"><sub>アーティストのアバター</sub></td><td><img src="assets/credits/deezer.png" width="24" height="24"></td><td><a href="https://www.deezer.com"><b>Deezer API</b></a></td></tr>
+<tr><td align="right"><sub>ホスティング</sub></td><td><img src="assets/credits/github.svg" width="24" height="24"></td><td><a href="https://github.com"><b>GitHub</b></a></td></tr>
+</table>
