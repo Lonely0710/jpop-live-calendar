@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="96 96 832 832">
+<rect x="100" y="100" width="824" height="824" rx="185" fill="#F7F3EA"/>
+<rect x="100.5" y="100.5" width="823" height="823" rx="185" fill="none" stroke="#D8D1C7" stroke-width="3"/>
+<circle cx="512" cy="512" r="300" fill="#FFD9A8" opacity="0.5"/>
+<g transform="translate(60.56 80.36) scale(0.72)">
+<rect x="280" y="296" width="694" height="685" rx="95" fill="#F7F3EB"/>
+<path fill="#FC9073" d="M280 452V391a95 95 0 0 1 95-95H879a95 95 0 0 1 95 95V452Z"/>
+<rect x="357" y="530" width="106" height="97" rx="22" fill="#E9DDD6"/><rect x="502" y="530" width="106" height="97" rx="22" fill="#E9DDD6"/><rect x="648" y="530" width="106" height="97" rx="22" fill="#E9DDD6"/><rect x="793" y="530" width="106" height="97" rx="22" fill="#E9DDD6"/><rect x="357" y="662" width="106" height="97" rx="22" fill="#E9DDD6"/><rect x="648" y="662" width="106" height="97" rx="22" fill="#E9DDD6"/><rect x="793" y="662" width="106" height="97" rx="22" fill="#E9DDD6"/><rect x="357" y="795" width="106" height="97" rx="22" fill="#E9DDD6"/><rect x="502" y="795" width="106" height="97" rx="22" fill="#E9DDD6"/><rect x="648" y="795" width="106" height="97" rx="22" fill="#E9DDD6"/><rect x="793" y="795" width="106" height="97" rx="22" fill="#E9DDD6"/>
+<rect x="488" y="650" width="132" height="128" rx="32" fill="#FC7E5D"/>
+<path fill="#F8F5EB" d="M534.5 737.5V686.8Q534.5 682.3 539.1 681.6L583.9 674.3Q588.7 673.6 588.7 678.5V728.5H581.1V691.7L542.2 698.6V738.9Z"/><circle cx="529.3" cy="738.9" r="12.9" fill="#F8F5EB"/><circle cx="575.9" cy="728.5" r="12.9" fill="#F8F5EB"/>
+<g fill="none" stroke="#2E2A28" stroke-width="32" stroke-linejoin="round"><rect x="280" y="296" width="694" height="685" rx="95"/><path d="M280 452H974"/></g>
+<g fill="#F8F5EB" stroke="#2E2A28" stroke-width="32"><rect x="429" y="218" width="73" height="161" rx="36.5"/><rect x="753" y="218" width="73" height="161" rx="36.5"/></g>
+<circle cx="908" cy="852" r="158" fill="#FD8260" stroke="#2E2A28" stroke-width="32"/>
+<g transform="translate(908 852) rotate(-43)"><path fill="#F8F5EB" d="M-94 -43a12 12 0 0 1 12-12H82a12 12 0 0 1 12 12V-16a16 16 0 0 0 0 32V43a12 12 0 0 1-12 12H-82a12 12 0 0 1-12-12V16a16 16 0 0 0 0-32Z"/><g fill="#FD8260"><rect x="1" y="-35" width="14" height="20" rx="7"/><rect x="1" y="-10" width="14" height="20" rx="7"/><rect x="1" y="15" width="14" height="20" rx="7"/></g></g>
+</g>
+</svg>

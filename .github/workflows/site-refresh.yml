@@ -1,0 +1,23 @@
+# Rebuilds the website on Cloudflare Pages every 6 hours, so its shows and
+# deadlines stay current (Cloudflare itself rebuilds only on push).
+# Cloudflare: project → Settings → Builds → Deploy hooks → add one, then save
+# its URL as the repository secret CF_DEPLOY_HOOK.
+name: Refresh site
+
+on:
+  schedule:
+    - cron: "17 */6 * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Cloudflare Pages build
+        env:
+          HOOK: ${{ secrets.CF_DEPLOY_HOOK }}
+        run: |
+          if [ -z "$HOOK" ]; then echo "CF_DEPLOY_HOOK is not set"; exit 1; fi
+          curl -fsS -X POST "$HOOK"
