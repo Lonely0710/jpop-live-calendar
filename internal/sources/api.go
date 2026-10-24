@@ -12,6 +12,7 @@ import (
 	"golang.org/x/text/unicode/norm"
 
 	"jpop-live-calendar/internal/domain"
+	"jpop-live-calendar/locales"
 )
 
 // API reads the structured public data an official site loads in the
@@ -35,7 +36,7 @@ func (API) Fetch(ctx context.Context, src domain.SourceConfig, env Env) (Result,
 		}
 		return sonyLive(ctx, src, env)
 	}
-	return Result{}, fmt.Errorf("不认识的数据接口 %s（目前支持 Sony Music 艺人 Live 接口）", u.Host)
+	return Result{}, fmt.Errorf("%s", locales.ApiUnknown(u.Host))
 }
 
 // sonyItem is a tour, or a single show, of Sony Music's feed.
@@ -115,7 +116,7 @@ func sonyLive(ctx context.Context, src domain.SourceConfig, env Env) (Result, er
 		})
 	}
 	if len(res.Announcements) == 0 {
-		res.Warnings = append(res.Warnings, "接口里暂时没有 Live")
+		res.Warnings = append(res.Warnings, locales.ApiEmptyLive())
 	}
 	return res, nil
 }
@@ -154,7 +155,7 @@ func jsonp(ctx context.Context, src domain.SourceConfig, env Env, v any) (*Respo
 		body = strings.TrimSuffix(strings.TrimSuffix(strings.TrimSpace(body[i+1:]), ";"), ")")
 	}
 	if err := json.Unmarshal([]byte(body), v); err != nil {
-		return resp, fmt.Errorf("接口返回的不是预期的 JSON：%w", err)
+		return resp, fmt.Errorf("%s", locales.ApiBadJson(err.Error()))
 	}
 	return resp, nil
 }
@@ -208,7 +209,7 @@ func sonyNews(ctx context.Context, src domain.SourceConfig, env Env) (Result, er
 		})
 	}
 	if len(res.Announcements) == 0 {
-		res.Warnings = append(res.Warnings, "接口里暂时没有符合关键词的公告")
+		res.Warnings = append(res.Warnings, locales.ApiEmptyNews())
 	}
 	return res, nil
 }

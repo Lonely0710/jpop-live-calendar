@@ -12,10 +12,12 @@ import (
 
 	"jpop-live-calendar/internal/domain"
 	"jpop-live-calendar/internal/theme"
+	"jpop-live-calendar/locales"
 )
 
 // sourceDraft is the 数据源 page's "新增数据源" form. It lives in the app
-// state so the fields keep their text while the view rebuilds.
+// state so the fields keep their text while the view rebuilds. Its choices
+// are stable IDs, which the labels of the current language name.
 type sourceDraft struct {
 	open     bool
 	name     string
@@ -29,27 +31,34 @@ type sourceDraft struct {
 }
 
 var (
-	sourceKindOptions     = []string{"官网 website", "RSS"}
-	sourceLayerOptions    = []string{"日程 live", "公告 news"}
-	sourceIntervalOptions = []string{"6h", "12h", "24h", "0（仅手动）"}
+	sourceKindIDs     = []string{string(domain.SourceOfficialSite), string(domain.SourceRSS)}
+	sourceLayerIDs    = []string{domain.LayerLive, domain.LayerNews}
+	sourceIntervalIDs = []string{"6h", "12h", "24h", "0"}
 )
 
 func newSourceDraft() sourceDraft {
-	return sourceDraft{kind: sourceKindOptions[0], layer: sourceLayerOptions[0], interval: "12h"}
+	return sourceDraft{kind: sourceKindIDs[0], layer: sourceLayerIDs[0], interval: "12h"}
 }
 
-func parseSourceKind(s string) domain.SourceKind {
-	if strings.HasPrefix(s, "RSS") {
-		return domain.SourceRSS
+func sourceKindLabel(id string) string {
+	if id == string(domain.SourceRSS) {
+		return locales.SourceKindRssOption()
 	}
-	return domain.SourceOfficialSite
+	return locales.SourceKindWebsiteOption()
 }
 
-func parseSourceLayer(s string) string {
-	if strings.HasPrefix(s, "公告") {
-		return domain.LayerNews
+func sourceLayerLabel(id string) string {
+	if id == domain.LayerNews {
+		return locales.SourceLayerNewsOption()
 	}
-	return domain.LayerLive
+	return locales.SourceLayerLiveOption()
+}
+
+func sourceIntervalLabel(id string) string {
+	if id == "0" {
+		return locales.SourcesIntervalManual()
+	}
+	return id
 }
 
 func parseSourceInterval(s string) time.Duration {
@@ -69,47 +78,53 @@ func (a *App) sourceFormView(c *ui.Context) {
 	f := &a.sourceForm
 	card(c).Padding(14, 16).Gap(10).Children(func() {
 		ui.Row(c).Gap(10).AlignItems(ui.Center).Children(func() {
-			ui.Text(c, "新增数据源").Bold()
-			caption(c, "写入 sources.yaml；只添加公开、允许访问的官方或 RSS 来源")
+			ui.Text(c, locales.SourceFormTitle()).Bold()
+			caption(c, locales.SourceFormNote())
 			ui.Spacer(c)
-			if ui.Button(c, "取消").Clicked() {
+			if ui.Button(c, locales.CommonCancel()).Clicked() {
 				f.open = false
 			}
 		})
-		fieldRow(c, "名称", func() {
-			ui.TextInput(c, &f.name).Grow(1).Shrink(1).Label("名称").Placeholder("例：某乐队官网 LIVE")
+		fieldRow(c, locales.FieldName(), func() {
+			ui.TextInput(c, &f.name).Grow(1).Shrink(1).Label(locales.FieldName()).Placeholder(locales.FieldNamePlaceholder())
 		})
 		ui.Row(c).Gap(14).AlignItems(ui.End).Children(func() {
-			fieldRow(c, "类型", func() { ui.Select(c, &f.kind, sourceKindOptions).Width(150).Label("类型") })
-			fieldRow(c, "层级", func() { ui.Select(c, &f.layer, sourceLayerOptions).Width(150).Label("层级") })
-			fieldRow(c, "间隔", func() { ui.Select(c, &f.interval, sourceIntervalOptions).Width(140).Label("间隔") })
+			fieldRow(c, locales.FieldKind(), func() {
+				placeSelect(c, &f.kind, sourceKindIDs, sourceKindLabel, locales.FieldKind(), 150)
+			})
+			fieldRow(c, locales.FieldLayer(), func() {
+				placeSelect(c, &f.layer, sourceLayerIDs, sourceLayerLabel, locales.FieldLayer(), 150)
+			})
+			fieldRow(c, locales.FieldInterval(), func() {
+				placeSelect(c, &f.interval, sourceIntervalIDs, sourceIntervalLabel, locales.FieldInterval(), 140)
+			})
 		})
-		fieldRow(c, "地址", func() {
-			ui.TextInput(c, &f.url).Grow(1).Shrink(1).Label("地址").Placeholder("https://…")
+		fieldRow(c, locales.FieldUrl(), func() {
+			ui.TextInput(c, &f.url).Grow(1).Shrink(1).Label(locales.FieldUrl()).Placeholder("https://…")
 		})
 		ui.Row(c).Gap(14).AlignItems(ui.End).Children(func() {
 			ui.Column(c).Shrink(1).Children(func() {
-				fieldRow(c, "艺人（可选）", func() {
-					ui.TextInput(c, &f.artist).Width(210).Label("艺人").Placeholder("sources.yaml 中的艺人名")
+				fieldRow(c, locales.FieldArtistOptional(), func() {
+					ui.TextInput(c, &f.artist).Width(210).Label(locales.FieldArtistOptional()).Placeholder(locales.FieldArtistPlaceholder())
 				})
 			})
 			ui.Column(c).Grow(1).Children(func() {
-				fieldRow(c, "备注（可选）", func() {
-					ui.TextInput(c, &f.note).Grow(1).Label("备注").Placeholder("显示在数据源卡片上")
+				fieldRow(c, locales.FieldNoteOptional(), func() {
+					ui.TextInput(c, &f.note).Grow(1).Label(locales.FieldNoteOptional()).Placeholder(locales.FieldNotePlaceholder())
 				})
 			})
 		})
 		ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
-			caption(c, "官网地址请填 LIVE / SCHEDULE / NEWS 列表页；RSS 填 feed 地址。机器翻译或需要登录的页面不要添加。")
+			caption(c, locales.SourceFormHelp())
 		})
 		if f.err != "" {
 			ui.Text(c, f.err).FontSize(12.5).TextColor(theme.StatusError)
 		}
 		ui.Row(c).Gap(10).AlignItems(ui.Center).Children(func() {
-			if ui.Button(c, "添加数据源").Clicked() {
+			if ui.Button(c, locales.SourceFormAdd()).Clicked() {
 				a.addSource(c)
 			}
-			caption(c, "添加后立即同步一次；可在卡片上停用或删除。")
+			caption(c, locales.SourceFormAfter())
 		})
 	})
 }
@@ -129,20 +144,20 @@ func (a *App) draftSource() (domain.SourceConfig, error) {
 	rawURL := strings.TrimSpace(f.url)
 	switch {
 	case name == "":
-		return domain.SourceConfig{}, errors.New("请填写名称")
+		return domain.SourceConfig{}, errors.New(locales.SourceErrName())
 	case !strings.HasPrefix(rawURL, "https://") && !strings.HasPrefix(rawURL, "http://"):
-		return domain.SourceConfig{}, errors.New("地址必须以 https:// 开头（只读取公开页面）")
+		return domain.SourceConfig{}, errors.New(locales.SourceErrUrl())
 	}
 	return domain.SourceConfig{
 		ID:       a.sourceID(rawURL),
 		Name:     name,
-		Kind:     parseSourceKind(f.kind),
+		Kind:     domain.SourceKind(f.kind),
 		URL:      rawURL,
 		Enabled:  true,
 		Interval: parseSourceInterval(f.interval),
 		Artist:   strings.TrimSpace(f.artist),
 		Note:     strings.TrimSpace(f.note),
-		Layer:    parseSourceLayer(f.layer),
+		Layer:    f.layer,
 	}, nil
 }
 
@@ -165,16 +180,16 @@ func (a *App) addSource(c *ui.Context) {
 	*f = newSourceDraft()
 	a.Refresh(src.ID)
 	if a.opt.AddSource == nil {
-		c.Toast("已添加「" + name + "」（仅本次运行有效）")
+		c.Toast(locales.SourceAddedVolatile(name))
 		return
 	}
 	file, err := a.opt.AddSource(src)
 	if err != nil {
-		c.Toast("已添加「" + name + "」，但写入配置失败：" + err.Error())
+		c.Toast(locales.SourceAddedError(name, err.Error()))
 		return
 	}
 	a.opt.Config.Path = file
-	c.Toast("已添加「" + name + "」并同步")
+	c.Toast(locales.SourceAdded(name))
 }
 
 // sourceID makes a unique id from the URL's host and last path segment,

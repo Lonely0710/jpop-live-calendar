@@ -9,6 +9,8 @@ import (
 	"strings"
 
 	"gopkg.in/yaml.v3"
+
+	"jpop-live-calendar/locales"
 )
 
 // RemoveSource deletes the source id from the configuration file at
@@ -29,7 +31,7 @@ func RemoveSource(path, id string) (string, error) {
 	case strings.HasPrefix(path, Embedded):
 		// The user's file is broken and the app runs on the defaults:
 		// writing would replace the file being fixed.
-		return "", errors.New("配置文件有错误，未写入")
+		return "", errors.New(locales.ConfigBadFile())
 	default:
 		b, err := os.ReadFile(path)
 		if err != nil {
@@ -42,7 +44,7 @@ func RemoveSource(path, id string) (string, error) {
 		return "", err
 	}
 	if _, err := Parse(out); err != nil {
-		return "", fmt.Errorf("删除后配置无效：%w", err)
+		return "", fmt.Errorf("%s", locales.ConfigInvalidAfterRemove(err.Error()))
 	}
 	if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
 		return "", err
@@ -67,7 +69,7 @@ func removeSource(b []byte, id string) ([]byte, error) {
 		return nil, err
 	}
 	if len(doc.Content) == 0 || doc.Content[0].Kind != yaml.MappingNode {
-		return nil, errors.New("配置文件不是映射")
+		return nil, errors.New(locales.ConfigNotMapping())
 	}
 	root := doc.Content[0]
 	var seq *yaml.Node
@@ -81,7 +83,7 @@ func removeSource(b []byte, id string) ([]byte, error) {
 		}
 	}
 	if seq == nil || seq.Kind != yaml.SequenceNode {
-		return nil, errors.New("配置文件没有 sources 列表")
+		return nil, errors.New(locales.ConfigNoSources())
 	}
 	at := -1
 	for i, item := range seq.Content {
@@ -92,7 +94,7 @@ func removeSource(b []byte, id string) ([]byte, error) {
 		}
 	}
 	if at < 0 {
-		return nil, fmt.Errorf("没有数据源 %q", id)
+		return nil, fmt.Errorf("%s", locales.ConfigNoSourceId(id))
 	}
 	lines := strings.SplitAfter(string(b), "\n")
 	end := len(lines) // exclusive, 0-based

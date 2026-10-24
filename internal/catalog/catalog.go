@@ -21,8 +21,9 @@ type Catalog struct {
 	store *dedup.Store
 	snap  atomic.Pointer[Snapshot]
 
-	mu   sync.Mutex
-	opts dedup.Options
+	mu        sync.Mutex
+	opts      dedup.Options
+	localeGen uint64
 }
 
 // New returns an empty catalog.
@@ -75,15 +76,31 @@ func (c *Catalog) SetInclude(include func(sourceID string) bool) {
 	c.Rebuild()
 }
 
+// SetLocale changes the language of the derived text — notes, change logs
+// and the search index. Call Rebuild afterwards; a build that started
+// before this call never replaces the snapshot.
+func (c *Catalog) SetLocale(tag string) {
+	c.mu.Lock()
+	c.opts.Locale = tag
+	c.localeGen++
+	c.mu.Unlock()
+}
+
 // Rebuild merges every stored announcement into a new snapshot.
 func (c *Catalog) Rebuild() *Snapshot {
 	c.mu.Lock()
 	opts := c.opts
+	gen := c.localeGen
 	c.mu.Unlock()
 	res := dedup.Build(c.store.All(), opts)
 	s := newSnapshot(res, c.store.Count())
-	c.snap.Store(s)
-	return s
+	c.mu.Lock()
+	if gen == c.localeGen {
+		c.snap.Store(s)
+	}
+	current := c.snap.Load()
+	c.mu.Unlock()
+	return current
 }
 
 // Snapshot returns the latest snapshot; never nil.

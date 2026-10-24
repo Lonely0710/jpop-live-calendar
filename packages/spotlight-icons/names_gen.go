@@ -53,6 +53,7 @@ const (
 	Share         Name = "share"
 	MapRoute      Name = "map-route"
 	MapJapan      Name = "map-japan"
+	Globe         Name = "globe"
 	Home          Name = "home"
 	Calendar      Name = "calendar"
 	Month         Name = "month"
@@ -120,6 +121,7 @@ var All = []Name{
 	Share,
 	MapRoute,
 	MapJapan,
+	Globe,
 	Home,
 	Calendar,
 	Month,
@@ -186,6 +188,7 @@ var groups = map[Name]Group{
 	Share:         "navigation",
 	MapRoute:      "navigation",
 	MapJapan:      "navigation",
+	Globe:         "navigation",
 	Home:          "views",
 	Calendar:      "views",
 	Month:         "views",

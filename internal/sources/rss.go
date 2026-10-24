@@ -11,6 +11,7 @@ import (
 
 	"jpop-live-calendar/internal/domain"
 	"jpop-live-calendar/internal/normalize"
+	"jpop-live-calendar/locales"
 )
 
 // RSS reads an RSS 2.0, RSS 1.0 (RDF) or Atom feed. Each item becomes an
@@ -180,7 +181,7 @@ func (RSS) Fetch(ctx context.Context, src domain.SourceConfig, env Env) (Result,
 		// The filter is config-driven, so it is compiled once per sync.
 		include, err = regexp.Compile("(?i)" + opt.Include)
 		if err != nil {
-			return res, fmt.Errorf("article.include 不是有效的正则表达式：%w", err)
+			return res, fmt.Errorf("%s", locales.ConfigSourceInclude(src.ID, err.Error()))
 		}
 	}
 	opened := 0
@@ -206,11 +207,11 @@ func (RSS) Fetch(ctx context.Context, src domain.SourceConfig, env Env) (Result,
 			a.ArtistHints = append(a.ArtistHints, parenRe.ReplaceAllString(c, ""))
 		}
 		if a.PublishedAt.IsZero() {
-			res.Warnings = append(res.Warnings, fmt.Sprintf("「%s」没有发布时间，按抓取时间处理", it.Title))
+			res.Warnings = append(res.Warnings, locales.RssNoTime(it.Title))
 		}
 		if opt.Enabled && wanted(it.Title, opt) && !env.known(it.Link) {
 			if opt.MaxPerSync > 0 && opened >= opt.MaxPerSync {
-				res.Warnings = append(res.Warnings, fmt.Sprintf("已达到每次同步最多打开 %d 篇的上限，其余下次同步", opt.MaxPerSync))
+				res.Warnings = append(res.Warnings, locales.RssLimit(opt.MaxPerSync))
 				opt.MaxPerSync = -1 // warn once
 			} else if opt.MaxPerSync >= 0 {
 				if opened > 0 {
@@ -221,11 +222,11 @@ func (RSS) Fetch(ctx context.Context, src domain.SourceConfig, env Env) (Result,
 				opened++
 				page, err := env.Get.Get(ctx, it.Link)
 				if err != nil {
-					res.Warnings = append(res.Warnings, fmt.Sprintf("「%s」正文抓取失败：%v", it.Title, err))
+					res.Warnings = append(res.Warnings, locales.RssBodyFailed(it.Title, err.Error()))
 				} else if !page.NotModified {
 					text, hints, ok := article(page.Text, opt)
 					if !ok {
-						res.Warnings = append(res.Warnings, fmt.Sprintf("「%s」没有找到正文标记，页面结构可能已变化", it.Title))
+						res.Warnings = append(res.Warnings, locales.RssNoMarker(it.Title))
 					}
 					a.RawText, a.MetadataOnly = text, false
 					if len(hints) > 0 {

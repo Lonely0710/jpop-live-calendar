@@ -53,10 +53,10 @@ func TestMapStats(t *testing.T) {
 
 	// The filters apply to the map as to the calendar.
 	app.mapScope = MapAll
-	app.region = "关东"
+	app.region = "kanto"
 	for pref := range app.mapStats().byPref {
-		if r, _ := regionOf(pref); r.label != "关东" {
-			t.Errorf("关东 filter kept %s", pref)
+		if r, _ := regionOf(pref); r.id != "kanto" {
+			t.Errorf("kanto filter kept %s", pref)
 		}
 	}
 }

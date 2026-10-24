@@ -4,6 +4,7 @@ package config
 
 import (
 	_ "embed"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -15,6 +16,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"jpop-live-calendar/internal/domain"
+	"jpop-live-calendar/locales"
 )
 
 //go:embed sources.yaml
@@ -24,19 +26,33 @@ var embedded []byte
 type Config struct {
 	Sources []domain.SourceConfig
 	Artists []domain.Artist
-	Avatars string // AvatarsDeezer or AvatarsOff
-	Path    string // where it was read from; "内置默认配置" when embedded
+	Avatars string // AvatarsDeezer, AvatarsQQ, AvatarsITunes or AvatarsOff
+	Path    string // where it was read from; Embedded when embedded
 }
 
 // How artist pictures are found.
 const (
-	AvatarsDeezer = "deezer" // Deezer's public artist search
+	// AvatarsDeezer is Deezer's public artist search: a photo of the
+	// artist. Deezer's API cannot be reached from the mainland, so a
+	// lookup that comes back empty or unreachable falls back to iTunes.
+	AvatarsDeezer = "deezer"
+	// AvatarsQQ is QQ Music's search: a photo of the artist too, and one
+	// that answers from the mainland.
+	AvatarsQQ     = "qq"
+	AvatarsITunes = "itunes" // Apple's public search: the cover of a release
 	AvatarsOff    = "off"    // only configured avatar_url
 )
+
+// sourceLanguages are the languages a source's name and note may be given
+// in besides zh-Hans, the source language of the interface; each adds
+// name_<tag> and note_<tag> to a source in sources.yaml.
+var sourceLanguages = []string{"ja", "en"}
 
 type fileSource struct {
 	ID       string `yaml:"id"`
 	Name     string `yaml:"name"`
+	NameJa   string `yaml:"name_ja"`
+	NameEn   string `yaml:"name_en"`
 	Kind     string `yaml:"kind"`
 	URL      string `yaml:"url"`
 	Enabled  bool   `yaml:"enabled"`
@@ -46,6 +62,8 @@ type fileSource struct {
 	Feature  string `yaml:"feature"`
 	Layer    string `yaml:"layer"`
 	Note     string `yaml:"note"`
+	NoteJa   string `yaml:"note_ja"`
+	NoteEn   string `yaml:"note_en"`
 	Article  struct {
 		Enabled     bool     `yaml:"enabled"`
 		BodyStart   string   `yaml:"body_start"`
@@ -75,8 +93,9 @@ type file struct {
 	} `yaml:"artists"`
 }
 
-// Embedded is the label of the built-in copy.
-const Embedded = "内置默认配置"
+// Embedded is the stable path of the built-in copy; views show its
+// localized label instead of the token.
+const Embedded = "builtin"
 
 // Candidates returns the paths Load tries, in order.
 func Candidates() []string {
@@ -134,18 +153,22 @@ func Parse(b []byte) (Config, error) {
 	switch strings.ToLower(strings.TrimSpace(f.Avatars)) {
 	case "", AvatarsDeezer:
 		c.Avatars = AvatarsDeezer
+	case AvatarsQQ, "qqmusic", "tencent":
+		c.Avatars = AvatarsQQ
+	case AvatarsITunes, "apple", "applemusic":
+		c.Avatars = AvatarsITunes
 	case AvatarsOff, "false", "none":
 		c.Avatars = AvatarsOff
 	default:
-		return Config{}, fmt.Errorf("avatars 应为 deezer 或 off，而不是 %q", f.Avatars)
+		return Config{}, fmt.Errorf("%s", locales.ConfigAvatarsInvalid(f.Avatars))
 	}
 	seen := map[string]bool{}
 	for i, s := range f.Sources {
 		if s.ID == "" {
-			return Config{}, fmt.Errorf("第 %d 个数据源缺少 id", i+1)
+			return Config{}, fmt.Errorf("%s", locales.ConfigSourceNNoId(i+1))
 		}
 		if seen[s.ID] {
-			return Config{}, fmt.Errorf("数据源 id %q 重复", s.ID)
+			return Config{}, fmt.Errorf("%s", locales.ConfigSourceDup(s.ID))
 		}
 		seen[s.ID] = true
 		kind := domain.SourceKind(strings.ToLower(s.Kind))
@@ -155,51 +178,51 @@ func Parse(b []byte) (Config, error) {
 		switch kind {
 		case domain.SourceDemo, domain.SourceRSS, domain.SourceOfficialSite, domain.SourceAPI:
 		default:
-			return Config{}, fmt.Errorf("数据源 %q：未知类型 %q（可用 demo / rss / website / api）", s.ID, s.Kind)
+			return Config{}, fmt.Errorf("%s", locales.ConfigSourceUnknownKind(s.ID, s.Kind))
 		}
 		if kind != domain.SourceDemo && !strings.HasPrefix(s.URL, "https://") && !strings.HasPrefix(s.URL, "http://") {
-			return Config{}, fmt.Errorf("数据源 %q：url 必须以 https:// 开头", s.ID)
+			return Config{}, fmt.Errorf("%s", locales.ConfigSourceUrl(s.ID))
 		}
 		iv, err := duration(s.Interval)
 		if err != nil {
-			return Config{}, fmt.Errorf("数据源 %q：interval %w", s.ID, err)
+			return Config{}, fmt.Errorf("%s", locales.ConfigSourceInterval(s.ID, err.Error()))
 		}
 		if iv > 0 && iv < 10*time.Minute && kind != domain.SourceDemo {
 			iv = 10 * time.Minute // be gentle with public sites
 		}
 		delay, err := duration(s.Article.Delay)
 		if err != nil {
-			return Config{}, fmt.Errorf("数据源 %q：delay %w", s.ID, err)
+			return Config{}, fmt.Errorf("%s", locales.ConfigSourceDelay(s.ID, err.Error()))
 		}
 		if delay < time.Second {
 			delay = time.Second
 		}
 		if s.Follow != "" {
 			if _, err := regexp.Compile(s.Follow); err != nil {
-				return Config{}, fmt.Errorf("数据源 %q：follow 不是有效的正则表达式：%v", s.ID, err)
+				return Config{}, fmt.Errorf("%s", locales.ConfigSourceFollow(s.ID, err.Error()))
 			}
 		}
 		if s.Feature != "" {
 			if _, err := regexp.Compile(s.Feature); err != nil {
-				return Config{}, fmt.Errorf("数据源 %q：feature 不是有效的正则表达式：%v", s.ID, err)
+				return Config{}, fmt.Errorf("%s", locales.ConfigSourceFeature(s.ID, err.Error()))
 			}
 		}
 		if s.Article.Include != "" {
 			if _, err := regexp.Compile("(?i)" + s.Article.Include); err != nil {
-				return Config{}, fmt.Errorf("数据源 %q：article.include 不是有效的正则表达式：%v", s.ID, err)
+				return Config{}, fmt.Errorf("%s", locales.ConfigSourceInclude(s.ID, err.Error()))
 			}
 		}
 		maxAge, err := duration(s.Article.MaxAge)
 		if err != nil {
-			return Config{}, fmt.Errorf("数据源 %q：article.max_age %w", s.ID, err)
+			return Config{}, fmt.Errorf("%s", locales.ConfigSourceMaxAge(s.ID, err.Error()))
 		}
 		if maxAge < 0 {
-			return Config{}, fmt.Errorf("数据源 %q：article.max_age 不能为负数", s.ID)
+			return Config{}, fmt.Errorf("%s", locales.ConfigSourceMaxAgeNeg(s.ID))
 		}
 		switch s.Layer {
 		case "", domain.LayerLive, domain.LayerNews:
 		default:
-			return Config{}, fmt.Errorf("数据源 %q：layer 应为 live 或 news", s.ID)
+			return Config{}, fmt.Errorf("%s", locales.ConfigSourceLayer(s.ID))
 		}
 		name := s.Name
 		if name == "" {
@@ -215,16 +238,18 @@ func Parse(b []byte) (Config, error) {
 				MaxPerSync: s.Article.MaxPerSync, Delay: delay,
 			},
 			Artist: strings.TrimSpace(s.Artist), Follow: s.Follow, Note: strings.TrimSpace(s.Note),
+			Names:   translations(map[string]string{"ja": s.NameJa, "en": s.NameEn}),
+			Notes:   translations(map[string]string{"ja": s.NoteJa, "en": s.NoteEn}),
 			Feature: s.Feature, Layer: s.Layer,
 		})
 	}
 	for _, a := range f.Artists {
 		if a.Name != "" {
 			if a.Avatar != "" && a.Avatar != "none" && !strings.HasPrefix(a.Avatar, "https://") && !strings.HasPrefix(a.Avatar, "http://") {
-				return Config{}, fmt.Errorf("艺人 %q：avatar_url 必须以 https:// 开头，或填 none", a.Name)
+				return Config{}, fmt.Errorf("%s", locales.ConfigArtistAvatar(a.Name))
 			}
 			if a.Color != "" && !hexRe.MatchString(a.Color) {
-				return Config{}, fmt.Errorf("艺人 %q：color 应为 #RRGGBB", a.Name)
+				return Config{}, fmt.Errorf("%s", locales.ConfigArtistColor(a.Name))
 			}
 			c.Artists = append(c.Artists, domain.Artist{Name: a.Name, Aliases: a.Aliases, OfficialURL: a.Official,
 				AvatarURL: a.Avatar, Color: a.Color, Followed: a.Follow == nil || *a.Follow})
@@ -235,6 +260,21 @@ func Parse(b []byte) (Config, error) {
 
 var hexRe = regexp.MustCompile(`^#[0-9A-Fa-f]{6}$`)
 
+// translations keeps the languages a source names, nil when it names none
+// so a source without them keeps the text written in sources.yaml.
+func translations(in map[string]string) map[string]string {
+	out := make(map[string]string, len(sourceLanguages))
+	for _, tag := range sourceLanguages {
+		if v := strings.TrimSpace(in[tag]); v != "" {
+			out[tag] = v
+		}
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	return out
+}
+
 func duration(s string) (time.Duration, error) {
 	s = strings.TrimSpace(s)
 	if s == "" || s == "0" {
@@ -243,13 +283,13 @@ func duration(s string) (time.Duration, error) {
 	if strings.HasSuffix(s, "d") {
 		n, err := strconv.Atoi(strings.TrimSuffix(s, "d"))
 		if err != nil || n < 0 {
-			return 0, fmt.Errorf("格式不正确（例：30m、2h、90d）")
+			return 0, errors.New(locales.ConfigBadDuration())
 		}
 		return time.Duration(n) * 24 * time.Hour, nil
 	}
 	d, err := time.ParseDuration(s)
 	if err != nil {
-		return 0, fmt.Errorf("格式不正确（例：30m、2h、90d）")
+		return 0, errors.New(locales.ConfigBadDuration())
 	}
 	return d, nil
 }

@@ -17,9 +17,10 @@ import (
 	"jpop-live-calendar/internal/domain"
 	"jpop-live-calendar/internal/theme"
 	"jpop-live-calendar/internal/views"
+	"jpop-live-calendar/locales"
 )
 
-const version = "1.0.2"
+const version = "1.1.0"
 
 // trayIcon is the black-and-transparent menu bar icon; macOS tints it.
 //
@@ -40,12 +41,17 @@ var pacificoFont []byte
 
 func main() {
 	cfg, err := config.Load()
+	cfgErr := err
 	if err != nil {
 		// A broken sources.yaml must not stop the app: run on the
 		// built-in defaults and say so on the 数据源 page.
 		log.Printf("sources.yaml: %v; using the built-in defaults", err)
 		cfg = config.Default()
-		cfg.Path = config.Embedded + "（" + err.Error() + "）"
+		cfg.Path = config.Embedded
+	}
+	localePref, localeErr := config.LoadLocale()
+	if localeErr != nil {
+		log.Printf("locale.json: %v; following the system language", localeErr)
 	}
 	pins, pinErr := config.LoadPins()
 	if pinErr != nil {
@@ -75,10 +81,14 @@ func main() {
 	}
 	var win *mygo.Window
 	app := views.New(views.Options{
-		Config:   cfg,
-		Version:  version,
-		Pinned:   pins,
-		SavePins: config.SavePins,
+		Config:     cfg,
+		ConfigErr:  cfgErr,
+		Version:    version,
+		Pinned:     pins,
+		SavePins:   config.SavePins,
+		LocalePref: localePref,
+		SetLocale:  mygo.App.SetLocale,
+		SaveLocale: config.SaveLocale,
 		// 上次同步的公告快照：启动时先显示，之后每次同步完成再写回。
 		CachePath: cachePath,
 		// 抽选截止提醒：系统通知；同一截止只提醒一次（notified.json）。
@@ -86,7 +96,7 @@ func main() {
 		SaveNotified: config.SaveNotified,
 		Notify: func(r views.Reminder) error {
 			if !mygo.NotificationsSupported() {
-				return errors.New("系统通知不可用（需要打包后的 App）")
+				return errors.New(locales.NotifyUnavailable())
 			}
 			n := mygo.NewNotification(mygo.NotificationOptions{
 				ID: r.ID, Title: r.Title, Subtitle: r.Subtitle, Body: r.Body, Group: "deadlines",
@@ -108,7 +118,8 @@ func main() {
 			}
 			return p, err
 		},
-		// 艺人头像与主题色：后台从 Deezer 公开 API 获取（avatars: off 可关闭），
+		// 艺人头像与主题色：后台从公开 API 获取——Deezer 的艺人照片，查不到或
+		// 连不上（大陆网络）时用 iTunes 的专辑封面；avatars: off 可关闭。
 		// 公开图片缓存在 avatars.json，启动先用缓存，条件请求只替换有变化的图。
 		Avatars:       avatarStore,
 		AvatarGetters: avatar.NewGetters(cfg.Avatars),
@@ -147,6 +158,10 @@ func main() {
 		win.Update(func() { app.OpenEntry(entry) })
 	})
 	mygo.App.WhenReady(func() {
+		// The language the user chose, or the system's. MyGo keeps its own
+		// copy too; locale.json tells "follow the system" apart from a choice.
+		mygo.App.SetLocale(localePref)
+		app.InitLocale(mygo.App.Locale())
 		opts := mygo.WindowOptions{
 			Title:           "Live Calendar",
 			Width:           theme.WindowWidth,
@@ -169,6 +184,13 @@ func main() {
 		// Sync every enabled source now, then on each one's interval.
 		app.Start(ctx)
 		setupMenuBar(app, win)
+		mygo.App.OnLocaleChanged(func(tag string) {
+			app.LocaleChanged(tag)
+			if tray != nil {
+				tray.SetMenu(trayMenu(app, win))
+				tray.SetToolTip(locales.TrayTooltip())
+			}
+		})
 		if entry := pendingEntry; entry != "" {
 			pendingEntry = ""
 			win.Show()
@@ -186,6 +208,21 @@ func main() {
 // for as long as the application runs.
 var tray *mygo.Tray
 
+// trayMenu is the menu bar menu, in the language the app shows now.
+func trayMenu(app *views.App, win *mygo.Window) *mygo.Menu {
+	show := func() {
+		win.Show()
+		win.Focus()
+		mygo.App.Focus()
+	}
+	return mygo.NewMenu([]*mygo.MenuItem{
+		{Label: locales.TrayOpen(), Click: func(*mygo.MenuItem, *mygo.Window) { show() }},
+		{Label: locales.TraySync(), Click: func(*mygo.MenuItem, *mygo.Window) { app.Refresh() }},
+		{Type: mygo.MenuItemSeparator},
+		{Label: locales.TrayQuit(), Role: mygo.RoleQuit, Click: func(*mygo.MenuItem, *mygo.Window) { mygo.App.Quit() }},
+	})
+}
+
 // setupMenuBar adds the tray icon and keeps the app alive when the window is
 // closed: closing hides the window, and the sync, the deadlines and the tray
 // stay. The tray's first item brings it back; 退出 is the only way to quit.
@@ -197,12 +234,6 @@ func setupMenuBar(app *views.App, win *mygo.Window) {
 		win.Focus()
 		mygo.App.Focus()
 	}
-	menu := mygo.NewMenu([]*mygo.MenuItem{
-		{Label: "打开 Live Calendar", Click: func(*mygo.MenuItem, *mygo.Window) { show() }},
-		{Label: "立即同步", Click: func(*mygo.MenuItem, *mygo.Window) { app.Refresh() }},
-		{Type: mygo.MenuItemSeparator},
-		{Label: "退出 Live Calendar", Role: mygo.RoleQuit, Click: func(*mygo.MenuItem, *mygo.Window) { mygo.App.Quit() }},
-	})
 	icon := trayIcon
 	if runtime.GOOS == "windows" {
 		icon = trayIconWindows
@@ -210,8 +241,8 @@ func setupMenuBar(app *views.App, win *mygo.Window) {
 	t, err := mygo.NewTray(mygo.TrayOptions{
 		Icon:           icon,
 		IconIsTemplate: runtime.GOOS == "darwin",
-		ToolTip:        "Live Calendar · 日本音乐 Live 情报日历",
-		Menu:           menu,
+		ToolTip:        locales.TrayTooltip(),
+		Menu:           trayMenu(app, win),
 	})
 	if err != nil {
 		log.Printf("menu bar: %v", err)

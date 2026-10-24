@@ -132,17 +132,9 @@ func KindColor(k domain.EntryKind, st domain.Status) ui.Color {
 	}
 }
 
-// Legend lists the markers the calendar explains, in order.
-var Legend = []struct {
-	Label string
-	Color ui.Color
-}{
-	{"Live", LiveCoral},
-	{"抽选受付", StatusWarning},
-	{"结果公布", StatusInfo},
-	{"发售", StatusSuccess},
-	{"延期/中止", StatusError},
-}
+// Legend lists the markers the calendar explains, in order; the views
+// name them in the language the app shows.
+var Legend = []ui.Color{LiveCoral, StatusWarning, StatusInfo, StatusSuccess, StatusError}
 
 // Liquid Glass layout: the sidebar and the inspector are panes of glass
 // floating over a warm backdrop, inset from the window's edges; the

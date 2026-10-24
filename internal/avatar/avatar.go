@@ -15,6 +15,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"image"
 	"image/color"
@@ -22,6 +23,7 @@ import (
 	_ "image/jpeg"
 	_ "image/png"
 	"net/url"
+	"regexp"
 	"sync"
 	"time"
 
@@ -57,6 +59,11 @@ type Store struct {
 	m       map[string]Avatar
 	version int
 	running bool
+	// unreachable records that the last pass stopped because the lookup
+	// could not reach Deezer at all (a network that needs a proxy, say),
+	// which the settings page says out loud: every artist fails the same
+	// way, so nothing else explains the missing pictures.
+	unreachable bool
 
 	// OnChange is called (on the fetching goroutine) after each avatar.
 	OnChange func()
@@ -78,6 +85,14 @@ func (s *Store) Version() int {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	return s.version
+}
+
+// Unreachable reports whether the last pass gave up because Deezer could
+// not be reached at all.
+func (s *Store) Unreachable() bool {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.unreachable
 }
 
 // Running reports whether Fetch is running.
@@ -134,8 +149,40 @@ func ArtistID(a domain.Artist) string {
 
 // Getters are what Fetch reads through.
 type Getters struct {
-	Lookup   sources.Getter // Deezer search API; nil turns lookups off
+	// Lookup is Deezer's artist search: a real artist photo when it has
+	// one. nil skips it.
+	Lookup sources.Getter
+	// QQ is QQ Music's search, which has Japanese artists' photos and
+	// answers from the mainland, where Deezer's API does not. nil skips it.
+	QQ sources.Getter
+	// Albums is Apple's iTunes search, whose covers stand in for a photo.
+	// nil skips it.
+	Albums   sources.Getter
 	Pictures sources.Getter // picture downloads
+}
+
+// catalog is one place a picture may come from: what to ask, how, and what
+// this pass has learned about reaching it.
+type catalog struct {
+	name string
+	get  sources.Getter
+	find func(context.Context, sources.Getter, domain.Artist) (string, bool, error)
+	down *bool // set once the pass found this one unreachable; nil: never mark
+}
+
+// catalogs are the lookups to try, in the order the mode configured them.
+func (g Getters) catalogs(state *lookupState) []catalog {
+	var out []catalog
+	if g.Lookup != nil {
+		out = append(out, catalog{"Deezer", g.Lookup, deezer, &state.deezerDown})
+	}
+	if g.QQ != nil {
+		out = append(out, catalog{"QQ", g.QQ, qqMusic, &state.qqDown})
+	}
+	if g.Albums != nil {
+		out = append(out, catalog{"iTunes", g.Albums, albums, nil})
+	}
+	return out
 }
 
 // Fetch finds the avatars of the artists that have none yet, one after
@@ -160,7 +207,9 @@ func (s *Store) fetch(ctx context.Context, g Getters, artists []domain.Artist, r
 		return false
 	}
 	s.running = true
+	s.unreachable = false
 	s.mu.Unlock()
+	var state lookupState
 	defer func() {
 		s.mu.Lock()
 		s.running = false
@@ -187,13 +236,31 @@ func (s *Store) fetch(ctx context.Context, g Getters, artists []domain.Artist, r
 		} else if ok && old.Err == "" {
 			continue
 		}
-		next := fetchOne(ctx, g, ar, id, old, refresh)
+		next, offline := fetchOne(ctx, g, ar, id, old, refresh, &state)
 		if refresh && next.Hash == old.Hash && next.Err == old.Err {
 			continue // unchanged: keep the cached picture, no redraw
 		}
 		s.put(next)
+		if offline {
+			// Neither catalog could be reached: the rest of the artists
+			// would spend their seconds failing the same way, so the pass
+			// stops here. The next pass (a launch, a sync) tries again.
+			s.mu.Lock()
+			s.unreachable = true
+			s.mu.Unlock()
+			return true
+		}
 	}
 	return true
+}
+
+// lookupState is what one pass learns about the catalogs: once one has
+// failed to answer at all (a network that cannot reach it, as from the
+// mainland), the rest of the pass skips it instead of spending a request
+// and a retry on every artist.
+type lookupState struct {
+	deezerDown bool
+	qqDown     bool
 }
 
 // Fallback is the theme color of an artist without a picture: a fixed
@@ -238,11 +305,14 @@ func abs(v float64) float64 {
 
 func mod(a, b float64) float64 { return a - b*float64(int(a/b)) }
 
-func fetchOne(ctx context.Context, g Getters, ar domain.Artist, id string, old Avatar, refresh bool) Avatar {
+// fetchOne finds one artist's picture. offline reports that no catalog
+// could be reached at all, as opposed to none of them knowing the artist:
+// the pass stops on the former.
+func fetchOne(ctx context.Context, g Getters, ar domain.Artist, id string, old Avatar, refresh bool, state *lookupState) (av Avatar, offline bool) {
 	if refresh {
-		return revalidateOne(ctx, g, ar, old)
+		return revalidateOne(ctx, g, ar, old), false
 	}
-	av := Avatar{
+	av = Avatar{
 		ArtistID: id, URL: ar.AvatarURL, Source: "配置", Color: Fallback(ar.Name),
 		FetchedAt: time.Now(),
 	}
@@ -251,19 +321,15 @@ func fetchOne(ctx context.Context, g Getters, ar domain.Artist, id string, old A
 	}
 	if av.URL == "none" {
 		av.URL, av.Err = "", "配置为不使用头像"
-		return av
+		return av, false
 	}
 	if av.URL == "" {
-		if g.Lookup == nil {
-			av.Err = "未配置头像（avatars: off）"
-			return av
-		}
-		u, err := deezer(ctx, g.Lookup, ar)
+		pic, source, offline, err := lookup(ctx, g, ar, state)
 		if err != nil {
 			av.Err = err.Error()
-			return av
+			return av, offline
 		}
-		av.URL, av.Source = u, "Deezer"
+		av.URL, av.Source = pic, source
 	}
 	if old.URL == av.URL {
 		seedValidators(g.Pictures, av.URL, old.ETag, old.LastModified)
@@ -271,24 +337,24 @@ func fetchOne(ctx context.Context, g Getters, ar domain.Artist, id string, old A
 	resp, err := g.Pictures.Get(ctx, av.URL)
 	if err != nil {
 		av.Err = "头像下载失败：" + err.Error()
-		return av
+		return av, false
 	}
 	if resp.NotModified {
 		if old.Image != nil {
 			old.Err, old.FetchedAt = "", time.Now()
-			return old
+			return old, false
 		}
 		av.Err = "头像下载失败：内容为空"
-		return av
+		return av, false
 	}
 	if len(resp.Body) == 0 {
 		av.Err = "头像下载失败：内容为空"
-		return av
+		return av, false
 	}
 	img, _, err := image.Decode(bytes.NewReader(resp.Body))
 	if err != nil {
 		av.Err = "头像无法解码：" + err.Error()
-		return av
+		return av, false
 	}
 	av.Image = img
 	av.Hash = hashBytes(resp.Body)
@@ -296,7 +362,7 @@ func fetchOne(ctx context.Context, g Getters, ar domain.Artist, id string, old A
 	if !av.Manual {
 		av.Color, av.Share = Dominant(img)
 	}
-	return av
+	return av, false
 }
 
 // revalidateOne asks whether a cached picture changed, with its validators.
@@ -357,6 +423,47 @@ func hashBytes(b []byte) string {
 	return hex.EncodeToString(h[:])
 }
 
+// lookup finds a picture for the artist, trying the configured catalogs in
+// order and taking the first hit: a real photo from Deezer or QQ Music, or
+// else the cover of a release from iTunes. offline says none of them could
+// be reached at all, which is a network's fault, not the artist's, and ends
+// the pass.
+func lookup(ctx context.Context, g Getters, ar domain.Artist, state *lookupState) (pic, source string, offline bool, err error) {
+	cats := g.catalogs(state)
+	if len(cats) == 0 {
+		return "", "", false, errors.New("未配置头像（avatars: off）")
+	}
+	var miss, unreachable error
+	for _, c := range cats {
+		if c.down != nil && *c.down {
+			continue
+		}
+		got, down, err := c.find(ctx, c.get, ar)
+		if err == nil {
+			return got, c.name, false, nil
+		}
+		if down {
+			if c.down != nil {
+				*c.down = true
+			}
+			unreachable = err
+			continue
+		}
+		if miss == nil {
+			miss = err // the first catalog that did answer, and said no
+		}
+	}
+	switch {
+	case miss != nil:
+		return "", "", false, miss
+	case unreachable != nil:
+		return "", "", true, unreachable
+	default:
+		// Everything was skipped as unreachable earlier in this pass.
+		return "", "", true, errors.New("头像来源都连不上")
+	}
+}
+
 type deezerArtist struct {
 	Name          string `json:"name"`
 	Fans          int    `json:"nb_fan"`
@@ -366,7 +473,9 @@ type deezerArtist struct {
 
 // deezer looks the artist up by each of their names and returns the
 // picture of the best-known artist whose name is exactly one of them.
-func deezer(ctx context.Context, get sources.Getter, ar domain.Artist) (string, error) {
+// unreachable says the request never got an answer from Deezer (a blocked
+// or offline network), which is not the artist's fault and stops the pass.
+func deezer(ctx context.Context, get sources.Getter, ar domain.Artist) (pic string, unreachable bool, err error) {
 	keys := map[string]bool{}
 	names := append([]string{ar.Name}, ar.Aliases...)
 	for _, n := range names {
@@ -379,13 +488,13 @@ func deezer(ctx context.Context, get sources.Getter, ar domain.Artist) (string, 
 		}
 		resp, err := get.Get(ctx, "https://api.deezer.com/search/artist?limit=10&q="+url.QueryEscape(n))
 		if err != nil {
-			return "", fmt.Errorf("头像查询失败：%v", err)
+			return "", true, fmt.Errorf("头像查询失败：%v", err)
 		}
 		var res struct {
 			Data []deezerArtist `json:"data"`
 		}
 		if err := json.Unmarshal([]byte(resp.Text), &res); err != nil {
-			return "", fmt.Errorf("头像查询结果无法读取：%v", err)
+			return "", false, fmt.Errorf("头像查询结果无法读取：%v", err)
 		}
 		for j := range res.Data {
 			d := &res.Data[j]
@@ -398,12 +507,156 @@ func deezer(ctx context.Context, get sources.Getter, ar domain.Artist) (string, 
 		}
 	}
 	if best == nil {
-		return "", fmt.Errorf("Deezer 上没有找到同名艺人")
+		return "", false, fmt.Errorf("Deezer 上没有找到同名艺人")
 	}
 	if best.PictureMedium != "" {
-		return best.PictureMedium, nil // 250 px: enough for a 64 pt circle
+		return best.PictureMedium, false, nil // 250 px: enough for a 64 pt circle
 	}
-	return best.PictureBig, nil
+	return best.PictureBig, false, nil
+}
+
+// qqArtist is one singer of QQ Music's search answer: the name to match
+// and the identifier their picture's address is built from.
+type qqArtist struct {
+	Name string `json:"name"`
+	Mid  string `json:"mid"`
+}
+
+// qqPhoto is where QQ Music keeps a singer's picture, given their mid: the
+// same 300 px photo its own pages show.
+const qqPhoto = "https://y.gtimg.cn/music/photo_new/T001R300x300M000"
+
+// qqMusic looks the artist up in QQ Music, Tencent's public search endpoint
+// (no account, no key), and returns their photo. It is the catalog with
+// Japanese artists' photos that answers from the mainland, where Deezer's
+// API does not. unreachable says QQ Music did not answer at all.
+func qqMusic(ctx context.Context, get sources.Getter, ar domain.Artist) (pic string, unreachable bool, err error) {
+	keys := map[string]bool{}
+	names := append([]string{ar.Name}, ar.Aliases...)
+	for _, n := range names {
+		keys[normalize.Key(n)] = true
+	}
+	if len(names) > 4 {
+		names = names[:4] // a sanity cap; configurations have far fewer aliases
+	}
+	for _, n := range names {
+		resp, err := get.Get(ctx, "https://c.y.qq.com/splcloud/fcgi-bin/smartbox_new.fcg?format=json&key="+url.QueryEscape(n))
+		if err != nil {
+			return "", true, fmt.Errorf("头像查询失败：%v", err)
+		}
+		var res struct {
+			Data struct {
+				Singer struct {
+					Items []qqArtist `json:"itemlist"`
+				} `json:"singer"`
+			} `json:"data"`
+		}
+		if err := json.Unmarshal([]byte(resp.Text), &res); err != nil {
+			return "", false, fmt.Errorf("头像查询结果无法读取：%v", err)
+		}
+		for _, a := range res.Data.Singer.Items {
+			if a.Mid != "" && keys[normalize.Key(a.Name)] {
+				return qqPhoto + a.Mid + ".jpg", false, nil
+			}
+		}
+	}
+	return "", false, fmt.Errorf("QQ 音乐上没有找到同名艺人")
+}
+
+// itunesAlbum is one row of Apple's search answer: who released it, what
+// it is, and the cover, which stands in for a photo of the artist.
+type itunesAlbum struct {
+	Artist     string `json:"artistName"`
+	Collection string `json:"collectionName"`
+	Kind       string `json:"collectionType"`
+	Tracks     int    `json:"trackCount"`
+	Artwork    string `json:"artworkUrl100"`
+}
+
+// artSize is the size token of an Apple artwork URL ("…/100x100bb.jpg").
+var artSize = regexp.MustCompile(`/\d+x\d+[a-z]*\.(jpe?g|png|webp)$`)
+
+// albums looks the artist up in the iTunes catalog and returns the cover of
+// one of their releases. Apple answers from the mainland, where Deezer's
+// API does not, so this is what keeps avatars working without a proxy.
+// unreachable reports that Apple did not answer at all.
+func albums(ctx context.Context, get sources.Getter, ar domain.Artist) (pic string, unreachable bool, err error) {
+	keys := map[string]bool{}
+	names := append([]string{ar.Name}, ar.Aliases...)
+	for _, n := range names {
+		keys[normalize.Key(n)] = true
+	}
+	if len(names) > 4 {
+		names = names[:4] // a sanity cap; configurations have far fewer aliases
+	}
+	for _, n := range names {
+		pic, ok, err := itunesSearch(ctx, get, n, "jp", keys)
+		if err != nil {
+			return "", true, err
+		}
+		if ok {
+			return pic, false, nil
+		}
+	}
+	// Not in Japan's storefront: ask the default one, once.
+	if pic, ok, err := itunesSearch(ctx, get, ar.Name, "", keys); err != nil {
+		return "", true, err
+	} else if ok {
+		return pic, false, nil
+	}
+	return "", false, fmt.Errorf("iTunes 上没有找到同名艺人")
+}
+
+// itunesSearch asks one storefront for albums of term, and returns the
+// cover of the best match among the rows whose artist is one of keys.
+func itunesSearch(ctx context.Context, get sources.Getter, term, country string, keys map[string]bool) (string, bool, error) {
+	raw := "https://itunes.apple.com/search?entity=album&limit=25&term=" + url.QueryEscape(term)
+	if country != "" {
+		raw += "&country=" + country
+	}
+	resp, err := get.Get(ctx, raw)
+	if err != nil {
+		return "", false, fmt.Errorf("头像查询失败：%v", err)
+	}
+	var res struct {
+		Results []itunesAlbum `json:"results"`
+	}
+	if err := json.Unmarshal([]byte(resp.Text), &res); err != nil {
+		return "", false, fmt.Errorf("头像查询结果无法读取：%v", err)
+	}
+	best := -1
+	for i, a := range res.Results {
+		if a.Artwork == "" || !keys[normalize.Key(a.Artist)] {
+			continue
+		}
+		if best < 0 || betterCover(a, res.Results[best]) {
+			best = i
+		}
+	}
+	if best < 0 {
+		return "", false, nil
+	}
+	return cover600(res.Results[best].Artwork), true, nil
+}
+
+// betterCover prefers a full album to a single, and the longer release
+// between two of a kind: its cover says more about the artist than a
+// single's does.
+func betterCover(a, b itunesAlbum) bool {
+	albumA, albumB := a.Kind == "Album", b.Kind == "Album"
+	if albumA != albumB {
+		return albumA
+	}
+	return a.Tracks > b.Tracks
+}
+
+// cover600 asks Apple's image service for the same cover at 600 px, which
+// is what a 64 pt circle needs on a Retina display.
+func cover600(raw string) string {
+	if artSize.MatchString(raw) {
+		return artSize.ReplaceAllString(raw, "/600x600bb.$1")
+	}
+	return raw
 }
 
 func parseHex(s string) (color.RGBA, bool) {

@@ -17,6 +17,7 @@ import (
 	"jpop-live-calendar/internal/catalog"
 	"jpop-live-calendar/internal/domain"
 	"jpop-live-calendar/internal/sources"
+	"jpop-live-calendar/locales"
 )
 
 // SourceStatus is what the UI shows about a source.
@@ -291,7 +292,7 @@ func (s *Scheduler) runSource(ctx context.Context, src domain.SourceConfig) (run
 	var warnings []string
 	defer func() {
 		if r := recover(); r != nil {
-			run.State, run.Err = domain.SyncFailed, fmt.Sprint("内部错误：", r)
+			run.State, run.Err = domain.SyncFailed, locales.CrawlInternal(fmt.Sprint(r))
 		}
 		run.FinishedAt = s.now()
 		s.mu.Lock()
@@ -302,7 +303,7 @@ func (s *Scheduler) runSource(ctx context.Context, src domain.SourceConfig) (run
 	}()
 	ad := s.Adapters[src.Kind]
 	if ad == nil {
-		run.State, run.Err = domain.SyncFailed, fmt.Sprintf("不支持的数据源类型 %q", src.Kind)
+		run.State, run.Err = domain.SyncFailed, locales.CrawlUnsupported(string(src.Kind))
 		return run
 	}
 	timeout := s.Timeout
@@ -329,7 +330,7 @@ func (s *Scheduler) runSource(ctx context.Context, src domain.SourceConfig) (run
 func cleanErr(err error) string {
 	msg := err.Error()
 	if strings.Contains(msg, "context deadline exceeded") {
-		return "同步超时"
+		return locales.CrawlTimeout()
 	}
 	return msg
 }

@@ -30,12 +30,6 @@ func TestSourceID(t *testing.T) {
 			t.Errorf("sourceID(%q) = %q, want %q", raw, got, want)
 		}
 	}
-	if got := parseSourceKind("RSS"); got != domain.SourceRSS {
-		t.Errorf("RSS kind = %q", got)
-	}
-	if got := parseSourceLayer("公告 news"); got != domain.LayerNews {
-		t.Errorf("news layer = %q", got)
-	}
 	if got := parseSourceInterval("6h"); got != 6*time.Hour {
 		t.Errorf("6h = %v", got)
 	}
@@ -43,7 +37,7 @@ func TestSourceID(t *testing.T) {
 
 func TestDraftSource(t *testing.T) {
 	a := &App{opt: Options{Config: config.Config{Sources: []domain.SourceConfig{{ID: "example-com-live"}}}}}
-	a.sourceForm = sourceDraft{name: "某乐队", kind: "RSS", layer: "公告 news", interval: "6h",
+	a.sourceForm = sourceDraft{name: "某乐队", kind: string(domain.SourceRSS), layer: domain.LayerNews, interval: "6h",
 		url: "https://example.com/live/", artist: "某乐队", note: " 说明 "}
 	src, err := a.draftSource()
 	if err != nil {

@@ -1,7 +1,6 @@
 package dedup
 
 import (
-	"fmt"
 	"sort"
 	"strings"
 	"time"
@@ -9,6 +8,7 @@ import (
 	"jpop-live-calendar/internal/domain"
 	"jpop-live-calendar/internal/normalize"
 	"jpop-live-calendar/internal/parser"
+	"jpop-live-calendar/locales"
 )
 
 // Options configure a build.
@@ -16,6 +16,7 @@ type Options struct {
 	Artists     []domain.Artist            // configured names and aliases
 	SourceNames map[string]string          // source ID → display name
 	Include     func(sourceID string) bool // nil includes every source
+	Locale      string                     // UI language of derived notes; "" is zh-Hans
 }
 
 // Result is the merged calendar.
@@ -76,13 +77,16 @@ func Build(anns []domain.PublicAnnouncement, opt Options) Result {
 		res.Venues = append(res.Venues, *v)
 	}
 	sort.Slice(res.Venues, func(i, j int) bool { return res.Venues[i].Name < res.Venues[j].Name })
-	res.Entries = Entries(res.Events, res.Rounds, res.Artists, opt.SourceNames)
+	res.Entries = Entries(res.Events, res.Rounds, res.Artists, opt.SourceNames, opt.Locale)
 	return res
 }
 
+// msgs says the notes and change fields in the build's language.
+func (b *builder) msgs() locales.Messages { return locales.In(b.opt.Locale) }
+
 func (b *builder) read(a domain.PublicAnnouncement) {
 	when := published(a)
-	res := parser.Parse(parser.Input{Title: a.Title, Text: a.RawText, ArtistHints: a.ArtistHints, Published: when, Schedule: a.Schedule})
+	res := parser.Parse(parser.Input{Title: a.Title, Text: a.RawText, ArtistHints: a.ArtistHints, Published: when, Schedule: a.Schedule, Locale: b.opt.Locale})
 	if len(res.Events) == 0 && len(res.Rounds) == 0 {
 		return
 	}
@@ -104,10 +108,10 @@ func (b *builder) read(a domain.PublicAnnouncement) {
 	}
 	var annNotes []string
 	if guessed {
-		annNotes = append(annNotes, "艺人名由标题推断，需确认")
+		annNotes = append(annNotes, b.msgs().NoteArtistGuessed())
 	}
 	if len(artistIDs) == 0 {
-		annNotes = append(annNotes, "未识别到艺人")
+		annNotes = append(annNotes, b.msgs().NoteArtistUnknown())
 	}
 	annNotes = append(annNotes, res.Notes...)
 
@@ -168,13 +172,13 @@ func (b *builder) mergeEvent(a domain.PublicAnnouncement, when time.Time, pe par
 		e = same[0]
 	case len(unsure) == 1 && (unsure[0].VenueName == "" || pe.Venue == ""):
 		e = unsure[0]
-		addNote(e, "场地信息不完整，按艺人与日期合并，需确认")
+		addNote(e, b.msgs().NoteVenueIncomplete())
 	}
 	if e == nil {
 		e = b.newEvent(a, when, pe, artistIDs)
 		for _, o := range unsure {
-			addNote(e, fmt.Sprintf("可能与「%s」(%s) 为同一场演出", o.Title, o.VenueName))
-			addNote(o, fmt.Sprintf("可能与「%s」(%s) 为同一场演出", e.Title, e.VenueName))
+			addNote(e, b.msgs().NotePossibleSame(o.Title, o.VenueName))
+			addNote(o, b.msgs().NotePossibleSame(e.Title, e.VenueName))
 		}
 	} else {
 		b.update(e, a, when, pe)
@@ -183,7 +187,7 @@ func (b *builder) mergeEvent(a domain.PublicAnnouncement, when time.Time, pe par
 		e.ArtistIDs = appendUnique(e.ArtistIDs, id)
 	}
 	for _, n := range append(append([]string(nil), annNotes...), pe.Notes...) {
-		if n == noVenue && e.VenueName != "" {
+		if n == b.msgs().NoteNoVenue() && e.VenueName != "" {
 			continue
 		}
 		addNote(e, n)
@@ -248,9 +252,9 @@ func change(field, old, new string, a domain.PublicAnnouncement, when time.Time)
 	return domain.Change{Field: field, Old: old, New: new, At: when, Source: a.URL}
 }
 
-func clockText(c *domain.Clock) string {
+func (b *builder) clockText(c *domain.Clock) string {
 	if c == nil {
-		return "未公布"
+		return b.msgs().CommonTba()
 	}
 	return c.String()
 }
@@ -260,16 +264,16 @@ func (b *builder) update(e *domain.PublicEvent, a domain.PublicAnnouncement, whe
 		if v == nil || (*cur != nil && **cur == *v) {
 			return
 		}
-		e.Changes = append(e.Changes, change(field, clockText(*cur), v.String(), a, when))
+		e.Changes = append(e.Changes, change(field, b.clockText(*cur), v.String(), a, when))
 		*cur = v
 	}
-	setClock("开场时间", &e.OpenAt, pe.OpenAt)
-	setClock("开演时间", &e.StartAt, pe.StartAt)
+	setClock(b.msgs().ChangeFieldOpenTime(), &e.OpenAt, pe.OpenAt)
+	setClock(b.msgs().ChangeFieldStartTime(), &e.StartAt, pe.StartAt)
 	if e.VenueName == "" && pe.Venue != "" {
-		e.Changes = append(e.Changes, change("场地", "未公布", pe.Venue, a, when))
+		e.Changes = append(e.Changes, change(b.msgs().ChangeFieldVenue(), b.msgs().CommonTba(), pe.Venue, a, when))
 		e.VenueName, e.Prefecture = pe.Venue, pe.Prefecture
 		b.setVenue(e)
-		removeNote(e, noVenue)
+		removeNote(e, b.msgs().NoteNoVenue())
 	}
 	if e.TicketURL == "" && pe.TicketURL != "" {
 		e.TicketURL = pe.TicketURL
@@ -282,7 +286,7 @@ func (b *builder) update(e *domain.PublicEvent, a domain.PublicAnnouncement, whe
 		e.Title = pe.Tour
 	}
 	if pe.Status != "" && pe.Status != e.Status {
-		e.Changes = append(e.Changes, change("状态", e.Status.Label(), pe.Status.Label(), a, when))
+		e.Changes = append(e.Changes, change(b.msgs().ChangeFieldStatus(), e.Status.Label(b.opt.Locale), pe.Status.Label(b.opt.Locale), a, when))
 		e.Status = pe.Status
 	}
 	if when.After(e.UpdatedAt) {
@@ -296,9 +300,9 @@ func roundKey(artistIDs []string, tour string, r parser.Round) string {
 	return strings.Join(ids, ",") + "|" + normalize.Key(tour) + "|" + string(r.Type) + "|" + normalize.Key(r.Name)
 }
 
-func momentText(m *domain.Moment) string {
+func (b *builder) momentText(m *domain.Moment) string {
 	if m == nil {
-		return "未公布"
+		return b.msgs().CommonTba()
 	}
 	return m.String()
 }
@@ -327,15 +331,15 @@ func (b *builder) mergeRound(a domain.PublicAnnouncement, when time.Time, pr par
 			if v == nil || (*cur != nil && (*cur).Equal(*v)) {
 				return
 			}
-			r.Changes = append(r.Changes, change(field, momentText(*cur), v.String(), a, when))
+			r.Changes = append(r.Changes, change(field, b.momentText(*cur), v.String(), a, when))
 			*cur = v
 		}
-		set("受付开始", &r.OpensAt, pr.OpensAt)
-		set("受付截止", &r.ClosesAt, pr.ClosesAt)
-		set("结果公布", &r.ResultAt, pr.ResultAt)
+		set(b.msgs().ChangeFieldOpens(), &r.OpensAt, pr.OpensAt)
+		set(b.msgs().ChangeFieldCloses(), &r.ClosesAt, pr.ClosesAt)
+		set(b.msgs().ChangeFieldResults(), &r.ResultAt, pr.ResultAt)
 		if pr.URL != "" && pr.URL != r.PurchaseURL {
 			if r.PurchaseURL != "" {
-				r.Changes = append(r.Changes, change("购票链接", r.PurchaseURL, pr.URL, a, when))
+				r.Changes = append(r.Changes, change(b.msgs().ChangeFieldTicketUrl(), r.PurchaseURL, pr.URL, a, when))
 			}
 			r.PurchaseURL = pr.URL
 		}
@@ -364,8 +368,8 @@ func (b *builder) linkRounds() {
 			}
 		}
 		if len(r.EventIDs) == 0 {
-			if !contains(r.ReviewNotes, "未关联到具体场次") {
-				r.ReviewNotes = append(r.ReviewNotes, "未关联到具体场次")
+			if note := b.msgs().NoteUnlinkedRound(); !contains(r.ReviewNotes, note) {
+				r.ReviewNotes = append(r.ReviewNotes, note)
 			}
 			r.NeedsReview = true
 		}
@@ -378,8 +382,6 @@ func (b *builder) linkRounds() {
 		}
 	}
 }
-
-const noVenue = "场地未公布"
 
 func removeNote(e *domain.PublicEvent, n string) {
 	var keep []string

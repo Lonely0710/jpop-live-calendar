@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="164" height="314" viewBox="0 0 164 314">
+<!-- Wizard bitmap of the Windows installer (164x314, the size MUI draws on
+     the finish page), in the paper-and-type artwork of assets/readme/hero.svg
+     and assets/dmg/background.svg. Rendered to wizard.bmp by
+     scripts/render-artwork.sh; scripts/windows-installer.sh hands it to NSIS. -->
+<defs>
+  <filter id="grain" x="0" y="0" width="100%" height="100%">
+    <feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="2" stitchTiles="stitch"/>
+    <feColorMatrix values="0 0 0 0 .45 0 0 0 0 .38 0 0 0 0 .3 0 0 0 .22 0"/>
+  </filter>
+</defs>
+<rect width="164" height="314" fill="#F3ECDF"/>
+<rect width="164" height="314" filter="url(#grain)"/>
+
+<!-- ticket edges -->
+<rect x="9.5" y="9.5" width="145" height="295" rx="3" fill="none" stroke="#2E2A28" stroke-width="1"/>
+<rect x="14.5" y="14.5" width="135" height="285" rx="2" fill="none" stroke="#2E2A28" stroke-width=".6" opacity=".45"/>
+
+<g font-family="'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="7.5" letter-spacing="1.7" fill="#8C847B" text-anchor="middle">
+  <text x="82" y="42">JPOP LIVE CALENDAR</text>
+</g>
+
+<g font-family="'Hiragino Mincho ProN','Yu Mincho','Songti SC','Noto Serif CJK SC','Noto Serif SC',serif" font-weight="800" text-anchor="middle">
+  <text x="82" y="104" font-size="25" fill="#2E2A28">Live</text>
+  <text x="82" y="136" font-size="25" font-style="italic" fill="#E85A3A">Calendar</text>
+</g>
+
+<line x1="32" y1="158" x2="132" y2="158" stroke="#2E2A28" stroke-width=".9"/>
+<line x1="32" y1="161" x2="132" y2="161" stroke="#2E2A28" stroke-width=".5" opacity=".6"/>
+
+<g font-family="'Hiragino Mincho ProN','Yu Mincho','Songti SC','Noto Serif CJK SC','Noto Serif SC',serif" font-size="11" fill="#5B544F" text-anchor="middle">
+  <text x="82" y="188">日本音楽ライブ情報暦</text>
+</g>
+
+<g fill="#2E2A28">
+  <rect x="32" y="204" width="1" height="42"/><rect x="35" y="204" width="3" height="42"/><rect x="40" y="204" width="1" height="42"/><rect x="43" y="204" width="2" height="42"/><rect x="47" y="204" width="1" height="42"/><rect x="50" y="204" width="3" height="42"/><rect x="55" y="204" width="1" height="42"/><rect x="58" y="204" width="1" height="42"/><rect x="61" y="204" width="3" height="42"/><rect x="66" y="204" width="2" height="42"/><rect x="70" y="204" width="1" height="42"/><rect x="73" y="204" width="3" height="42"/><rect x="78" y="204" width="1" height="42"/><rect x="81" y="204" width="2" height="42"/><rect x="85" y="204" width="1" height="42"/><rect x="88" y="204" width="3" height="42"/><rect x="93" y="204" width="1" height="42"/><rect x="96" y="204" width="1" height="42"/><rect x="99" y="204" width="2" height="42"/><rect x="103" y="204" width="3" height="42"/><rect x="108" y="204" width="1" height="42"/><rect x="111" y="204" width="2" height="42"/><rect x="115" y="204" width="1" height="42"/><rect x="118" y="204" width="3" height="42"/><rect x="123" y="204" width="1" height="42"/><rect x="126" y="204" width="2" height="42"/><rect x="130" y="204" width="1" height="42"/>
+</g>
+
+<g font-family="'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="7.5" letter-spacing="1.5" fill="#8C847B" text-anchor="middle">
+  <text x="82" y="272">VOL 1.1.0 · WINDOWS</text>
+</g>
+</svg>

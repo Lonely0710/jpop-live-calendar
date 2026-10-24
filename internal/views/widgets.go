@@ -87,6 +87,14 @@ func caption(c *ui.Context, s string) ui.Element {
 	return ui.Text(c, s).FontSize(theme.CaptionSize).TextColor(theme.TextSecondary)
 }
 
+// countLabel is the figure a row puts on its right, next to a Spacer ("36
+// shows", "締切 10/31 (土)"). It keeps to one line whatever the row is
+// squeezed to: the name on the left gives way, the count never breaks into
+// "36 / shows".
+func countLabel(c *ui.Context, s string) ui.Element {
+	return caption(c, s).SingleLine().Shrink(0)
+}
+
 // emptyState is the centered placeholder of a page without content.
 func emptyState(c *ui.Context, name icons.Name, title, body string) ui.Element {
 	return ui.Column(c).Grow(1).Center().Gap(10).Padding(32).Children(func() {

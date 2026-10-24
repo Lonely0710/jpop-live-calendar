@@ -5,6 +5,7 @@ mygo_windows_*.syso
 # Agent instructions and skills are local tooling, not part of the app.
 [Aa][Gg][Ee][Nn][Tt][Ss].[Mm][Dd]
 /.agents/
+/.workbuddy/
 
 # Website build output (GitHub Actions)
 /_site/

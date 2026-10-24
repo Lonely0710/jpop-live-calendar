@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"jpop-live-calendar/internal/domain"
+	"jpop-live-calendar/locales"
 )
 
 // Website reads an official site.
@@ -66,7 +67,7 @@ func (Website) Fetch(ctx context.Context, src domain.SourceConfig, env Env) (Res
 	bodies := []struct{ url, body string }{{base, resp.Text}}
 	if src.Follow == "" {
 		if _, ok := between(resp.Text, src.Article.BodyStart, src.Article.BodyEnd); !ok && src.Article.BodyStart != "" {
-			res.Warnings = append(res.Warnings, "没有找到正文标记，已读取整页")
+			res.Warnings = append(res.Warnings, locales.SiteNoMarker())
 		}
 		res.Announcements = []domain.PublicAnnouncement{page(src.URL, resp.Text, src.Name)}
 		err := features(ctx, src, env, bodies, map[string]bool{src.URL: true}, &res, page)
@@ -74,7 +75,7 @@ func (Website) Fetch(ctx context.Context, src domain.SourceConfig, env Env) (Res
 	}
 	pattern, err := regexp.Compile(src.Follow)
 	if err != nil {
-		return res, fmt.Errorf("follow 正则无效：%w", err)
+		return res, fmt.Errorf("%s", locales.SiteBadFollow(err.Error()))
 	}
 	links := Links(resp.Text, base)
 	max := src.Article.MaxPerSync
@@ -100,7 +101,7 @@ func (Website) Fetch(ctx context.Context, src domain.SourceConfig, env Env) (Res
 		detail, err := env.Get.Get(ctx, l.URL)
 		switch {
 		case err != nil:
-			res.Warnings = append(res.Warnings, fmt.Sprintf("「%s」抓取失败：%v", l.Text, err))
+			res.Warnings = append(res.Warnings, locales.SiteItemFailed(l.Text, err.Error()))
 		case detail.NotModified:
 			res.Announcements = append(res.Announcements, domain.PublicAnnouncement{
 				SourceID: src.ID, URL: l.URL, Title: l.Text, FetchedAt: now, PublishedAt: now,
@@ -112,7 +113,7 @@ func (Website) Fetch(ctx context.Context, src domain.SourceConfig, env Env) (Res
 		}
 	}
 	if opened == 0 && src.Feature == "" {
-		res.Warnings = append(res.Warnings, "列表页里暂时没有符合 follow 规则的链接（没有新 Live，或页面结构已变化）")
+		res.Warnings = append(res.Warnings, locales.SiteNoLinks())
 	}
 	err = features(ctx, src, env, bodies, seen, &res, page)
 	return res, err
@@ -133,7 +134,7 @@ func features(ctx context.Context, src domain.SourceConfig, env Env, bodies []st
 	}
 	pattern, err := regexp.Compile(src.Feature)
 	if err != nil {
-		return fmt.Errorf("feature 正则无效：%w", err)
+		return fmt.Errorf("%s", locales.SiteBadFeature(err.Error()))
 	}
 	opened := 0
 	for _, b := range bodies {
@@ -153,7 +154,7 @@ func features(ctx context.Context, src domain.SourceConfig, env Env, bodies []st
 			detail, err := env.Get.Get(ctx, l.URL)
 			switch {
 			case err != nil:
-				res.Warnings = append(res.Warnings, fmt.Sprintf("巡演专题「%s」抓取失败：%v", l.URL, err))
+				res.Warnings = append(res.Warnings, locales.SiteFeatureFailed(l.URL, err.Error()))
 			case detail.NotModified:
 				res.Announcements = append(res.Announcements, domain.PublicAnnouncement{
 					SourceID: src.ID, URL: l.URL, Title: l.Text, FetchedAt: env.now(), PublishedAt: env.now(),

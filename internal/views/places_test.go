@@ -30,22 +30,22 @@ func TestPlaceFilters(t *testing.T) {
 	if !app.placeMatches(tokyo) || !app.placeMatches(osaka) {
 		t.Error("all places must match the defaults")
 	}
-	app.region = "关东"
+	app.region = "kanto"
 	if !app.placeMatches(tokyo) || app.placeMatches(osaka) {
-		t.Error("关东 should keep Tokyo and drop Osaka")
+		t.Error("kanto should keep Tokyo and drop Osaka")
 	}
-	app.region, app.city = allRegions, "大阪"
+	app.region, app.city = allRegions, "osaka"
 	if app.placeMatches(tokyo) || !app.placeMatches(osaka) {
-		t.Error("大阪 should keep Osaka and drop Tokyo")
+		t.Error("osaka should keep Osaka and drop Tokyo")
 	}
-	app.region, app.city = "关西（近畿）", "大阪"
+	app.region, app.city = "kansai", "osaka"
 	if !app.placeMatches(osaka) {
-		t.Error("关西 + 大阪 should keep Osaka")
+		t.Error("kansai + osaka should keep Osaka")
 	}
 	if app.placeMatches(tokyo) {
-		t.Error("关西 + 大阪 should drop Tokyo")
+		t.Error("kansai + osaka should drop Tokyo")
 	}
-	if !hasString(cityOptions("关东"), "东京") || hasString(cityOptions("关东"), "大阪") {
-		t.Error("关东 city options should be its capital only")
+	if !hasString(cityIDs("kanto"), "tokyo") || hasString(cityIDs("kanto"), "osaka") {
+		t.Error("kanto city options should be its capital only")
 	}
 }

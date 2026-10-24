@@ -196,6 +196,10 @@
     "group": "navigation"
   },
   {
+    "name": "globe",
+    "group": "navigation"
+  },
+  {
     "name": "home",
     "group": "views"
   },

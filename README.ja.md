@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <a href="#更新履歴"><img src="https://img.shields.io/badge/version-1.0.2-E85A3A?style=flat-square&labelColor=2E2A28" alt="バージョン 1.0.2"></a>
+  <a href="#更新履歴"><img src="https://img.shields.io/badge/version-1.1.0-E85A3A?style=flat-square&labelColor=2E2A28" alt="バージョン 1.1.0"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-2E2A28?style=flat-square" alt="ライセンス MIT"></a>
   <a href="https://go.dev"><img src="https://img.shields.io/badge/Go-1.27+-00ADD8?style=flat-square&logo=go&logoColor=white" alt="Go 1.27+"></a>
   <a href="https://github.com/egoist/mygo"><img src="https://img.shields.io/badge/MyGo-v0.5.5-3D86F5?style=flat-square&labelColor=2E2A28&logo=go&logoColor=white" alt="MyGo v0.5.5"></a>
@@ -22,7 +22,7 @@
 
 Live Calendar は、日本の音楽ライブの公演、抽選・先行受付、結果発表、一般発売を公式の告知からひとつのカレンダーにまとめる、macOS / Windows 向けのネイティブデスクトップアプリです。
 
-![月表示](assets/screenshots/month-live.png)
+![月表示](assets/screenshots/ja/month-live.png)
 
 ## 機能
 
@@ -43,6 +43,9 @@ Live Calendar は、日本の音楽ライブの公演、抽選・先行受付、
 <td width="50%" valign="top"><img src="packages/spotlight-icons/svg/sync.svg" width="20" height="20" align="absmiddle">&nbsp;&nbsp;<code>07</code>&nbsp;<b>バックグラウンド動作</b><br><sub>メニューバー（macOS）/ タスクトレイ（Windows）で同期を続け、抽選締切の 3 日前に通知します。</sub></td>
 <td width="50%" valign="top"><img src="packages/spotlight-icons/svg/download.svg" width="20" height="20" align="absmiddle">&nbsp;&nbsp;<code>08</code>&nbsp;<b>ローカルスナップショット</b><br><sub>起動時は前回の結果を表示し、裏で更新。一部のソースが失敗しても他に影響しません。</sub></td>
 </tr>
+<tr>
+<td width="50%" valign="top"><img src="packages/spotlight-icons/svg/globe.svg" width="20" height="20" align="absmiddle">&nbsp;&nbsp;<code>09</code>&nbsp;<b>表示言語</b><br><sub>システムに合わせるか、簡体中文・日本語・English から選択。画面、解析メモ、変更履歴もまとめて切り替わります。</sub></td>
+</tr>
 </table>
 
 <p align="center">
@@ -59,12 +62,12 @@ Live Calendar は、日本の音楽ライブの公演、抽選・先行受付、
 
 <table width="100%">
   <tr>
-    <td width="50%" align="center" valign="top"><b><small>FIG. 1</small> 詳細パネル</b><br><img src="assets/screenshots/inspector.png" width="100%" alt="詳細パネル：公演、チケット日程、変更履歴"></td>
-    <td width="50%" align="center" valign="top"><b><small>FIG. 2</small> 地図</b><br><img src="assets/screenshots/map.png" width="100%" alt="地図：都道府県別の公演数"></td>
+    <td width="50%" align="center" valign="top"><b><small>FIG. 1</small> 詳細パネル</b><br><img src="assets/screenshots/ja/inspector.png" width="100%" alt="詳細パネル：公演、チケット日程、変更履歴"></td>
+    <td width="50%" align="center" valign="top"><b><small>FIG. 2</small> 地図</b><br><img src="assets/screenshots/ja/map.png" width="100%" alt="地図：都道府県別の公演数"></td>
   </tr>
   <tr>
-    <td width="50%" align="center" valign="top"><b><small>FIG. 3</small> アーティスト</b><br><img src="assets/screenshots/artists-live.png" width="100%" alt="アーティスト：ツアー別に整理した公演"></td>
-    <td width="50%" align="center" valign="top"><b><small>FIG. 4</small> ソース</b><br><img src="assets/screenshots/sources.png" width="100%" alt="ソース：アーティスト別の同期状況"></td>
+    <td width="50%" align="center" valign="top"><b><small>FIG. 3</small> アーティスト</b><br><img src="assets/screenshots/ja/artists-live.png" width="100%" alt="アーティスト：ツアー別に整理した公演"></td>
+    <td width="50%" align="center" valign="top"><b><small>FIG. 4</small> ソース</b><br><img src="assets/screenshots/ja/sources.png" width="100%" alt="ソース：アーティスト別の同期状況"></td>
   </tr>
 </table>
 
@@ -137,7 +140,15 @@ artists:
     color: "#3975AB"     # 任意：テーマカラー
 ```
 
-すべての項目（`article` フィルター、`follow` / `feature` の正規表現、アバター設定など）は [`config/sources.yaml`](config/sources.yaml) のコメントを参照してください。アプリの「ソース」ページからも追加・無効化・削除でき、ファイルへ書き戻す際にコメントは保持されます。
+すべての項目（`article` フィルター、`follow` / `feature` の正規表現、アバター設定など）は [`config/sources.yaml`](config/sources.yaml) のコメントを参照してください。`name` / `note` は中国語の表記です。`name_ja` / `name_en`（`note` は `note_ja` / `note_en`）を書くと、表示言語に合わせてその言語で表示されます。アプリの「ソース」ページからも追加・無効化・削除でき、ファイルへ書き戻す際にコメントは保持されます。
+
+### アバター
+
+アバターは**写真優先・ジャケットは最後の手段**です。Deezer（`api.deezer.com`、アーティスト写真）→ QQ ミュージック（`c.y.qq.com`、アーティスト写真）→ iTunes（`itunes.apple.com`、ジャケット、600 px）の順に試します。いずれもアカウント不要で、名前と別名で厳密に照合します。
+
+最後がジャケットなのは、Apple の公開 API では `entity=musicArtist` が `artistId` / `artistLinkUrl` / ジャンルのみを返し、**画像フィールドが存在しない**ためです（`artworkUrl100` が付くのはアルバムと曲だけ）。Apple Music のページにあるアーティスト画像はトークンが必要な内部 API で、公開されていません。
+
+`api.deezer.com` は中国大陸から直結できないため、大陸では実際に QQ ミュージックの写真が使われます（このエンドポイントは Tencent が文書化していません。気になる場合は `avatars: itunes`）。`avatars:` の値は `deezer`（既定・写真優先）・`qq`（Deezer を飛ばす）・`itunes`（ジャケットのみ）・`off` です。
 
 ## ディレクトリ構成
 
@@ -180,6 +191,7 @@ mygoicons.Mono(c, icons.Calendar, 18)  // 単色。文字色に追従
 - 解析ルールは日本語告知のよくある書き方のみに対応しています。正確な情報は原文を確認してください。
 - 地図の精度は都道府県単位です。公演は会場の実際の位置ではなく、県庁所在地に表示されます。
 - Windows 版のトレイ、通知、タイトルバーは実機で十分に検証できていません。
+- 画面は簡体中文・日本語・English を切り替えられます。アーティスト名、ツアー、会場、告知本文、`sources.yaml` の名称は原文のまま表示します。
 
 ## 今後の予定
 
@@ -189,6 +201,7 @@ mygoicons.Mono(c, icons.Calendar, 18)  // 単色。文字色に追従
 
 ## 更新履歴
 
+- **1.1.0**（2026-10-25）：UI を簡体字中国語 / 日本語 / English に対応、インストーラと公式サイトも更新。
 - **1.0.2**（2026-10-23）：地図ページを追加。都道府県別に公演数を集計。
 - **1.0.1**（2026-10-22）：Windows に対応。アーティストページをツアー別に整理。解析の不具合をいくつか修正。アイコンを 63 個に拡充。
 - **1.0.0**：メニューバー常駐、締切通知、アプリ内でのソース追加、アバターのキャッシュ。

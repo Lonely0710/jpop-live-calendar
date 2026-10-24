@@ -11,7 +11,7 @@
 </style>
 <rect width="1200" height="500" rx="18" fill="#F3ECDF"/><rect width="1200" height="500" rx="18" filter="url(#n)"/>
 <g font-family="'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" letter-spacing="2" fill="#2E2A28">
-<text x="48" y="46">VOL. 1.0.2 · MACOS / WINDOWS · MIT</text><text x="1152" y="46" text-anchor="end">JAPANESE MUSIC LIVE CALENDAR</text></g>
+<text x="48" y="46">VOL. 1.1.0 · MACOS / WINDOWS · MIT</text><text x="1152" y="46" text-anchor="end">JAPANESE MUSIC LIVE CALENDAR</text></g>
 <line x1="48" y1="60" x2="1152" y2="60" stroke="#2E2A28"/>
 <g font-family="'Hiragino Mincho ProN','Yu Mincho','Songti SC','Noto Serif CJK SC','Noto Serif SC',serif" font-weight="800">
 <text x="44" y="205" font-size="118" fill="#2E2A28" letter-spacing="-3">Live</text>

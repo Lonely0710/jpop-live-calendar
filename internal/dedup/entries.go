@@ -5,12 +5,13 @@ import (
 	"strings"
 
 	"jpop-live-calendar/internal/domain"
+	"jpop-live-calendar/locales"
 )
 
 // Entries turns shows and ticket rounds into calendar entries: one for each
 // show day and one for each dated step of a round (受付开始, 受付截止,
 // 结果公布, 一般发售), sorted by date and time.
-func Entries(events []domain.PublicEvent, rounds []domain.PublicTicketRound, artists []domain.Artist, sourceNames map[string]string) []domain.Entry {
+func Entries(events []domain.PublicEvent, rounds []domain.PublicTicketRound, artists []domain.Artist, sourceNames map[string]string, locale string) []domain.Entry {
 	byID := map[string]domain.Artist{}
 	for _, a := range artists {
 		byID[a.ID] = a
@@ -57,7 +58,7 @@ func Entries(events []domain.PublicEvent, rounds []domain.PublicTicketRound, art
 			SourceIDs:   e.SourceIDs,
 			ArtistIDs:   e.ArtistIDs,
 			Search: strings.ToLower(strings.Join([]string{e.Title, e.Tour, as, e.VenueName, e.Prefecture,
-				sourceText(e.SourceIDs), domain.EntryLive.Label(), e.Status.Label(), strings.Join(e.Notes, " ")}, " ")),
+				sourceText(e.SourceIDs), domain.EntryLive.Label(locale), e.Status.Label(locale), strings.Join(e.Notes, " ")}, " ")),
 		})
 	}
 	for _, r := range rounds {
@@ -83,7 +84,7 @@ func Entries(events []domain.PublicEvent, rounds []domain.PublicTicketRound, art
 			}
 			return false
 		}
-		add := func(kind domain.EntryKind, m *domain.Moment, field suffix) {
+		add := func(kind domain.EntryKind, m *domain.Moment, field string) {
 			if m == nil {
 				return
 			}
@@ -101,22 +102,23 @@ func Entries(events []domain.PublicEvent, rounds []domain.PublicTicketRound, art
 				SourceIDs:   r.SourceIDs,
 				ArtistIDs:   r.ArtistIDs,
 				Search: strings.ToLower(strings.Join([]string{title, r.Tour, r.Name, as, strings.Join(venues, " "),
-					sourceText(r.SourceIDs), kind.Label(), r.Type.Label()}, " ")),
+					sourceText(r.SourceIDs), kind.Label(locale), r.Type.Label(locale)}, " ")),
 			})
 		}
 		open := domain.EntryLotteryOpen
 		if !r.Lottery {
 			open = domain.EntrySaleOpen
 		}
-		add(open, r.OpensAt, "受付开始")
-		add(domain.EntryLotteryClose, r.ClosesAt, "受付截止")
-		add(domain.EntryResult, r.ResultAt, "结果公布")
+		// The builder names a round's change fields in the language it
+		// builds in, so the entry has to look for the same names.
+		msgs := locales.In(locale)
+		add(open, r.OpensAt, msgs.ChangeFieldOpens())
+		add(domain.EntryLotteryClose, r.ClosesAt, msgs.ChangeFieldCloses())
+		add(domain.EntryResult, r.ResultAt, msgs.ChangeFieldResults())
 	}
 	sort.SliceStable(out, func(i, j int) bool { return Less(out[i], out[j]) })
 	return out
 }
-
-type suffix string
 
 var kindOrder = map[domain.EntryKind]int{}
 

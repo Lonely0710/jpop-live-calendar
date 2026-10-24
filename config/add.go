@@ -12,6 +12,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"jpop-live-calendar/internal/domain"
+	"jpop-live-calendar/locales"
 )
 
 // AddSource appends a source to the configuration file at path, keeping
@@ -32,7 +33,7 @@ func AddSource(path string, src domain.SourceConfig) (string, error) {
 	case strings.HasPrefix(path, Embedded):
 		// The user's file is broken and the app runs on the defaults:
 		// writing would replace the file being fixed.
-		return "", errors.New("配置文件有错误，未写入")
+		return "", errors.New(locales.ConfigBadFile())
 	default:
 		b, err := os.ReadFile(path)
 		if err != nil {
@@ -45,7 +46,7 @@ func AddSource(path string, src domain.SourceConfig) (string, error) {
 		return "", err
 	}
 	if _, err := Parse(out); err != nil {
-		return "", fmt.Errorf("添加后配置无效：%w", err)
+		return "", fmt.Errorf("%s", locales.ConfigInvalidAfterAdd(err.Error()))
 	}
 	if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
 		return "", err
@@ -78,7 +79,7 @@ type addedSource struct {
 // addSource appends one item to the sources list of a sources.yaml.
 func addSource(b []byte, src domain.SourceConfig) ([]byte, error) {
 	if src.ID == "" {
-		return nil, errors.New("数据源缺少 id")
+		return nil, errors.New(locales.ConfigSourceNoId())
 	}
 	cur, err := Parse(b)
 	if err != nil {
@@ -86,7 +87,7 @@ func addSource(b []byte, src domain.SourceConfig) ([]byte, error) {
 	}
 	for _, s := range cur.Sources {
 		if s.ID == src.ID {
-			return nil, fmt.Errorf("数据源 id %q 已存在", src.ID)
+			return nil, fmt.Errorf("%s", locales.ConfigSourceDupId(src.ID))
 		}
 	}
 	f := addedSource{
@@ -103,7 +104,7 @@ func addSource(b []byte, src domain.SourceConfig) ([]byte, error) {
 		return nil, err
 	}
 	if len(doc.Content) == 0 || doc.Content[0].Kind != yaml.MappingNode {
-		return nil, errors.New("配置文件不是映射")
+		return nil, errors.New(locales.ConfigNotMapping())
 	}
 	root := doc.Content[0]
 	at := -1
@@ -113,11 +114,11 @@ func addSource(b []byte, src domain.SourceConfig) ([]byte, error) {
 		}
 	}
 	if at < 0 {
-		return nil, errors.New("配置文件没有 sources 列表")
+		return nil, errors.New(locales.ConfigNoSources())
 	}
 	key, seq := root.Content[at], root.Content[at+1]
 	if seq.Kind == yaml.SequenceNode && seq.Style&yaml.FlowStyle != 0 && len(seq.Content) > 0 {
-		return nil, errors.New("配置文件的 sources 是行内格式，请在 sources.yaml 中手动添加")
+		return nil, errors.New(locales.ConfigInlineSources())
 	}
 	lines := strings.SplitAfter(string(b), "\n")
 	indent := "  "
@@ -131,7 +132,7 @@ func addSource(b []byte, src domain.SourceConfig) ([]byte, error) {
 		// sources: [] or a list with no items yet: write it below the key.
 		line := key.Line - 1
 		if line < 0 || line >= len(lines) {
-			return nil, errors.New("无法定位 sources 列表")
+			return nil, errors.New(locales.ConfigCannotLocate())
 		}
 		head := strings.TrimRight(lines[line], "\r\n")
 		// sources: [] carries no item; keep only the key.

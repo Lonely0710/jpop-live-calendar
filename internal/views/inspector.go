@@ -10,6 +10,7 @@ import (
 
 	"jpop-live-calendar/internal/domain"
 	"jpop-live-calendar/internal/theme"
+	"jpop-live-calendar/locales"
 )
 
 // inspectorPanel is the right column: the selected entry, or the entries
@@ -21,21 +22,21 @@ func (a *App) inspectorPanel(c *ui.Context) {
 			onMap := a.section == SectionMap
 			switch {
 			case ok:
-				back := "返回当天列表"
+				back := locales.InspectorBackDay()
 				if onMap {
-					back = "返回地区列表"
+					back = locales.InspectorBackRegion()
 				}
 				if capsuleIcon(c, icons.Previous, back, false).Clicked() {
 					a.entryID = ""
 				}
 			case onMap && a.mapPref != "":
-				if capsuleIcon(c, icons.Previous, "返回日本全国", false).Clicked() {
+				if capsuleIcon(c, icons.Previous, locales.InspectorBackNational(), false).Clicked() {
 					a.mapPref = ""
 				}
 			}
 			ui.Row(c).Gap(6).AlignItems(ui.Center).Height(theme.CapsuleH - 4).Children(func() {
 				mygoicons.Image(c, icons.Info, 16)
-				ui.Text(c, "详情").Bold()
+				ui.Text(c, locales.InspectorTitle()).Bold()
 			})
 		})
 		if !ok {
@@ -66,12 +67,12 @@ func (a *App) dayInspector(c *ui.Context) {
 		ui.Row(c).Gap(6).AlignItems(ui.Center).Children(func() {
 			caption(c, weekdayName(d.Weekday())+" · Asia/Tokyo")
 			if d == a.today() {
-				ui.Text(c, "今天").FontSize(theme.CaptionSize).Bold().TextColor(theme.LiveCoral)
+				ui.Text(c, locales.CommonToday()).FontSize(theme.CaptionSize).Bold().TextColor(theme.LiveCoral)
 			}
 		})
 	})
 	if len(evs) == 0 {
-		emptyState(c, icons.Calendar, "当天没有公开事件", "选中日历中的日期或事件，查看 Live 场次、抽选受付与官方公告。")
+		emptyState(c, icons.Calendar, locales.InspectorEmptyTitle(), locales.InspectorEmptyBody())
 		return
 	}
 	ui.Scroll(c).Grow(1).Children(func() {
@@ -104,24 +105,24 @@ func (a *App) entryHeader(c *ui.Context, e domain.Entry, title, sub string) {
 		ui.Row(c).Gap(6).AlignItems(ui.Center).Wrap().Children(func() {
 			ui.Row(c).Gap(5).Padding(2, 8).Radius(10).Background(col.Alpha(0.15)).AlignItems(ui.Center).Children(func() {
 				mygoicons.Image(c, kindIcon(e.Kind), 14)
-				ui.Text(c, e.Kind.Label()).FontSize(theme.CaptionSize).Bold().TextColor(col.Mix(theme.InkCharcoal, 0.3))
+				ui.Text(c, e.Kind.Label(lang())).FontSize(theme.CaptionSize).Bold().TextColor(col.Mix(theme.InkCharcoal, 0.3))
 			})
 			if e.Status == domain.StatusPostponed || e.Status == domain.StatusCancelled || e.Status == domain.StatusSoldOut {
-				tag(c, e.Status.Label(), theme.StatusError)
+				tag(c, e.Status.Label(lang()), theme.StatusError)
 			}
 			if e.Changed {
-				tag(c, "有更新", theme.StatusInfo)
+				tag(c, locales.CalendarUpdated(), theme.StatusInfo)
 			}
 			if e.NeedsReview {
-				tag(c, "需确认", theme.StatusWarning)
+				tag(c, locales.CalendarNeedsReview(), theme.StatusWarning)
 			}
 		})
-		t := ui.Text(c, title).FontSize(17).Bold()
+		t := ui.Text(c, title).Lang("ja").FontSize(17).Bold()
 		if e.Status == domain.StatusCancelled {
 			t.Strikethrough()
 		}
 		if sub != "" {
-			ui.Text(c, sub).TextColor(theme.TextSecondary)
+			ui.Text(c, sub).Lang("ja").TextColor(theme.TextSecondary)
 		}
 	})
 }
@@ -156,15 +157,15 @@ func (a *App) eventInspector(c *ui.Context, e domain.Entry) {
 				c.Key("artist:" + id)
 				pal := theme.Artist(a.artistColor(id, ar.Name))
 				b := ui.ButtonBase(c).FillWidth().Padding(6, 8).Gap(10).Radius(theme.Radius).Justify(ui.Start).
-					Background(pal.Tint).Label("艺人 " + ar.Name)
+					Background(pal.Tint).Label(locales.InspectorArtistLabel(ar.Name))
 				if b.Hovered() {
 					b.Background(pal.Hover)
 				}
 				if b.Children(func() {
 					a.avatarView(c, id, ar.Name, 36)
 					ui.Column(c).Shrink(1).Gap(1).Children(func() {
-						ui.Text(c, ar.Name).Bold().TextColor(pal.Text).SingleLine()
-						caption(c, "查看该艺人的全部巡演").SingleLine()
+						ui.Text(c, ar.Name).Lang("ja").Bold().TextColor(pal.Text).SingleLine()
+						caption(c, locales.InspectorArtistAll()).SingleLine()
 					})
 				}).Clicked() {
 					a.section, a.artistID = SectionArtists, id
@@ -173,40 +174,40 @@ func (a *App) eventInspector(c *ui.Context, e domain.Entry) {
 		})
 	}
 	ui.Column(c).Gap(10).Children(func() {
-		field(c, icons.Calendar, "日期", dayTitle(ev.StartDate), false)
-		times := "时间未公布"
+		field(c, icons.Calendar, locales.InspectorFieldDate(), dayTitle(ev.StartDate), false)
+		times := locales.CalendarTimeTba()
 		if ev.OpenAt != nil || ev.StartAt != nil {
-			times = fmt.Sprintf("开场 %s / 开演 %s", clockOr(ev.OpenAt), clockOr(ev.StartAt))
+			times = locales.InspectorTimes(clockOr(ev.OpenAt), clockOr(ev.StartAt))
 		}
-		field(c, icons.ShowTime, "开场 / 开演", times, false)
-		venue := "场地未公布"
+		field(c, icons.ShowTime, locales.InspectorFieldTimes(), times, false)
+		venue := locales.CalendarVenueTba()
 		if ev.VenueName != "" {
 			venue = ev.VenueName
 			if ev.Prefecture != "" {
 				venue = ev.Prefecture + " · " + venue
 			}
 		}
-		field(c, icons.Venue, "场地", venue, false)
-		field(c, icons.Live, "类型 / 状态", eventTypeLabel(ev.Type)+" · "+ev.Status.Label(), ev.Status != domain.StatusAnnounced)
+		field(c, icons.Venue, locales.InspectorFieldVenue(), venue, false)
+		field(c, icons.Live, locales.InspectorFieldTypeStatus(), eventTypeLabel(ev.Type)+" · "+ev.Status.Label(lang()), ev.Status != domain.StatusAnnounced)
 		if ev.Tour != "" && ev.Tour != ev.Title {
-			field(c, icons.Artist, "巡演", ev.Tour, false)
+			field(c, icons.Artist, locales.InspectorFieldTour(), ev.Tour, false)
 		}
 		for _, n := range ev.Notes {
-			field(c, icons.Info, "备注", n, false)
+			field(c, icons.Info, locales.InspectorFieldNotes(), n, false)
 		}
 	})
 	a.reviewBox(c, ev.ReviewNotes)
 	rounds := a.snap.RoundsFor(ev.ID)
-	section(c, fmt.Sprintf("票务节点（%d）", len(rounds)), func() {
+	section(c, locales.InspectorRounds(len(rounds)), func() {
 		if len(rounds) == 0 {
-			caption(c, "公告中还没有票务信息")
+			caption(c, locales.InspectorNoRounds())
 		}
 		for _, r := range rounds {
 			c.Key(r.ID)
 			a.roundCard(c, r)
 		}
 		if ev.TicketURL != "" && len(rounds) == 0 {
-			a.linkRow(c, "购票页面", ev.TicketURL)
+			a.linkRow(c, locales.InspectorTicketPage(), ev.TicketURL)
 		}
 	})
 	a.changeLog(c, ev.Changes)
@@ -215,7 +216,7 @@ func (a *App) eventInspector(c *ui.Context, e domain.Entry) {
 
 func clockOr(cl *domain.Clock) string {
 	if cl == nil {
-		return "未公布"
+		return locales.CommonTba()
 	}
 	return cl.String()
 }
@@ -226,23 +227,23 @@ func (a *App) roundCard(c *ui.Context, r domain.PublicTicketRound) {
 	now := a.opt.Now()
 	ended := a.endedRound(r)
 	b := ui.ButtonBase(c).Column().FillWidth().AlignItems(ui.Stretch).Padding(10, 12).Gap(4).Radius(theme.Radius).
-		Border(1, theme.MistGray).Label("票务 " + r.Name)
+		Border(1, theme.MistGray).Label(locales.InspectorRoundLabel(r.Name))
 	if b.Hovered() {
 		b.Background(theme.Hover.Alpha(0.5))
 	}
 	if b.Children(func() {
 		ui.Row(c).Gap(6).AlignItems(ui.Center).Children(func() {
 			dot(c, theme.StatusWarning, 6)
-			ui.Text(c, r.Name).Bold().Shrink(1)
+			ui.Text(c, r.Name).Lang("ja").Bold().Shrink(1)
 			ui.Spacer(c)
-			caption(c, lotteryLabel(r))
+			countLabel(c, lotteryLabel(r))
 		})
-		caption(c, fmt.Sprintf("受付 %s ~ %s", momentLabel(r.OpensAt), momentLabel(r.ClosesAt)))
+		caption(c, locales.InspectorRoundWindow(momentLabel(r.OpensAt), momentLabel(r.ClosesAt)))
 		if r.ClosesAt != nil {
-			caption(c, "截止"+countdownSuffix(countdown(r.ClosesAt, now)))
+			caption(c, locales.InspectorDeadline()+countdownSuffix(countdown(r.ClosesAt, now)))
 		}
 		if r.ResultAt != nil {
-			caption(c, "结果公布 "+momentLabel(r.ResultAt))
+			caption(c, locales.InspectorResultAt(momentLabel(r.ResultAt)))
 		}
 	}).Clicked() {
 		for _, k := range []domain.EntryKind{domain.EntryLotteryClose, domain.EntryLotteryOpen, domain.EntrySaleOpen, domain.EntryResult} {
@@ -267,9 +268,9 @@ func countdownSuffix(s string) string {
 
 func lotteryLabel(r domain.PublicTicketRound) string {
 	if r.Lottery {
-		return r.Type.Label() + " · 抽选"
+		return r.Type.Label(lang()) + locales.InspectorLotterySuffix()
 	}
-	return r.Type.Label() + " · 先着"
+	return r.Type.Label(lang()) + locales.InspectorFirstcomeSuffix()
 }
 
 func (a *App) roundInspector(c *ui.Context, e domain.Entry) {
@@ -284,21 +285,21 @@ func (a *App) roundInspector(c *ui.Context, e domain.Entry) {
 	}
 	a.entryHeader(c, e, r.Name, title)
 	ui.Column(c).Gap(10).Children(func() {
-		field(c, icons.Artist, "艺人", orDash(a.artistNames(r.ArtistIDs)), false)
-		field(c, icons.Price, "方式", lotteryLabel(r), false)
-		field(c, icons.PreorderStart, "受付开始", momentLabel(r.OpensAt)+countdownSuffix(countdown(r.OpensAt, now)), e.Kind == domain.EntryLotteryOpen || e.Kind == domain.EntrySaleOpen)
-		field(c, icons.PreorderEnd, "受付截止", momentLabel(r.ClosesAt)+countdownSuffix(countdown(r.ClosesAt, now)), true)
+		field(c, icons.Artist, locales.InspectorFieldArtist(), orDash(a.artistNames(r.ArtistIDs)), false)
+		field(c, icons.Price, locales.InspectorFieldMethod(), lotteryLabel(r), false)
+		field(c, icons.PreorderStart, locales.InspectorOpens(), momentLabel(r.OpensAt)+countdownSuffix(countdown(r.OpensAt, now)), e.Kind == domain.EntryLotteryOpen || e.Kind == domain.EntrySaleOpen)
+		field(c, icons.PreorderEnd, locales.InspectorCloses(), momentLabel(r.ClosesAt)+countdownSuffix(countdown(r.ClosesAt, now)), true)
 		if r.Lottery || r.ResultAt != nil {
-			field(c, icons.Result, "结果公布", momentLabel(r.ResultAt), e.Kind == domain.EntryResult)
+			field(c, icons.Result, locales.InspectorResults(), momentLabel(r.ResultAt), e.Kind == domain.EntryResult)
 		}
 		if r.PurchaseURL != "" {
-			a.linkRow(c, "购票 / 受付页面", r.PurchaseURL)
+			a.linkRow(c, locales.InspectorPurchasePage(), r.PurchaseURL)
 		}
 	})
 	a.reviewBox(c, r.ReviewNotes)
-	section(c, fmt.Sprintf("对应场次（%d）", len(r.EventIDs)), func() {
+	section(c, locales.InspectorEvents(len(r.EventIDs)), func() {
 		if len(r.EventIDs) == 0 {
-			caption(c, "公告没有写明对应哪些场次")
+			caption(c, locales.InspectorNoEvents())
 		}
 		for _, id := range r.EventIDs {
 			ev, ok := a.snap.Event(id)
@@ -336,7 +337,7 @@ func (a *App) showRow(c *ui.Context, ev domain.PublicEvent, withTitle bool) {
 		where = ev.Prefecture + " · " + where
 	}
 	if where == "" {
-		where = "场地未公布"
+		where = locales.CalendarVenueTba()
 	}
 	if withTitle {
 		where = ev.Title + " · " + where
@@ -350,11 +351,11 @@ func (a *App) showRow(c *ui.Context, ev domain.PublicEvent, withTitle bool) {
 		ui.Box(c).Width(3).FillHeight().Background(col)
 		ui.Column(c).Gap(1).Shrink(1).Children(func() {
 			ui.Text(c, when).FontSize(theme.CaptionSize).Bold().SingleLine()
-			caption(c, where).SingleLine()
+			caption(c, where).Lang("ja").SingleLine()
 		})
 		ui.Spacer(c)
 		if ev.Status == domain.StatusPostponed || ev.Status == domain.StatusCancelled {
-			tag(c, ev.Status.Label(), theme.StatusError)
+			tag(c, ev.Status.Label(lang()), theme.StatusError)
 		}
 	}).Clicked() {
 		a.showEntry("live:" + ev.ID)
@@ -366,7 +367,7 @@ func (a *App) showRow(c *ui.Context, ev domain.PublicEvent, withTitle bool) {
 
 func orDash(s string) string {
 	if s == "" {
-		return "未识别"
+		return locales.InspectorUnknown()
 	}
 	return s
 }
@@ -386,12 +387,12 @@ func (a *App) reviewBox(c *ui.Context, notes []string) {
 	ui.Column(c).Gap(4).Padding(10, 12).Radius(theme.Radius).Background(theme.StatusWarning.Alpha(0.12)).Children(func() {
 		ui.Row(c).Gap(6).AlignItems(ui.Center).Children(func() {
 			mygoicons.Image(c, icons.ParseError, 14)
-			ui.Text(c, "需要确认").FontSize(theme.CaptionSize).Bold()
+			ui.Text(c, locales.InspectorReviewTitle()).FontSize(theme.CaptionSize).Bold()
 		})
 		for _, n := range notes {
 			ui.Text(c, "· "+n).FontSize(theme.CaptionSize)
 		}
-		caption(c, "以下信息未经猜测补全，请以原文为准。")
+		caption(c, locales.InspectorReviewBody())
 	})
 }
 
@@ -400,9 +401,9 @@ func (a *App) linkRow(c *ui.Context, label, url string) {
 		mygoicons.Image(c, icons.Link, 16)
 		ui.Link(c, label, url).Tooltip(url).Shrink(1)
 		ui.Spacer(c)
-		if iconButton(c, icons.ViewSwitch, "复制链接 "+label, false, false).Clicked() {
+		if iconButton(c, icons.ViewSwitch, locales.InspectorCopyLink(label), false, false).Clicked() {
 			c.WriteClipboard(url)
-			c.Toast("已复制链接")
+			c.Toast(locales.InspectorCopied())
 		}
 	})
 }
@@ -411,7 +412,7 @@ func (a *App) changeLog(c *ui.Context, changes []domain.Change) {
 	if len(changes) == 0 {
 		return
 	}
-	disclosure(c, fmt.Sprintf("变更记录（%d）", len(changes)), &a.showChanges, func() {
+	disclosure(c, locales.InspectorChanges(len(changes)), &a.showChanges, func() {
 		for i := len(changes) - 1; i >= 0; i-- {
 			ch := changes[i]
 			c.Key(i)
@@ -423,7 +424,7 @@ func (a *App) changeLog(c *ui.Context, changes []domain.Change) {
 						ui.Text(c, ch.Old).FontSize(theme.CaptionSize).Strikethrough().TextColor(theme.TextSecondary)
 						ui.Text(c, "→ "+ch.New).FontSize(theme.CaptionSize)
 					})
-					caption(c, "公告发布于 "+stamp(ch.At))
+					caption(c, locales.InspectorAnnouncedAt(stamp(ch.At)))
 				})
 			})
 		}
@@ -455,16 +456,16 @@ func disclosure(c *ui.Context, title string, open *bool, fn func()) {
 // disclosure, in the system's monospaced font.
 func rawText(c *ui.Context, text string, open *bool) {
 	p := ui.CollapsibleBase(c, open)
-	tr := p.Trigger.AlignSelf(ui.Start).AlignItems(ui.Center).Gap(4).Padding(2, 6, 2, 0).Radius(6).Label("解析用文本")
+	tr := p.Trigger.AlignSelf(ui.Start).AlignItems(ui.Center).Gap(4).Padding(2, 6, 2, 0).Radius(6).Label(locales.InspectorParseText())
 	if tr.Hovered() {
 		tr.Background(theme.GlassHover)
 	}
 	tr.Children(func() {
 		mygoicons.Image(c, icons.Next, 11).Opacity(0.7).Rotate(90 * p.Progress())
-		ui.Text(c, "解析用文本").FontSize(theme.CaptionSize).TextColor(theme.TextSecondary)
+		ui.Text(c, locales.InspectorParseText()).FontSize(theme.CaptionSize).TextColor(theme.TextSecondary)
 	})
 	if panel := p.Panel(func() {
-		ui.Text(c, text).Font("monospace").FontSize(11).TextColor(theme.TextSecondary).Selectable()
+		ui.Text(c, text).Lang("ja").Font("monospace").FontSize(11).TextColor(theme.TextSecondary).Selectable()
 	}); panel.Valid() {
 		panel.Padding(4, 8, 6).Radius(6).Background(theme.CloudWhite.Alpha(0.7))
 	}
@@ -473,7 +474,7 @@ func rawText(c *ui.Context, text string, open *bool) {
 // sourceList shows the announcements a record came from, each with its
 // source, its publish and fetch time, and links to the original.
 func (a *App) sourceList(c *ui.Context, annIDs []string) {
-	disclosure(c, fmt.Sprintf("来源公告（%d）", len(annIDs)), &a.showSources, func() {
+	disclosure(c, locales.InspectorSourceAnnouncements(len(annIDs)), &a.showSources, func() {
 		for i := len(annIDs) - 1; i >= 0; i-- {
 			an, ok := a.snap.Announcement(annIDs[i])
 			if !ok {
@@ -485,9 +486,9 @@ func (a *App) sourceList(c *ui.Context, annIDs []string) {
 					mygoicons.Image(c, sourceKindIcon(a.sourceKind(an.SourceID)), 14)
 					caption(c, a.sourceName(an.SourceID)).Bold()
 				})
-				ui.Text(c, an.Title).FontSize(12.5).MaxLines(3)
-				caption(c, "发布 "+stamp(an.PublishedAt))
-				caption(c, fmt.Sprintf("抓取 %s · 第 %d 版", stamp(an.FetchedAt), an.Revision))
+				ui.Text(c, an.Title).Lang("ja").FontSize(12.5).MaxLines(3)
+				caption(c, locales.InspectorPublished(stamp(an.PublishedAt)))
+				caption(c, locales.InspectorFetched(stamp(an.FetchedAt), an.Revision))
 				open := a.rawOpen[an.ID]
 				if open == nil {
 					open = new(bool)
@@ -495,16 +496,16 @@ func (a *App) sourceList(c *ui.Context, annIDs []string) {
 				}
 				rawText(c, an.RawText, open)
 				if a.sourceKind(an.SourceID) == domain.SourceDemo {
-					caption(c, "演示数据：内容为虚构，没有原文页面")
+					caption(c, locales.InspectorDemo())
 					return
 				}
 				ui.Row(c).Gap(6).AlignItems(ui.Center).Children(func() {
-					if iconTextButton(c, icons.Open, "打开原文").Tooltip(an.URL).Clicked() {
+					if iconTextButton(c, icons.Open, locales.InspectorOpenSource()).Tooltip(an.URL).Clicked() {
 						c.OpenURL(an.URL)
 					}
-					if iconButton(c, icons.ViewSwitch, "复制原文链接", false, false).Clicked() {
+					if iconButton(c, icons.ViewSwitch, locales.InspectorCopySource(), false, false).Clicked() {
 						c.WriteClipboard(an.URL)
-						c.Toast("已复制原文链接")
+						c.Toast(locales.InspectorSourceCopied())
 					}
 				})
 			})

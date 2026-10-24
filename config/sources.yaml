@@ -32,18 +32,27 @@
 #            …/json/v2/artist/<目录>/information/…（NEWS，公告层，可用 keywords / exclude 过滤）。
 # interval: 自动同步间隔（Go duration，如 30m、6h、12h）；0 或不写表示只手动同步。
 # note:     说明（显示在“数据源”页），例如为什么默认关闭。
+# name / note 是界面源语言（简体中文）的写法。可选的 name_ja / name_en 与
+# note_ja / note_en 是同一数据源在日文、英文界面里的写法；切换界面语言后显示
+# 对应语言的那一条，没写的就显示 name / note 原文。自己新增的数据源不用写。
 
 sources:
   - id: demo
     name: 演示数据（虚构）
+    name_ja: 'デモデータ（架空）'
+    name_en: 'Demo data (fictional)'
     kind: demo
     enabled: false
     interval: 0
     note: 虚构示例数据，用于体验界面；与真实数据并列显示。
+    note_ja: '架空のサンプルデータ。画面を試すためのもので、実際のデータと並べて表示されます。'
+    note_en: 'Fictional sample data for trying the interface; shown alongside real data.'
 
   # ── 米津玄師 ──
   - id: official-yonezu
     name: 米津玄師 官网 LIVE
+    name_ja: '米津玄師 公式 LIVE'
+    name_en: '米津玄師 Official LIVE'
     kind: website
     layer: live
     artist: 米津玄師
@@ -58,6 +67,8 @@ sources:
 
   - id: official-yonezu-news
     name: 米津玄師 官网 NEWS（全部资讯）
+    name_ja: '米津玄師 公式 NEWS（すべて）'
+    name_en: '米津玄師 Official NEWS (all news)'
     kind: website
     layer: news
     artist: 米津玄師
@@ -74,6 +85,8 @@ sources:
   # ── Official髭男dism ──
   - id: official-higedan
     name: Official髭男dism 官网 LIVE
+    name_ja: 'Official髭男dism 公式 LIVE'
+    name_en: 'Official髭男dism Official LIVE'
     kind: website
     layer: live
     artist: Official髭男dism
@@ -88,6 +101,8 @@ sources:
 
   - id: official-higedan-news
     name: Official髭男dism 官网 NEWS
+    name_ja: 'Official髭男dism 公式 NEWS'
+    name_en: 'Official髭男dism Official NEWS'
     kind: website
     layer: news
     artist: Official髭男dism
@@ -102,6 +117,8 @@ sources:
   # 官方站维护 / 改版时的备用：只读厂牌 NEWS，不替代官方 LIVE 日程与抽选。
   - id: official-higedan-label-news
     name: Official髭男dism 厂牌 NEWS（备用）
+    name_ja: 'Official髭男dism レーベル NEWS（予備）'
+    name_en: 'Official髭男dism Label NEWS (backup)'
     kind: rss
     layer: news
     artist: Official髭男dism
@@ -109,6 +126,8 @@ sources:
     enabled: false
     interval: 6h
     note: 仅厂牌新闻，可能缺少完整的 LIVE 日程与抽选；官方站维护时可启用。
+    note_ja: 'レーベルのニュースのみのため、LIVE 日程や抽選の情報が欠けることがあります。公式サイトのメンテナンス中に有効にしてください。'
+    note_en: 'Label news only: LIVE dates and lotteries may be missing. Turn it on while the official site is under maintenance.'
     article:
       enabled: true
       include: 'Official髭男dism|OFFICIAL HIGE DANDISM'
@@ -122,6 +141,8 @@ sources:
   # ── Mrs. GREEN APPLE ──
   - id: official-mga
     name: Mrs. GREEN APPLE 官网 Schedule
+    name_ja: 'Mrs. GREEN APPLE 公式 Schedule'
+    name_en: 'Mrs. GREEN APPLE Official Schedule'
     kind: website
     layer: live
     artist: Mrs. GREEN APPLE
@@ -137,6 +158,8 @@ sources:
   # ── RADWIMPS ──
   - id: official-radwimps
     name: RADWIMPS 官网 LIVE
+    name_ja: 'RADWIMPS 公式 LIVE'
+    name_en: 'RADWIMPS Official LIVE'
     kind: website
     layer: live
     artist: RADWIMPS
@@ -151,6 +174,8 @@ sources:
   # ── back number ──
   - id: official-backnumber
     name: back number 官网 LIVE/EVENT
+    name_ja: 'back number 公式 LIVE/EVENT'
+    name_en: 'back number Official LIVE/EVENT'
     kind: website
     layer: live
     artist: back number
@@ -164,6 +189,8 @@ sources:
 
   - id: official-backnumber-news
     name: back number 官网 NEWS
+    name_ja: 'back number 公式 NEWS'
+    name_en: 'back number Official NEWS'
     kind: website
     layer: news
     artist: back number
@@ -180,6 +207,8 @@ sources:
   # ── Sony Music 艺人：官网的 LIVE / NEWS 页由浏览器从 Sony Music 公开接口加载，这里直接读同一份 JSON ──
   - id: official-ryokushaka
     name: 緑黄色社会 官网 LIVE（Sony Music 接口）
+    name_ja: '緑黄色社会 公式 LIVE（Sony Music API）'
+    name_en: '緑黄色社会 Official LIVE (Sony Music API)'
     kind: api
     layer: live
     artist: 緑黄色社会
@@ -189,6 +218,8 @@ sources:
 
   - id: official-ryokushaka-news
     name: 緑黄色社会 官网 NEWS（Sony Music 接口）
+    name_ja: '緑黄色社会 公式 NEWS（Sony Music API）'
+    name_en: '緑黄色社会 Official NEWS (Sony Music API)'
     kind: api
     layer: news
     artist: 緑黄色社会
@@ -201,6 +232,8 @@ sources:
 
   - id: official-yoasobi
     name: YOASOBI 官网 LIVE（Sony Music 接口）
+    name_ja: 'YOASOBI 公式 LIVE（Sony Music API）'
+    name_en: 'YOASOBI Official LIVE (Sony Music API)'
     kind: api
     layer: live
     artist: YOASOBI
@@ -210,6 +243,8 @@ sources:
 
   - id: official-yoasobi-news
     name: YOASOBI 官网 NEWS（Sony Music 接口）
+    name_ja: 'YOASOBI 公式 NEWS（Sony Music API）'
+    name_en: 'YOASOBI Official NEWS (Sony Music API)'
     kind: api
     layer: news
     artist: YOASOBI
@@ -222,6 +257,8 @@ sources:
 
   - id: official-yuuri
     name: 優里 官网 LIVE（Sony Music 接口）
+    name_ja: '優里 公式 LIVE（Sony Music API）'
+    name_en: '優里 Official LIVE (Sony Music API)'
     kind: api
     layer: live
     artist: 優里
@@ -231,6 +268,8 @@ sources:
 
   - id: official-yuuri-news
     name: 優里 官网 NEWS（Sony Music 接口）
+    name_ja: '優里 公式 NEWS（Sony Music API）'
+    name_en: '優里 Official NEWS (Sony Music API)'
     kind: api
     layer: news
     artist: 優里
@@ -243,6 +282,8 @@ sources:
 
   - id: official-aimer
     name: Aimer 官网 LIVE（Sony Music 接口）
+    name_ja: 'Aimer 公式 LIVE（Sony Music API）'
+    name_en: 'Aimer Official LIVE (Sony Music API)'
     kind: api
     layer: live
     artist: Aimer
@@ -252,6 +293,8 @@ sources:
 
   - id: official-aimer-news
     name: Aimer 官网 NEWS（Sony Music 接口）
+    name_ja: 'Aimer 公式 NEWS（Sony Music API）'
+    name_en: 'Aimer Official NEWS (Sony Music API)'
     kind: api
     layer: news
     artist: Aimer
@@ -264,6 +307,8 @@ sources:
 
   - id: official-natori
     name: なとり LIVE/EVENT（Sony Music 接口）
+    name_ja: 'なとり LIVE/EVENT（Sony Music API）'
+    name_en: 'なとり LIVE/EVENT (Sony Music API)'
     kind: api
     layer: live
     artist: なとり
@@ -273,6 +318,8 @@ sources:
 
   - id: official-natori-news
     name: なとり NEWS（Sony Music 接口）
+    name_ja: 'なとり NEWS（Sony Music API）'
+    name_en: 'なとり NEWS (Sony Music API)'
     kind: api
     layer: news
     artist: なとり
@@ -285,6 +332,8 @@ sources:
 
   - id: official-milet
     name: milet 官网 LIVE（Sony Music 接口）
+    name_ja: 'milet 公式 LIVE（Sony Music API）'
+    name_en: 'milet Official LIVE (Sony Music API)'
     kind: api
     layer: live
     artist: milet
@@ -294,6 +343,8 @@ sources:
 
   - id: official-milet-news
     name: milet 官网 NEWS（Sony Music 接口）
+    name_ja: 'milet 公式 NEWS（Sony Music API）'
+    name_en: 'milet Official NEWS (Sony Music API)'
     kind: api
     layer: news
     artist: milet
@@ -306,6 +357,8 @@ sources:
 
   - id: official-kinggnu
     name: King Gnu 官网 LIVE（Sony Music 接口）
+    name_ja: 'King Gnu 公式 LIVE（Sony Music API）'
+    name_en: 'King Gnu Official LIVE (Sony Music API)'
     kind: api
     layer: live
     artist: King Gnu
@@ -315,6 +368,8 @@ sources:
 
   - id: official-kinggnu-news
     name: King Gnu 官网 NEWS（Sony Music 接口）
+    name_ja: 'King Gnu 公式 NEWS（Sony Music API）'
+    name_en: 'King Gnu Official NEWS (Sony Music API)'
     kind: api
     layer: news
     artist: King Gnu
@@ -340,6 +395,8 @@ sources:
   # ── 藤井風 ──
   - id: official-fujiikaze
     name: 藤井風 官网 TOUR
+    name_ja: '藤井風 公式 TOUR'
+    name_en: '藤井風 Official TOUR'
     kind: website
     layer: live
     artist: 藤井風
@@ -353,6 +410,8 @@ sources:
 
   - id: official-fujiikaze-news
     name: 藤井風 官网 NEWS
+    name_ja: '藤井風 公式 NEWS'
+    name_en: '藤井風 Official NEWS'
     kind: website
     layer: news
     artist: 藤井風
@@ -370,6 +429,8 @@ sources:
   # ── 星野源 ──
   - id: official-hoshinogen
     name: 星野源 官网 TICKET
+    name_ja: '星野源 公式 TICKET'
+    name_en: '星野源 Official TICKET'
     kind: website
     layer: news
     artist: 星野源
@@ -377,6 +438,8 @@ sources:
     enabled: true
     interval: 6h
     note: 官网没有 LIVE 日程，改读 TICKET 公告：受付、抽选、一般发售与公演信息。
+    note_ja: '公式サイトに LIVE 日程がないため、TICKET のお知らせを読みます：受付・抽選・一般発売・公演情報。'
+    note_en: 'The official site has no LIVE schedule, so this reads TICKET news: application windows, lotteries, general sales and show details.'
     follow: '^https://www\.hoshinogen\.com/ticket/detail/\?id=\d+$'
     article:
       exclude: [グッズ, GOODS, Live in Cinemas, 上映]
@@ -385,6 +448,8 @@ sources:
 
   - id: official-hoshinogen-news
     name: 星野源 官网 NEWS
+    name_ja: '星野源 公式 NEWS'
+    name_en: '星野源 Official NEWS'
     kind: website
     layer: news
     artist: 星野源
@@ -401,6 +466,8 @@ sources:
   # ── Vaundy ──
   - id: official-vaundy
     name: Vaundy 官网 LIVE
+    name_ja: 'Vaundy 公式 LIVE'
+    name_en: 'Vaundy Official LIVE'
     kind: website
     layer: live
     artist: Vaundy
@@ -416,6 +483,8 @@ sources:
 
   - id: official-vaundy-news
     name: Vaundy 官网 NEWS
+    name_ja: 'Vaundy 公式 NEWS'
+    name_en: 'Vaundy Official NEWS'
     kind: website
     layer: news
     artist: Vaundy
@@ -433,6 +502,8 @@ sources:
   # ── Ado ──
   - id: official-ado
     name: Ado 官方站点
+    name_ja: 'Ado 公式サイト'
+    name_en: 'Ado Official site'
     kind: website
     layer: live
     artist: Ado
@@ -440,11 +511,15 @@ sources:
     enabled: false
     interval: 12h
     note: 新官网由 JavaScript 渲染（Sheeta），服务端 HTML 无内容；改用下面的官方 NEWS。
+    note_ja: '新しい公式サイトは JavaScript（Sheeta）で描画され、サーバー側の HTML に中身がありません。下の公式 NEWS を使ってください。'
+    note_en: 'The new official site is drawn by JavaScript (Sheeta) with nothing in its server HTML; use the official NEWS source below instead.'
     article:
       delay: 2s
 
   - id: official-ado-news
     name: Ado NEWS（Universal Music 官方艺人页）
+    name_ja: 'Ado NEWS（Universal Music 公式アーティストページ）'
+    name_en: 'Ado NEWS (Universal Music artist page)'
     kind: website
     layer: news
     artist: Ado
@@ -461,6 +536,8 @@ sources:
   # ── ZUTOMAYO ──
   - id: official-zutomayo
     name: ZUTOMAYO 官网 LIVE
+    name_ja: 'ZUTOMAYO 公式 LIVE'
+    name_en: 'ZUTOMAYO Official LIVE'
     kind: website
     layer: live
     artist: ZUTOMAYO
@@ -479,6 +556,8 @@ sources:
   # 场馆与时间分散在多行，会覆盖正确的开演时间。
   - id: official-yorushika
     name: ヨルシカ 官网 LIVE
+    name_ja: 'ヨルシカ 公式 LIVE'
+    name_en: 'ヨルシカ Official LIVE'
     kind: website
     layer: live
     artist: ヨルシカ
@@ -493,6 +572,8 @@ sources:
   # 官方站维护 / 改版时的备用：只读 Universal 厂牌 NEWS，不替代官方 LIVE 日程与抽选。
   - id: official-yorushika-label-news
     name: ヨルシカ 厂牌 NEWS（备用）
+    name_ja: 'ヨルシカ レーベル NEWS（予備）'
+    name_en: 'ヨルシカ Label NEWS (backup)'
     kind: rss
     layer: news
     artist: ヨルシカ
@@ -500,6 +581,8 @@ sources:
     enabled: false
     interval: 6h
     note: 仅 Universal 厂牌新闻，可能缺少完整的 LIVE 日程与抽选；官方站维护时可启用。
+    note_ja: 'Universal レーベルのニュースのみのため、LIVE 日程や抽選の情報が欠けることがあります。公式サイトのメンテナンス中に有効にしてください。'
+    note_en: 'Universal label news only: LIVE dates and lotteries may be missing. Turn it on while the official site is under maintenance.'
     article:
       enabled: true
       include: 'ヨルシカ|Yorushika'
@@ -513,6 +596,8 @@ sources:
   # ── あたらよ ──
   - id: official-atarayo
     name: あたらよ 官网 LIVE
+    name_ja: 'あたらよ 公式 LIVE'
+    name_en: 'あたらよ Official LIVE'
     kind: website
     layer: live
     artist: あたらよ
@@ -527,6 +612,8 @@ sources:
   # ── 美波 ──
   - id: official-minami
     name: 美波 官网 LIVE SCHEDULE
+    name_ja: '美波 公式 LIVE SCHEDULE'
+    name_en: '美波 Official LIVE SCHEDULE'
     kind: website
     layer: live
     artist: 美波
@@ -536,9 +623,16 @@ sources:
     article:
       delay: 2s
 
-# 头像：deezer（默认）= 按艺人名与别名调用 Deezer 公开搜索接口（api.deezer.com，
-#   无需账号，每个艺人最多 3 次请求、每秒至多 1 次）取得头像；off = 不联网查找头像，
-#   只用下面配置的 avatar_url / color，其余艺人按名字生成颜色。
+# 头像：都是免账号的公开接口，按艺人名与别名查找，每秒至多 1 次请求。照片优先，
+#   封面兜底——Apple 的公开接口不提供艺人照片，只有专辑封面。
+#   deezer（默认）  依次试 Deezer（api.deezer.com，艺人照片）→ QQ 音乐（c.y.qq.com，
+#                   艺人照片，国内可直连）→ iTunes（itunes.apple.com，专辑封面）。
+#                   api.deezer.com 在中国大陆直连不通，所以国内实际用的是 QQ 的照片。
+#   qq              只用 QQ 音乐 → iTunes，不再先试 Deezer（省掉一次超时）。
+#   itunes          只用 iTunes 的专辑封面。
+#   off             不联网查找，只用下面配置的 avatar_url / color，其余艺人按名字生成颜色。
+#   QQ 音乐这个接口腾讯没有公开文档；用的是专辑封面时，圆形里就是那张封面，
+#   主题色仍取自图里面积最大的色块。
 avatars: deezer
 
 # 艺人名与别名：同一艺人的不同写法会合并为一个艺人。

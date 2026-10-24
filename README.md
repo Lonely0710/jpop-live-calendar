@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <a href="#更新记录"><img src="https://img.shields.io/badge/version-1.0.2-E85A3A?style=flat-square&labelColor=2E2A28" alt="版本 1.0.2"></a>
+  <a href="#更新记录"><img src="https://img.shields.io/badge/version-1.1.0-E85A3A?style=flat-square&labelColor=2E2A28" alt="版本 1.1.0"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-2E2A28?style=flat-square" alt="MIT"></a>
   <a href="https://go.dev"><img src="https://img.shields.io/badge/Go-1.27+-00ADD8?style=flat-square&logo=go&logoColor=white" alt="Go 1.27+"></a>
   <a href="https://github.com/egoist/mygo"><img src="https://img.shields.io/badge/MyGo-v0.5.5-3D86F5?style=flat-square&labelColor=2E2A28&logo=go&logoColor=white" alt="MyGo v0.5.5"></a>
@@ -22,7 +22,7 @@
 
 Live Calendar 是一款 macOS / Windows 原生桌面应用，把日本音乐的 Live 场次、抽选 / 先行受付、结果公布和一般发售，从官方公告整理成一张日历。
 
-![月视图](assets/screenshots/month-live.png)
+![月视图](assets/screenshots/zh/month-live.png)
 
 ## 功能
 
@@ -43,6 +43,9 @@ Live Calendar 是一款 macOS / Windows 原生桌面应用，把日本音乐的 
 <td width="50%" valign="top"><img src="packages/spotlight-icons/svg/sync.svg" width="20" height="20" align="absmiddle">&nbsp;&nbsp;<code>07</code>&nbsp;<b>后台运行</b><br><sub>菜单栏（macOS）/ 系统托盘（Windows）常驻同步，抽选截止前 3 天通知。</sub></td>
 <td width="50%" valign="top"><img src="packages/spotlight-icons/svg/download.svg" width="20" height="20" align="absmiddle">&nbsp;&nbsp;<code>08</code>&nbsp;<b>本地快照</b><br><sub>启动时先显示上次结果再后台更新；单个数据源出错互不影响。</sub></td>
 </tr>
+<tr>
+<td width="50%" valign="top"><img src="packages/spotlight-icons/svg/globe.svg" width="20" height="20" align="absmiddle">&nbsp;&nbsp;<code>09</code>&nbsp;<b>界面语言</b><br><sub>跟随系统，或手动选择简体中文、日本語、English；界面、解析提示与变更记录一并切换。</sub></td>
+</tr>
 </table>
 
 <p align="center">
@@ -59,12 +62,12 @@ Live Calendar 是一款 macOS / Windows 原生桌面应用，把日本音乐的 
 
 <table width="100%">
   <tr>
-    <td width="50%" align="center" valign="top"><b><small>FIG. 1</small> 详情面板</b><br><img src="assets/screenshots/inspector.png" width="100%" alt="详情面板：场次、票务节点与变更记录"></td>
-    <td width="50%" align="center" valign="top"><b><small>FIG. 2</small> 地图</b><br><img src="assets/screenshots/map.png" width="100%" alt="地图：按都道府县统计 Live"></td>
+    <td width="50%" align="center" valign="top"><b><small>FIG. 1</small> 详情面板</b><br><img src="assets/screenshots/zh/inspector.png" width="100%" alt="详情面板：场次、票务节点与变更记录"></td>
+    <td width="50%" align="center" valign="top"><b><small>FIG. 2</small> 地图</b><br><img src="assets/screenshots/zh/map.png" width="100%" alt="地图：按都道府县统计 Live"></td>
   </tr>
   <tr>
-    <td width="50%" align="center" valign="top"><b><small>FIG. 3</small> 艺人</b><br><img src="assets/screenshots/artists-live.png" width="100%" alt="艺人页：按巡演整理场次"></td>
-    <td width="50%" align="center" valign="top"><b><small>FIG. 4</small> 数据源</b><br><img src="assets/screenshots/sources.png" width="100%" alt="数据源页：按艺人分组的同步状态"></td>
+    <td width="50%" align="center" valign="top"><b><small>FIG. 3</small> 艺人</b><br><img src="assets/screenshots/zh/artists-live.png" width="100%" alt="艺人页：按巡演整理场次"></td>
+    <td width="50%" align="center" valign="top"><b><small>FIG. 4</small> 数据源</b><br><img src="assets/screenshots/zh/sources.png" width="100%" alt="数据源页：按艺人分组的同步状态"></td>
   </tr>
 </table>
 
@@ -137,7 +140,15 @@ artists:
     color: "#3975AB"     # 可选：主题色
 ```
 
-完整字段（`article` 过滤、`follow` / `feature` 正则、头像设置等）见 [`config/sources.yaml`](config/sources.yaml) 的注释。也可以在应用的「数据源」页新增、停用或删除来源，写回文件时会保留注释。
+完整字段（`article` 过滤、`follow` / `feature` 正则、头像设置等）见 [`config/sources.yaml`](config/sources.yaml) 的注释。`name` / `note` 是中文写法，另写 `name_ja` / `name_en`（`note` 同理写 `note_ja` / `note_en`）后，切换界面语言时显示对应语言。也可以在应用的「数据源」页新增、停用或删除来源，写回文件时会保留注释。
+
+### 头像
+
+头像**照片优先、封面兜底**：依次查 Deezer（`api.deezer.com`，艺人照片）→ QQ 音乐（`c.y.qq.com`，艺人照片）→ iTunes（`itunes.apple.com`，专辑封面，600 px）。三者都免账号、都按艺人名与别名精确匹配。
+
+为什么最后一档是封面：Apple 的公开接口（Search / Lookup API）里，`entity=musicArtist` 只返回 `artistId` / `artistLinkUrl` / 流派，**根本没有图片字段**；只有专辑和单曲才带 `artworkUrl100`。Apple Music 网页上的艺人头像走的是需要 token 的内部接口，用不了。要找艺人照片只能是 Deezer 或 QQ 音乐。
+
+`api.deezer.com` 在中国大陆直连不通，所以国内实际拿到的是 QQ 音乐的艺人照片（腾讯没公开这个接口的文档，介意就写 `avatars: itunes`）。`avatars:` 的取值：`deezer`（默认，照片优先）、`qq`（跳过 Deezer，直接 QQ → iTunes）、`itunes`（只用 Apple 封面）、`off`（不联网，只用 `avatar_url` / `color`）。
 
 ## 项目结构
 
@@ -180,6 +191,7 @@ mygoicons.Mono(c, icons.Calendar, 18)  // 单色，跟随文字颜色
 - 解析规则只覆盖日文公告的常见写法，结果以原文为准。
 - 地图只精确到都道府县，场次标在县厅所在地，而非场馆的实际位置。
 - Windows 版的托盘、通知和标题栏尚未在真机上完整验证。
+- 界面语言在简体中文、日本語和 English 之间切换；艺人名、巡演、场馆、公告原文和 `sources.yaml` 中的名称保持原文，不翻译。
 
 ## 路线图
 
@@ -189,6 +201,7 @@ mygoicons.Mono(c, icons.Calendar, 18)  // 单色，跟随文字颜色
 
 ## 更新记录
 
+- **1.1.0**（2026-10-25）：界面支持简体中文 / 日本語 / English，安装包与官网同步更新。
 - **1.0.2**（2026-10-23）：新增地图页，按都道府县统计 Live。
 - **1.0.1**（2026-10-22）：支持 Windows；艺人页按巡演分组；修正若干解析问题；图标增至 63 个。
 - **1.0.0**：菜单栏常驻、截止提醒、在应用内新增数据源、头像缓存。

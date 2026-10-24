@@ -9,6 +9,7 @@ import (
 
 	"jpop-live-calendar/internal/domain"
 	"jpop-live-calendar/internal/theme"
+	"jpop-live-calendar/locales"
 )
 
 // Reminder is one system notification: a ticket deadline about to pass.
@@ -108,13 +109,13 @@ func (a *App) deadlineReminders(now time.Time) []Reminder {
 		if _, ok := a.notified[id]; ok {
 			continue
 		}
-		label := shortDay(e.Date) + " 截止"
+		label := locales.ReminderLabel(shortDay(e.Date))
 		if e.At != nil {
-			label = shortDay(e.Date) + " " + e.At.String() + " 截止"
+			label = locales.ReminderLabelAt(shortDay(e.Date), e.At.String())
 		}
 		dues = append(dues, due{at: at, r: Reminder{
 			ID:       id,
-			Title:    "抽选截止提醒",
+			Title:    locales.ReminderTitle(),
 			Subtitle: e.Title,
 			Body:     label + " · " + countdown(&domain.Moment{Date: e.Date, Clock: e.At}, now),
 			EntryID:  e.ID,

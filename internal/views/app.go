@@ -27,6 +27,7 @@ import (
 	"jpop-live-calendar/internal/dedup"
 	"jpop-live-calendar/internal/domain"
 	"jpop-live-calendar/internal/theme"
+	"jpop-live-calendar/locales"
 )
 
 // Section is the page the sidebar chose.
@@ -50,7 +51,17 @@ const (
 	ModeAgenda
 )
 
-var modeLabels = []string{"月", "周", "日", "列表"}
+func modeLabel(m Mode) string {
+	switch m {
+	case ModeWeek:
+		return locales.ModeWeek()
+	case ModeDay:
+		return locales.ModeDay()
+	case ModeAgenda:
+		return locales.ModeAgenda()
+	}
+	return locales.ModeMonth()
+}
 
 // Search date scopes.
 const (
@@ -59,7 +70,19 @@ const (
 	ScopePast
 )
 
-var scopeLabels = []string{"全部日期", "今天起", "已过去"}
+func scopeLabel(scope int) string {
+	switch scope {
+	case ScopeUpcoming:
+		return locales.ScopeToday()
+	case ScopePast:
+		return locales.ScopePast()
+	}
+	return locales.ScopeAll()
+}
+
+func scopeLabels() []string {
+	return []string{scopeLabel(ScopeAll), scopeLabel(ScopeUpcoming), scopeLabel(ScopePast)}
+}
 
 // Options wires the App to its environment; the zero value works offline
 // with the demo source.
@@ -71,6 +94,19 @@ type Options struct {
 	Catalog   *catalog.Catalog
 	Scheduler *crawler.Scheduler
 	Version   string
+
+	// Locale is the language the UI shows, as resolved from the system or
+	// the user's choice; "" is the source language, zh-Hans. LocalePref is
+	// the choice saved by the user ("" follows the system). SetLocale applies
+	// a choice through MyGo; SaveLocale keeps it for the next launch.
+	Locale     string
+	LocalePref string
+	SetLocale  func(string)
+	SaveLocale func(string) error
+
+	// ConfigErr is the error of a sources.yaml that failed to load; the app
+	// then runs on the built-in defaults and shows this on the sources page.
+	ConfigErr error
 
 	// Avatars holds the artists' pictures and theme colors; AvatarGetters
 	// finds them when Start runs (none: no lookups, as in tests).
@@ -121,6 +157,9 @@ type App struct {
 	sideHide     bool    // the sidebar is collapsed
 	sideShown    float32 // how far the sidebar is shown this frame, 0 to 1
 	userOpen     bool
+	langOpen     bool    // the language popover is open
+	lang         string  // the language the UI shows
+	langChoice   string  // the user's choice; "" follows the system
 	sideWidth    float32 // expanded sidebar width, dragged by its edge
 	inspectWidth float32 // inspector width, dragged by its edge
 
@@ -178,15 +217,20 @@ func New(opt Options) *App {
 	if opt.Config.Sources == nil {
 		opt.Config = config.Default()
 	}
+	if opt.Locale == "" {
+		opt.Locale = "zh-Hans"
+	}
 	if opt.Catalog == nil {
-		opt.Catalog = catalog.New(dedup.Options{Artists: opt.Config.Artists, SourceNames: sourceNames(opt.Config.Sources)})
+		opt.Catalog = catalog.New(dedup.Options{Artists: opt.Config.Artists, SourceNames: sourceNames(opt.Config.Sources), Locale: opt.Locale})
+	} else {
+		opt.Catalog.SetLocale(opt.Locale)
 	}
 	if opt.Scheduler == nil {
 		opt.Scheduler = crawler.New(opt.Catalog, opt.Config.Sources)
 		opt.Scheduler.Now = opt.Now
 	}
 	if opt.Version == "" {
-		opt.Version = "1.0.2"
+		opt.Version = "1.1.0"
 	}
 	if opt.Avatars == nil {
 		opt.Avatars = avatar.NewStore()
@@ -213,6 +257,7 @@ func New(opt Options) *App {
 		notified[id] = at
 	}
 	a := &App{opt: opt, cursor: today, selected: today, inspector: true,
+		lang: opt.Locale, langChoice: opt.LocalePref,
 		sourceOff: map[string]*bool{}, srcOn: map[string]*bool{}, rawOpen: map[string]*bool{}, tourOpen: map[string]*bool{}, tourPick: map[string]string{}, deleteOpen: map[string]*bool{}, showSources: true, showChanges: true,
 		bitmaps: map[string]*ui.Bitmap{}, avatarSVGs: map[string]*ui.SVG{}, colors: map[string]ui.Color{}, pins: map[string]bool{},
 		notified: notified, sourceForm: newSourceDraft(), region: allRegions, city: allCities,
@@ -241,10 +286,19 @@ func New(opt Options) *App {
 	return a
 }
 
+// sourceNames maps each source to the text its search matches: the name
+// in every language it is written in, so a search finds a source whatever
+// language the interface shows.
 func sourceNames(srcs []domain.SourceConfig) map[string]string {
 	m := map[string]string{}
 	for _, s := range srcs {
-		m[s.ID] = s.Name
+		all := []string{s.Name}
+		for _, tag := range localeChoices {
+			if name := s.DisplayName(tag); name != s.Name {
+				all = append(all, name)
+			}
+		}
+		m[s.ID] = strings.Join(all, " ")
 	}
 	return m
 }
@@ -609,6 +663,18 @@ func (a *App) inspectorShown() bool { return a.inspector && a.hasInspector() }
 // hasInspector reports whether the page has the inspector on its right.
 func (a *App) hasInspector() bool { return a.section == SectionCalendar || a.section == SectionMap }
 
+// sheetWidth is the width of the Cloud White sheet the page is drawn on,
+// from the window's width as View lays it out.
+func (a *App) sheetWidth(c *ui.Context) float32 {
+	w, _ := c.Size()
+	side := theme.RailWidth + (a.sideWidth-theme.RailWidth)*a.sideShown
+	w -= 2*theme.PaneInset + side + 2*theme.PaneGap
+	if a.inspectorShown() {
+		w -= a.inspectWidth
+	}
+	return w
+}
+
 // sideResizer is the sidebar's right edge: drag it, or focus it and use the
 // arrows, to change the expanded sidebar's width. It is hidden while the
 // sidebar collapses to its rail.
@@ -618,7 +684,7 @@ func (a *App) sideResizer(c *ui.Context, sideW float32, shown float32) {
 	}
 	h := ui.Box(c).Absolute().Left(theme.PaneInset + sideW - 3).Top(0).FillHeight().Width(6).
 		Cursor(ui.CursorResizeEW).Focusable().Role(ui.RoleSplitter).
-		Label("调整侧边栏宽度").Tooltip("拖动调整侧边栏宽度；聚焦后按 ←/→")
+		Label(locales.SidebarResizerLabel()).Tooltip(locales.SidebarResizerTooltip())
 	if dx, _, ok := h.Dragged(); ok && dx != 0 {
 		a.sideWidth = clampWidth(a.sideWidth+dx, 180, 340)
 	}
@@ -639,7 +705,7 @@ func (a *App) sideResizer(c *ui.Context, sideW float32, shown float32) {
 func (a *App) inspectorResizer(c *ui.Context) {
 	h := ui.Box(c).Absolute().Left(0).Top(0).FillHeight().Width(6).
 		Cursor(ui.CursorResizeEW).Focusable().Role(ui.RoleSplitter).
-		Label("调整详情面板宽度").Tooltip("拖动调整详情面板宽度；聚焦后按 ←/→")
+		Label(locales.InspectorResizerLabel()).Tooltip(locales.InspectorResizerTooltip())
 	if dx, _, ok := h.Dragged(); ok && dx != 0 {
 		a.inspectWidth = clampWidth(a.inspectWidth-dx, 260, 400)
 	}

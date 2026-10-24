@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="420" viewBox="0 0 680 420">
+<!-- Disk image window background (680x420 points), same paper, grain and
+     type as assets/readme/hero.svg. Rendered to background.png (1x) and
+     background@2x.png by scripts/dmg-background.sh; scripts/dmg_layout.py
+     places the app and the Applications link on the two empty zones. -->
+<defs>
+  <filter id="grain" x="0" y="0" width="100%" height="100%">
+    <feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="2" stitchTiles="stitch"/>
+    <feColorMatrix values="0 0 0 0 .45 0 0 0 0 .38 0 0 0 0 .3 0 0 0 .22 0"/>
+  </filter>
+</defs>
+<rect width="680" height="420" fill="#F3ECDF"/>
+<rect width="680" height="420" filter="url(#grain)"/>
+
+<!-- header -->
+<g font-family="'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="9.5" letter-spacing="1.7" fill="#5B544F">
+  <text x="32" y="29">LIVE CALENDAR · VOL 1.1.0</text>
+  <text x="648" y="29" text-anchor="end">JAPANESE MUSIC LIVE CALENDAR</text>
+</g>
+<line x1="32" y1="42" x2="648" y2="42" stroke="#2E2A28" stroke-width="1"/>
+
+<!-- title -->
+<g font-family="'Hiragino Mincho ProN','Yu Mincho','Songti SC','Noto Serif CJK SC','Noto Serif SC',serif" font-weight="800" font-size="42" letter-spacing="-1.2">
+  <text x="29" y="108" fill="#2E2A28">Live</text>
+  <text x="123" y="108" font-style="italic" fill="#E85A3A">Calendar</text>
+</g>
+<g font-family="'Hiragino Mincho ProN','Yu Mincho','Songti SC','Noto Serif CJK SC','Noto Serif SC',serif" font-size="12.5" fill="#2E2A28">
+  <text x="641" y="66" text-anchor="middle">日</text><text x="641" y="88" text-anchor="middle">本</text><text x="641" y="110" text-anchor="middle">音</text><text x="641" y="132" text-anchor="middle">楽</text><text x="641" y="154" text-anchor="middle">ラ</text><text x="641" y="176" text-anchor="middle">イ</text><text x="641" y="198" text-anchor="middle">ブ</text><text x="641" y="220" text-anchor="middle">情</text><text x="641" y="242" text-anchor="middle">報</text><text x="641" y="264" text-anchor="middle">暦</text>
+</g>
+<line x1="615" y1="54" x2="615" y2="272" stroke="#2E2A28" stroke-width=".8" opacity=".45"/>
+
+<!-- drag hint between the app and the Applications link -->
+<g text-anchor="middle">
+  <text x="337" y="180" font-family="-apple-system,BlinkMacSystemFont,'Hiragino Sans','PingFang SC','Noto Sans CJK SC',sans-serif" font-size="13" font-weight="600" fill="#2E2A28">拖入「应用程序」</text>
+  <text x="337" y="228" font-family="'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="8.5" letter-spacing="1.3" fill="#8C847B">DRAG INTO APPLICATIONS</text>
+</g>
+<g fill="none" stroke="#E85A3A" stroke-width="2.2" stroke-linecap="round">
+  <path d="M263 200.5 C 296 196.5, 366 203.5, 401 200"/>
+</g>
+<path d="M413 200 l -15 -7.5 l 0 15 z" fill="#E85A3A"/>
+<circle cx="256" cy="200" r="2.6" fill="#E85A3A" opacity=".55"/>
+
+<!-- footer -->
+<line x1="32" y1="352" x2="648" y2="352" stroke="#2E2A28" stroke-width="1"/>
+<line x1="32" y1="356" x2="648" y2="356" stroke="#2E2A28" stroke-width=".6"/>
+<g font-family="'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="8.5" letter-spacing="1.2" fill="#8C847B">
+  <text x="32" y="380">© 2026 LONELY YANG</text>
+  <text x="340" y="380" text-anchor="middle">BUILT WITH GO &amp; MYGO</text>
+  <text x="648" y="380" text-anchor="end">MADE FOR J-POP FANS</text>
+</g>
+</svg>

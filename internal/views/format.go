@@ -1,20 +1,35 @@
 package views
 
 import (
-	"fmt"
 	"time"
+
+	"github.com/egoist/mygo/i18n"
 
 	"jpop-live-calendar/internal/domain"
 	"jpop-live-calendar/internal/theme"
+	"jpop-live-calendar/locales"
 )
 
-var weekdayNames = [...]string{"周日", "周一", "周二", "周三", "周四", "周五", "周六"}
+// lang is the language the views say their messages in: the one MyGo
+// resolved from the system or the user's choice.
+func lang() string { return i18n.Locale() }
 
-func weekdayName(w time.Weekday) string { return weekdayNames[w] }
+func weekdayName(w time.Weekday) string {
+	names := [7]string{
+		locales.WeekdayLongSun(), locales.WeekdayLongMon(), locales.WeekdayLongTue(),
+		locales.WeekdayLongWed(), locales.WeekdayLongThu(), locales.WeekdayLongFri(),
+		locales.WeekdayLongSat(),
+	}
+	return names[int(w)%7]
+}
 
 // weekdayHeaders returns the column titles from theme.WeekStart.
 func weekdayHeaders() []string {
-	short := [...]string{"日", "一", "二", "三", "四", "五", "六"}
+	short := [7]string{
+		locales.WeekdayShortSun(), locales.WeekdayShortMon(), locales.WeekdayShortTue(),
+		locales.WeekdayShortWed(), locales.WeekdayShortThu(), locales.WeekdayShortFri(),
+		locales.WeekdayShortSat(),
+	}
 	out := make([]string, 7)
 	for i := range out {
 		out[i] = short[(int(theme.WeekStart)+i)%7]
@@ -22,35 +37,42 @@ func weekdayHeaders() []string {
 	return out
 }
 
-func monthTitle(d domain.Date) string { return fmt.Sprintf("%d年%d月", d.Year, int(d.Month)) }
-
-func dayTitle(d domain.Date) string {
-	return fmt.Sprintf("%d年%d月%d日 %s", d.Year, int(d.Month), d.Day, weekdayName(d.Weekday()))
+func dateOf(d domain.Date, skeleton string) string {
+	return i18n.FormatDate(lang(), d.Time(theme.DisplayZone), i18n.DateOptions{Skeleton: skeleton})
 }
 
-func shortDay(d domain.Date) string { return fmt.Sprintf("%d月%d日", int(d.Month), d.Day) }
+// monthTitle is the month's name with its year. The abbreviated month
+// ("Oct 2026") is what English writes; zh and ja are unchanged, and the
+// short form is what leaves room for the counts in the toolbar.
+func monthTitle(d domain.Date) string { return dateOf(d, "yMMM") }
+
+func dayTitle(d domain.Date) string { return dateOf(d, "yMMMMEEEEd") }
+
+func shortDay(d domain.Date) string { return dateOf(d, "MMMd") }
 
 func weekTitle(d domain.Date) string {
 	s := d.WeekStart(theme.WeekStart)
 	e := s.AddDays(6)
+	end := ""
 	switch {
 	case s.Year != e.Year:
-		return fmt.Sprintf("%d年%d月%d日 – %d年%d月%d日", s.Year, int(s.Month), s.Day, e.Year, int(e.Month), e.Day)
+		end = dateOf(e, "yMMMd")
 	case s.Month != e.Month:
-		return fmt.Sprintf("%d年%d月%d日 – %d月%d日", s.Year, int(s.Month), s.Day, int(e.Month), e.Day)
+		end = dateOf(e, "MMMd")
 	default:
-		return fmt.Sprintf("%d年%d月%d日 – %d日", s.Year, int(s.Month), s.Day, e.Day)
+		end = dateOf(e, "d")
 	}
+	return locales.DateRange(dateOf(s, "yMMMd"), end)
 }
 
 func (a *App) title() string {
 	switch a.section {
 	case SectionArtists:
-		return "艺人"
+		return locales.NavArtists()
 	case SectionSources:
-		return "数据源"
+		return locales.NavSources()
 	case SectionSettings:
-		return "设置"
+		return locales.NavSettings()
 	}
 	switch Mode(a.mode) {
 	case ModeWeek:
@@ -58,7 +80,7 @@ func (a *App) title() string {
 	case ModeDay:
 		return dayTitle(a.cursor)
 	case ModeAgenda:
-		return "从 " + shortDay(a.cursor) + " 起"
+		return locales.CalendarFromDate(shortDay(a.cursor))
 	}
 	return monthTitle(a.cursor)
 }
@@ -76,10 +98,10 @@ func (a *App) artistNames(ids []string) string {
 	return out
 }
 
-// momentLabel is "11月3日 周二 23:59", or "未公布".
+// momentLabel is "11月3日 周二 23:59", or the catalog's "TBA".
 func momentLabel(m *domain.Moment) string {
 	if m == nil {
-		return "未公布"
+		return locales.CommonTba()
 	}
 	s := shortDay(m.Date) + " " + weekdayName(m.Date.Weekday())
 	if m.Clock != nil {
@@ -91,7 +113,7 @@ func momentLabel(m *domain.Moment) string {
 // stamp formats a publish or fetch time.
 func stamp(t time.Time) string {
 	if t.IsZero() {
-		return "未知"
+		return locales.CommonUnknown()
 	}
 	return t.In(theme.DisplayZone).Format("2006-01-02 15:04")
 }
@@ -106,24 +128,24 @@ func countdown(m *domain.Moment, now time.Time) string {
 		at = at.Add(24*time.Hour - time.Second)
 	}
 	if at.Before(now) {
-		return "已过"
+		return locales.CalendarPast()
 	}
 	days := domain.DateOf(now, theme.DisplayZone).DaysUntil(m.Date)
 	if days == 0 {
 		if m.Clock != nil {
-			return fmt.Sprintf("还有 %.0f 小时", at.Sub(now).Hours())
+			return locales.CalendarCountdownHours(int(at.Sub(now).Hours() + 0.5))
 		}
-		return "今天"
+		return locales.CommonToday()
 	}
-	return fmt.Sprintf("还有 %d 天", days)
+	return locales.CalendarCountdownDays(days)
 }
 
 func eventTypeLabel(t domain.EventType) string {
 	switch t {
 	case domain.TypeFestival:
-		return "Fes / 对拼 / 活动出演"
+		return locales.EventTypeFestival()
 	case domain.TypeEvent:
-		return "活动"
+		return locales.EventTypeEvent()
 	}
-	return "单独公演 / 巡演"
+	return locales.EventTypeSolo()
 }

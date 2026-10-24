@@ -13,6 +13,7 @@ import (
 	"jpop-live-calendar/internal/domain"
 	"jpop-live-calendar/internal/geo"
 	"jpop-live-calendar/internal/theme"
+	"jpop-live-calendar/locales"
 )
 
 // The map page: Japan's prefectures shaded by how many Live shows they
@@ -31,7 +32,23 @@ const (
 	MapPast
 )
 
-var mapScopeLabels = []string{"今天起", "全部", "已结束"}
+func mapScopeLabel(scope int) string {
+	switch scope {
+	case MapAll:
+		return locales.MapScopeAll()
+	case MapPast:
+		return locales.MapScopePast()
+	}
+	return locales.MapScopeToday()
+}
+
+func mapScopeLabels() []string {
+	out := make([]string, 3)
+	for i := range out {
+		out[i] = mapScopeLabel(i)
+	}
+	return out
+}
 
 const (
 	mapMinZoom = 1
@@ -157,14 +174,14 @@ func (a *App) mapPage(c *ui.Context) {
 	st := a.mapStats()
 	ui.Column(c).Grow(1).Shrink(1).FillWidth().Padding(22, theme.ContentPadding+4).Gap(14).Children(func() {
 		ui.Row(c).Gap(12).AlignItems(ui.Center).Children(func() {
-			pageHeader(c, "地图")
-			ui.Row(c).Gap(8).Shrink(0).AlignItems(ui.Center).Tooltip("当前地图日期范围内的公开 Live 统计").Children(func() {
+			pageHeader(c, locales.MapTitle())
+			ui.Row(c).Gap(8).Shrink(0).AlignItems(ui.Center).Tooltip(locales.MapStatsTooltip()).Children(func() {
 				stat(c, fmt.Sprint(st.total), "Live")
 				divider(c)
-				stat(c, fmt.Sprint(len(st.prefs())), "都道府县")
+				stat(c, fmt.Sprint(len(st.prefs())), locales.MapPrefectures())
 			})
 			ui.Spacer(c)
-			ui.Segmented(c, &a.mapScope, mapScopeLabels...).Label("地图日期范围")
+			ui.Segmented(c, &a.mapScope, mapScopeLabels()...).Label(locales.MapDateRange())
 		})
 		card(c).Grow(1).Shrink(1).MinHeight(0).Background(mapSea).Clip().Children(func() {
 			a.mapCanvas(c, st)
@@ -283,7 +300,7 @@ func (a *App) mapCanvas(c *ui.Context, st mapStats) {
 	m := &a.mapCam
 	jp := geo.Japan()
 	box := ui.Box(c).Absolute().Left(0).Top(0).Right(0).Bottom(0).Focusable().Role(ui.RoleImage).
-		Label("日本地图：拖动移动，滚轮缩放，←/→ 切换都道府县，+/− 缩放，0 复位")
+		Label(locales.MapControlTooltip())
 	if m.pressed {
 		box.Cursor(ui.CursorGrabbing)
 	} else if m.hover >= 0 {
@@ -409,7 +426,7 @@ func (a *App) drawMap(p *ui.Painter, r ui.Rect, st mapStats, selected map[string
 		ir := ui.Rect{X: ox + in.X*s, Y: oy + in.Y*s, W: in.W * s, H: in.H * s}
 		p.Fill(ir, theme.CloudWhite.Alpha(0.6), 8)
 		p.StrokeDashed(ir, mapInsetCol, 8, 1)
-		p.Text(ir.X+10, ir.Y+8, "沖縄・奄美", 10.5, theme.TextSecondary)
+		p.Text(ir.X+10, ir.Y+8, locales.MapInset(), 10.5, theme.TextSecondary)
 
 		width := min(max(s*2.2, 0.6), 1.6)
 		for i, pr := range jp.Prefectures {
@@ -459,7 +476,7 @@ func (a *App) drawMap(p *ui.Painter, r ui.Rect, st mapStats, selected map[string
 			p.RichText(cx-w/2, cy-h/2, 0, label)
 			// Names show once the map is large enough to fit them.
 			if m.zoom >= 2.2 || selected[pr.Name] {
-				name := ui.Span{Text: geo.Suffixed(pr.Name), Size: 11, Weight: 600, Color: theme.InkCharcoal}
+				name := ui.Span{Text: prefLabel(pr.Name), Size: 11, Weight: 600, Color: theme.InkCharcoal}
 				nw, nh := p.MeasureText(0, name)
 				lr := ui.Rect{X: cx + rad + 4, Y: cy - nh/2 - 2, W: nw + 10, H: nh + 4}
 				p.Fill(lr, theme.CloudWhite.Alpha(0.9), 6)
@@ -469,11 +486,11 @@ func (a *App) drawMap(p *ui.Painter, r ui.Rect, st mapStats, selected map[string
 		// The prefecture under the pointer, named by the pointer.
 		if m.hover >= 0 {
 			pr := jp.Prefectures[m.hover]
-			text := geo.Suffixed(pr.Name)
+			text := prefLabel(pr.Name)
 			if n := len(st.byPref[pr.Name]); n > 0 {
-				text += fmt.Sprintf(" · %d 场", n)
+				text += locales.MapPrefShows(n)
 			} else {
-				text += " · 暂无 Live"
+				text += locales.MapNoLive()
 			}
 			span := ui.Span{Text: text, Size: 12, Weight: 600, Color: theme.CloudWhite}
 			w, h := p.MeasureText(0, span)
@@ -490,29 +507,29 @@ func (a *App) mapLegend(c *ui.Context, st mapStats) {
 	ui.Column(c).Absolute().Right(14+theme.ToolButton+6+12).Bottom(14).Padding(10, 12).Gap(6).Radius(theme.Radius).
 		Background(theme.CloudWhite.Alpha(0.92)).Border(1, theme.MistGray).Children(func() {
 		ui.Row(c).Gap(6).AlignItems(ui.Center).Children(func() {
-			caption(c, "少")
+			caption(c, locales.MapLegendLess())
 			for _, t := range []int{1, 2, 4, 8} {
 				most := max(st.max, 8)
 				ui.Box(c).Size(18, 10).Radius(3).Background(prefColor(t*most/8, most))
 			}
-			caption(c, "多")
+			caption(c, locales.MapLegendMore())
 			ui.Box(c).Width(6)
 			dot(c, theme.LiveCoral, 10)
-			caption(c, "场数")
+			caption(c, locales.MapLegendCount())
 		})
 		if n := len(st.unknown); n > 0 {
-			b := ui.ButtonBase(c).Row().Gap(6).AlignItems(ui.Center).Radius(4).Label(fmt.Sprintf("地区未公布 %d 场", n))
+			b := ui.ButtonBase(c).Row().Gap(6).AlignItems(ui.Center).Radius(4).Label(locales.MapUnknownButton(n))
 			if b.Hovered() {
 				b.Background(theme.Hover)
 			}
 			if b.Children(func() {
 				mygoicons.Image(c, icons.Venue, 13)
-				caption(c, fmt.Sprintf("地区未公布 %d 场（不在地图上）", n))
+				caption(c, locales.MapUnknownCaption(n))
 			}).Clicked() {
 				a.selectPref(mapUnknown)
 			}
 		}
-		ui.Text(c, "底图：地球地图日本（国土地理院）").FontSize(9.5).TextColor(theme.TextDisabled)
+		ui.Text(c, locales.MapSource()).FontSize(9.5).TextColor(theme.TextDisabled)
 	})
 }
 
@@ -521,13 +538,13 @@ func (a *App) mapControls(c *ui.Context) {
 	m := &a.mapCam
 	ui.Column(c).Absolute().Right(14).Bottom(14).Padding(3).Gap(2).Radius(theme.Radius).
 		Background(theme.CloudWhite.Alpha(0.92)).Border(1, theme.MistGray).Children(func() {
-		if iconButton(c, icons.Add, "放大 (+)", false, m.zoom >= mapMaxZoom).Clicked() {
+		if iconButton(c, icons.Add, locales.MapZoomIn(), false, m.zoom >= mapMaxZoom).Clicked() {
 			m.zoomAt(1.5, m.box.W/2, m.box.H/2)
 		}
-		if iconButton(c, icons.Remove, "缩小 (−)", false, m.zoom <= mapMinZoom).Clicked() {
+		if iconButton(c, icons.Remove, locales.MapZoomOut(), false, m.zoom <= mapMinZoom).Clicked() {
 			m.zoomAt(1/1.5, m.box.W/2, m.box.H/2)
 		}
-		if iconButton(c, icons.Home, "显示全国 (0)", false, m.zoom <= mapMinZoom).Clicked() {
+		if iconButton(c, icons.Home, locales.MapReset(), false, m.zoom <= mapMinZoom).Clicked() {
 			m.reset()
 		}
 	})
@@ -537,18 +554,18 @@ func (a *App) mapControls(c *ui.Context) {
 // prefecture's shows, or the shows without a known prefecture.
 func (a *App) mapInspector(c *ui.Context) {
 	st := a.mapStats()
-	scope := mapScopeLabels[a.mapScope]
+	scope := mapScopeLabel(a.mapScope)
 	switch a.mapPref {
 	case "":
 		ui.Column(c).Padding(0, 18, 14).Gap(4).BorderWidth(0, 0, 1, 0).BorderColor(theme.GlassLine).Children(func() {
-			ui.Text(c, "日本全国").FontSize(24).Bold()
-			caption(c, fmt.Sprintf("%s · %d 场 Live · %d 个都道府县", scope, st.total, len(st.prefs())))
+			ui.Text(c, locales.MapNational()).FontSize(24).Bold()
+			caption(c, locales.MapNationalSummary(scope, st.total, len(st.prefs())))
 		})
 		if st.total == 0 {
-			emptyState(c, icons.MapJapan, "没有符合条件的 Live", "调整日期范围、搜索或筛选后，这里会按地区列出各都道府县的 Live。")
+			emptyState(c, icons.MapJapan, locales.MapEmptyTitle(), locales.MapEmptyBody())
 			return
 		}
-		ui.Scroll(c).Grow(1).Label("各地区 Live").Children(func() {
+		ui.Scroll(c).Grow(1).Label(locales.MapRegionsLabel()).Children(func() {
 			ui.Column(c).Padding(10, 12, 14).Gap(4).Children(func() {
 				for _, r := range japanRegions {
 					n := 0
@@ -558,47 +575,47 @@ func (a *App) mapInspector(c *ui.Context) {
 					if n == 0 {
 						continue
 					}
-					c.Key("region:" + r.label)
+					c.Key("region:" + r.id)
 					ui.Row(c).Padding(8, 6, 2).Gap(6).AlignItems(ui.Center).Children(func() {
-						ui.Text(c, r.label).FontSize(theme.CaptionSize).Bold().TextColor(theme.TextSecondary)
+						ui.Text(c, regionLabel(r.id)).FontSize(theme.CaptionSize).Bold().TextColor(theme.TextSecondary)
 						ui.Spacer(c)
-						caption(c, fmt.Sprintf("%d 场", n))
+						caption(c, locales.CalendarLivesCount(n))
 					})
 					for _, p := range r.prefectures {
 						if k := len(st.byPref[p]); k > 0 {
-							a.prefRow(c, p, geo.Suffixed(p), k, st.max)
+							a.prefRow(c, p, prefLabel(p), k, st.max)
 						}
 					}
 				}
 				if n := len(st.unknown); n > 0 {
 					ui.Box(c).Height(6)
-					a.prefRow(c, mapUnknown, "地区未公布", n, 0)
+					a.prefRow(c, mapUnknown, locales.MapUnknown(), n, 0)
 				}
 			})
 		})
 	default:
-		title, sub := "地区未公布", "公告里没有写明都道府县，不在地图上标注"
+		title, sub := locales.MapUnknown(), locales.MapUnknownBody()
 		evs := st.unknown
 		if a.mapPref != mapUnknown {
-			title, evs = geo.Suffixed(a.mapPref), st.byPref[a.mapPref]
-			sub = "日本"
+			title, evs = prefLabel(a.mapPref), st.byPref[a.mapPref]
+			sub = locales.MapJapan()
 			if r, ok := regionOf(a.mapPref); ok {
-				sub = r.label
+				sub = regionLabel(r.id)
 			}
-			sub += fmt.Sprintf(" · %s · %d 场 Live", scope, len(evs))
+			sub += locales.MapPrefSummary(scope, len(evs))
 		}
 		ui.Column(c).Padding(0, 18, 14).Gap(4).BorderWidth(0, 0, 1, 0).BorderColor(theme.GlassLine).Children(func() {
 			ui.Text(c, title).FontSize(24).Bold()
 			caption(c, sub)
 			if venues := venueCount(evs); venues > 1 {
-				caption(c, fmt.Sprintf("%d 个场馆", venues))
+				caption(c, locales.MapVenues(venues))
 			}
 		})
 		if len(evs) == 0 {
-			emptyState(c, icons.MapJapan, "这里还没有 Live", "换个日期范围，或在地图上选择标有数字的地区。")
+			emptyState(c, icons.MapJapan, locales.MapPrefEmptyTitle(), locales.MapPrefEmptyBody())
 			return
 		}
-		ui.Scroll(c).Grow(1).Label(title + "的 Live").Children(func() {
+		ui.Scroll(c).Grow(1).Label(locales.MapPrefLives(title)).Children(func() {
 			ui.Column(c).Padding(8, 14, 14).Gap(6).Children(func() {
 				var cur domain.Date
 				for _, e := range evs {
@@ -610,7 +627,7 @@ func (a *App) mapInspector(c *ui.Context) {
 							label = dayTitle(cur)
 						}
 						if cur == a.today() {
-							label += " · 今天"
+							label += locales.CalendarTodaySuffix()
 						}
 						ui.Text(c, label).FontSize(theme.CaptionSize).Bold().TextColor(theme.TextSecondary).Padding(6, 2, 0)
 					}
@@ -637,7 +654,7 @@ func venueCount(evs []domain.Entry) int {
 func (a *App) prefRow(c *ui.Context, key, label string, n, most int) {
 	c.Key("pref:" + key)
 	b := ui.ButtonBase(c).FillWidth().Padding(7, 8).Gap(10).Radius(theme.Radius).Justify(ui.Start).
-		Label(fmt.Sprintf("%s，%d 场 Live", label, n))
+		Label(locales.MapPrefTooltip(label, n))
 	if b.Hovered() {
 		b.Background(theme.GlassHover)
 	}

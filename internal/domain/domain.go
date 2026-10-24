@@ -6,8 +6,11 @@
 package domain
 
 import (
+	"strings"
 	"time"
 	_ "time/tzdata" // Asia/Tokyo must work even without a system zoneinfo.
+
+	"jpop-live-calendar/locales"
 )
 
 // Tokyo is the zone every Japanese live and ticket time is given in.
@@ -182,34 +185,36 @@ const (
 
 // Entry is one item the calendar shows: a show, or one time of a ticket
 // round. Entries are derived from the catalog on every rebuild.
-// Label is the kind's name in the UI.
-func (k EntryKind) Label() string {
+// Label is the kind's name in the UI, in locale.
+func (k EntryKind) Label(locale string) string {
+	msgs := locales.In(locale)
 	switch k {
 	case EntryLive:
-		return "Live"
+		return msgs.LegendLive()
 	case EntryLotteryOpen:
-		return "受付开始"
+		return msgs.EntryKindLotteryOpen()
 	case EntryLotteryClose:
-		return "受付截止"
+		return msgs.EntryKindLotteryClose()
 	case EntryResult:
-		return "结果公布"
+		return msgs.EntryKindResult()
 	case EntrySaleOpen:
-		return "一般/先着发售"
+		return msgs.EntryKindSaleOpen()
 	}
 	return string(k)
 }
 
-// Short is the kind in two characters, for narrow calendar cells.
-func (k EntryKind) Short() string {
+// Short is the kind in a few characters, for narrow calendar cells.
+func (k EntryKind) Short(locale string) string {
+	msgs := locales.In(locale)
 	switch k {
 	case EntryLotteryOpen:
-		return "开始"
+		return msgs.EntryKindLotteryOpenShort()
 	case EntryLotteryClose:
-		return "截止"
+		return msgs.EntryKindLotteryCloseShort()
 	case EntryResult:
-		return "结果"
+		return msgs.EntryKindResultShort()
 	case EntrySaleOpen:
-		return "发售"
+		return msgs.EntryKindSaleShort()
 	}
 	return ""
 }
@@ -217,32 +222,34 @@ func (k EntryKind) Short() string {
 // Kinds lists every entry kind in display order.
 var Kinds = []EntryKind{EntryLive, EntryLotteryOpen, EntryLotteryClose, EntryResult, EntrySaleOpen}
 
-// Label is the status's name in the UI.
-func (s Status) Label() string {
+// Label is the status's name in the UI, in locale.
+func (s Status) Label(locale string) string {
+	msgs := locales.In(locale)
 	switch s {
 	case StatusSoldOut:
-		return "售罄"
+		return msgs.StatusSoldOut()
 	case StatusPostponed:
-		return "延期"
+		return msgs.StatusPostponed()
 	case StatusCancelled:
-		return "中止"
+		return msgs.StatusCancelled()
 	}
-	return "已公布"
+	return msgs.StatusAnnounced()
 }
 
-// Label is the round type's name in the UI.
-func (t RoundType) Label() string {
+// Label is the round type's name in the UI, in locale.
+func (t RoundType) Label(locale string) string {
+	msgs := locales.In(locale)
 	switch t {
 	case RoundFanClub:
-		return "FC 先行"
+		return msgs.RoundFanclub()
 	case RoundOfficial:
-		return "官方先行"
+		return msgs.RoundOfficial()
 	case RoundPlayguide:
-		return "售票平台先行"
+		return msgs.RoundPlayguide()
 	case RoundGeneral:
-		return "一般发售"
+		return msgs.RoundGeneral()
 	}
-	return "其他"
+	return msgs.RoundOther()
 }
 
 type Entry struct {
@@ -304,6 +311,12 @@ type SourceConfig struct {
 	Artist string
 	Follow string
 	Note   string
+	// Names and Notes hold the name and the note in the other languages
+	// the interface is written in, keyed by language tag ("ja", "en").
+	// Name and Note are the source language's, zh-Hans; a tag without an
+	// entry shows those.
+	Names map[string]string
+	Notes map[string]string
 	// Feature is a pattern of the tour pages ("…/feature/tour2026") an
 	// announcement links to: they are found from the announcements and
 	// opened too, so a tour's page is never configured by hand.
@@ -311,6 +324,34 @@ type SourceConfig struct {
 	// Layer is what the source watches: LayerLive (the LIVE/SCHEDULE list,
 	// read every 12h) or LayerNews (NEWS/TICKET, every 4–6h).
 	Layer string
+}
+
+// DisplayName is the source's name in locale, or the name as written in
+// sources.yaml when that language has none.
+func (s SourceConfig) DisplayName(locale string) string {
+	return localized(s.Name, s.Names, locale)
+}
+
+// DisplayNote is the source's note in locale, or the note as written in
+// sources.yaml when that language has none.
+func (s SourceConfig) DisplayNote(locale string) string {
+	return localized(s.Note, s.Notes, locale)
+}
+
+// localized picks the entry for locale from by, falling back on the base
+// text and on the language of a regional tag ("ja-JP" reads "ja").
+func localized(base string, by map[string]string, locale string) string {
+	if locale != "" {
+		if v := by[locale]; v != "" {
+			return v
+		}
+		if i := strings.IndexAny(locale, "-_"); i > 0 {
+			if v := by[locale[:i]]; v != "" {
+				return v
+			}
+		}
+	}
+	return base
 }
 
 // Source layers.

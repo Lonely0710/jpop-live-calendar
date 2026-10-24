@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/egoist/mygo/i18n"
 	"github.com/egoist/mygo/plugins/glass"
 	"github.com/egoist/mygo/ui"
 
@@ -12,33 +13,38 @@ import (
 
 	"jpop-live-calendar/internal/domain"
 	"jpop-live-calendar/internal/theme"
+	"jpop-live-calendar/locales"
 )
 
 type navItem struct {
 	id        string // the item's ID in the ui.Sidebar
 	icon      icons.Name
-	label     string
+	label     func() string // in the language the app shows
 	section   Section
 	mode      Mode // for calendar items
 	ownColors bool // the icon keeps its own colors instead of the sidebar's tint
 }
 
 var navItems = []navItem{
-	{"calendar", icons.Calendar, "日历", SectionCalendar, ModeMonth, false},
-	{"list", icons.List, "列表", SectionCalendar, ModeAgenda, false},
-	{"map", icons.MapRoute, "地图", SectionMap, 0, true},
-	{"artists", icons.Artist, "艺人", SectionArtists, 0, false},
-	{"sources", icons.DataStatus, "数据", SectionSources, 0, false},
+	{"calendar", icons.Calendar, locales.NavCalendar, SectionCalendar, ModeMonth, false},
+	{"list", icons.List, locales.NavList, SectionCalendar, ModeAgenda, false},
+	{"map", icons.MapRoute, locales.NavMap, SectionMap, 0, true},
+	{"artists", icons.Artist, locales.NavArtists, SectionArtists, 0, false},
+	{"sources", icons.DataStatus, locales.NavSources, SectionSources, 0, false},
 }
 
-var settingsItem = navItem{"settings", icons.Settings, "设置", SectionSettings, 0, false}
+var settingsItem = navItem{"settings", icons.Settings, locales.NavSettings, SectionSettings, 0, false}
+
+// languageItem is the language entry at the bottom of the sidebar: it
+// opens the language's popover instead of a page.
+var languageItem = navItem{"language", icons.Globe, locales.NavLanguage, -1, 0, false}
 
 // accountItem is the user's entry at the bottom of the sidebar, above the
 // settings: it opens the account's popover instead of a page.
-var accountItem = navItem{"account", icons.Account, "用户", -1, 0, false}
+var accountItem = navItem{"account", icons.Account, locales.NavAccount, -1, 0, false}
 
 // footerItems are the items at the bottom of the sidebar and the rail.
-var footerItems = []navItem{accountItem, settingsItem}
+var footerItems = []navItem{languageItem, accountItem, settingsItem}
 
 // navID is the ID of the sidebar's item the page and the view are.
 func (a *App) navID() string {
@@ -93,7 +99,7 @@ func (a *App) navList(c *ui.Context, items []navItem, title string, compact bool
 	sb := ui.Sidebar(c, &sel, func() {
 		build := func() {
 			for _, it := range items {
-				label := it.label
+				label := it.label()
 				if compact {
 					label = ""
 				}
@@ -108,13 +114,19 @@ func (a *App) navList(c *ui.Context, items []navItem, title string, compact bool
 					chosen, chosenIcon, chosenOwn, hasChosen = item, it.icon, it.ownColors, true
 				}
 				if compact {
-					item.Label(it.label).Tooltip(it.label)
+					item.Label(it.label()).Tooltip(it.label())
 				}
 				if it.id == accountItem.id {
 					if a.userOpen {
 						item.Background(theme.GlassSelected)
 					}
 					ui.Popover(c, item, &a.userOpen, func() { a.userPanel(c) })
+				}
+				if it.id == languageItem.id {
+					if a.langOpen {
+						item.Background(theme.GlassSelected)
+					}
+					ui.Popover(c, item, &a.langOpen, func() { a.languagePanel(c) })
 				}
 				if b := a.badge(it); b != "" {
 					item.Children(func() {
@@ -161,6 +173,8 @@ func (a *App) navList(c *ui.Context, items []navItem, title string, compact bool
 		}
 	}
 	switch {
+	case sel == languageItem.id:
+		a.langOpen = true
 	case sel == accountItem.id:
 		a.userOpen = true
 	case sel != a.navID():
@@ -191,10 +205,31 @@ func (a *App) userPanel(c *ui.Context) {
 	ui.Column(c).Width(240).Padding(14).Gap(8).Children(func() {
 		ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
 			mygoicons.Image(c, icons.Account, 20)
-			ui.Text(c, "用户").Bold()
+			ui.Text(c, locales.NavAccount()).Bold()
 		})
-		ui.Text(c, "用户功能将在后续版本开放").TextColor(theme.TextSecondary)
-		caption(c, "当前版本无需登录，所有数据均为公开信息。")
+		ui.Text(c, locales.AccountSoon()).TextColor(theme.TextSecondary)
+		caption(c, locales.AccountNote())
+	})
+}
+
+// languagePanel is the language's popover: the system's language, or one
+// of the languages the app is written in. Each language's name is its
+// own, so it reads the same whatever the app shows now.
+func (a *App) languagePanel(c *ui.Context) {
+	ui.Column(c).Width(240).Padding(14).Gap(10).Children(func() {
+		ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
+			mygoicons.Image(c, icons.Globe, 20)
+			ui.Text(c, locales.LangTitle()).Bold()
+		})
+		ui.RadioGroup(c, func() {
+			ui.Radio(c, &a.langChoice, "", locales.LangFollowSystem()).
+				OnChange(func() { a.ChooseLocale("") })
+			for _, tag := range localeChoices {
+				tag := tag
+				ui.Radio(c, &a.langChoice, tag, i18n.Autonym(tag)).
+					OnChange(func() { a.ChooseLocale(tag) })
+			}
+		}).Label(locales.LangTitle())
 	})
 }
 
@@ -207,9 +242,9 @@ func (a *App) sidebar(c *ui.Context) {
 			ui.Text(c, "Jpop Calendar").Font("Pacifico").FontSize(21).SingleLine()
 		})
 	})
-	a.navList(c, navItems, "浏览", false)
+	a.navList(c, navItems, locales.NavBrowse(), false)
 	ui.Column(c).Padding(14, 10, 4).Gap(6).Children(func() {
-		sectionLabel(c, "近期截止")
+		sectionLabel(c, locales.NavRecentDeadlines())
 		a.deadlines(c)
 	})
 	ui.Spacer(c).DragWindow()
@@ -229,7 +264,7 @@ func (a *App) rail(c *ui.Context) {
 		})
 		ui.Box(c).Height(1).Width(24).Margin(6, 0, 4).Background(theme.GlassLine)
 	})
-	a.navList(c, navItems, "浏览", true)
+	a.navList(c, navItems, locales.NavBrowse(), true)
 	ui.Spacer(c).DragWindow()
 	ui.Box(c).FillWidth().Padding(0, 0, 4).Children(func() {
 		a.navList(c, footerItems, "", true)
@@ -265,18 +300,18 @@ func (a *App) deadlines(c *ui.Context) {
 		}
 		c.Key("dl:" + e.ID)
 		b := ui.ButtonBase(c).FillWidth().Padding(6, 8).Gap(8).Radius(theme.Radius).Justify(ui.Start).
-			Label("截止 " + e.Title)
+			Label(locales.DeadlineItemLabel(e.Title))
 		if b.Hovered() {
 			b.Background(theme.GlassHover)
 		}
 		if b.Children(func() {
 			dot(c, theme.StatusWarning, 6)
 			ui.Column(c).Shrink(1).Gap(1).Children(func() {
-				ui.Text(c, e.Title).FontSize(theme.CaptionSize).SingleLine()
+				ui.Text(c, e.Title).Lang("ja").FontSize(theme.CaptionSize).SingleLine()
 				left := today.DaysUntil(e.Date)
-				label := fmt.Sprintf("%s 截止 · 还有 %d 天", shortDay(e.Date), left)
+				label := locales.DeadlineIn(shortDay(e.Date), left)
 				if left == 0 {
-					label = "今天截止"
+					label = locales.DeadlineToday()
 					if e.At != nil {
 						label += " " + e.At.String()
 					}
@@ -292,7 +327,7 @@ func (a *App) deadlines(c *ui.Context) {
 		}
 	}
 	if n == 0 {
-		caption(c, "30 天内没有截止的受付").Padding(0, 8)
+		caption(c, locales.NoDeadlines()).Padding(0, 8)
 	}
 }
 
@@ -318,15 +353,15 @@ func (a *App) syncSummary() (icon icons.Name, text string, last time.Time) {
 	}
 	switch {
 	case s.Running():
-		return icons.Sync, "同步中…", last
+		return icons.Sync, locales.SyncRunning(), last
 	case enabled == 0:
-		return icons.Suspended, "没有开启的数据源", last
+		return icons.Suspended, locales.SyncNoSources(), last
 	case last.IsZero():
-		return icons.Sync, "尚未同步", last
+		return icons.Sync, locales.SyncNever(), last
 	case failed > 0:
-		return icons.SyncFailed, fmt.Sprintf("更新于 %s · %d 个失败", clockOf(last), failed), last
+		return icons.SyncFailed, locales.SyncUpdatedFailed(clockOf(last), failed), last
 	}
-	return icons.Synced, "更新于 " + clockOf(last), last
+	return icons.Synced, locales.SyncUpdated(clockOf(last)), last
 }
 
 func clockOf(t time.Time) string { return t.In(theme.DisplayZone).Format("15:04") }
@@ -369,7 +404,7 @@ func (a *App) toolbar(c *ui.Context, bar ui.TitleBar, sheetLeft float32) {
 		ui.Box(c).Width(start - lead - toggleW).Shrink(0)
 		// MyGo's toolbar: one stop of Tab, the arrows move among its
 		// controls, and what does not fit goes into its overflow menu.
-		ui.Toolbar(c, func() { a.toolbarItems(c) }).Grow(1).Shrink(1).Padding(0).Gap(8).Label("工具栏")
+		ui.Toolbar(c, func() { a.toolbarItems(c) }).Grow(1).Shrink(1).Padding(0).Gap(8).Label(locales.ToolbarLabel())
 	})
 }
 
@@ -381,11 +416,11 @@ func (a *App) toolbarItems(c *ui.Context) {
 				a.step(-1)
 			}
 			today := ui.ButtonBase(c).Height(theme.CapsuleH-4).Padding(0, 10).Radius((theme.CapsuleH - 4) / 2).
-				Label("今天").Tooltip("回到今天 (" + todayShortcut + ")")
+				Label(locales.ToolbarToday()).Tooltip(locales.ToolbarTodayTooltip(todayShortcut))
 			if today.Hovered() {
 				today.Background(theme.GlassHover)
 			}
-			if today.Children(func() { ui.Text(c, "今天").FontSize(12.5).Bold() }).Clicked() {
+			if today.Children(func() { ui.Text(c, locales.ToolbarToday()).FontSize(12.5).Bold() }).Clicked() {
 				a.goToday()
 			}
 			if capsuleIcon(c, icons.Next, a.stepLabel(1), false).Clicked() {
@@ -408,21 +443,21 @@ func (a *App) toolbarItems(c *ui.Context) {
 	}
 	a.searchBox(c)
 	capsule(c).Children(func() {
-		f := capsuleIcon(c, icons.Filter, "筛选", a.filterOpen || a.filtersActive())
+		f := capsuleIcon(c, icons.Filter, locales.ToolbarFilter(), a.filterOpen || a.filtersActive())
 		if f.Clicked() {
 			a.filterOpen = !a.filterOpen
 		}
 		ui.Popover(c, f, &a.filterOpen, func() { a.filterPanel(c) })
 		icon, status, _ := a.syncSummary()
 		running := a.opt.Scheduler.Running()
-		r := capsuleGlyph(c, "立即同步 ("+syncShortcut+") · "+status, running, func() { a.syncGlyph(c, icon, 17) })
+		r := capsuleGlyph(c, locales.ToolbarSync(syncShortcut, status), running, func() { a.syncGlyph(c, icon, 17) })
 		if r.Clicked() {
 			a.Refresh()
 		}
 		if a.hasInspector() {
-			label := "显示详情面板 (" + inspectorShortcut + ")"
+			label := locales.ToolbarInspectorShow(inspectorShortcut)
 			if a.inspector {
-				label = "隐藏详情面板 (" + inspectorShortcut + ")"
+				label = locales.ToolbarInspectorHide(inspectorShortcut)
 			}
 			capsuleToggle(c, icons.SidebarRight, label, &a.inspector)
 		}
@@ -436,12 +471,13 @@ var modeIcons = []icons.Name{icons.Month, icons.Week, icons.Day, icons.List}
 // SegmentedBase in a capsule of glass: one icon-and-text segment per view,
 // the arrows choosing among them while it has the focus.
 func (a *App) viewSwitch(c *ui.Context) {
-	seg := ui.SegmentedBase(c, &a.mode, len(modeLabels))
+	seg := ui.SegmentedBase(c, &a.mode, len(modeIcons))
 	seg.Track.Height(theme.CapsuleH).Padding(2).AlignItems(ui.Center).Radius(theme.CapsuleH / 2).
-		Material(glass.Glass{}).Shrink(0).Label("视图").Children(func() {
-		for i, text := range modeLabels {
+		Material(glass.Glass{}).Shrink(0).Label(locales.ToolbarView()).Children(func() {
+		for i := range modeIcons {
+			text := modeLabel(Mode(i))
 			s := float32(theme.CapsuleH - 4)
-			label := fmt.Sprintf("%s视图 (%s)", text, viewShortcut(i))
+			label := locales.ToolbarViewLabel(text, viewShortcut(i))
 			seg := seg.Segment(i).Height(s).Padding(0, 11, 0, 9).Gap(5).Radius(s / 2).AlignItems(ui.Center).
 				Label(label).Tooltip(label)
 			switch {
@@ -465,9 +501,9 @@ func (a *App) viewSwitch(c *ui.Context) {
 // the sidebar shows; it stays in the top band, next to the traffic
 // lights, whether the sidebar shows or not.
 func (a *App) sidebarToggle(c *ui.Context) {
-	label := "隐藏侧边栏 (" + sidebarShortcut + ")"
+	label := locales.SidebarHide(sidebarShortcut)
 	if a.sideHide {
-		label = "显示侧边栏 (" + sidebarShortcut + ")"
+		label = locales.SidebarShow(sidebarShortcut)
 	}
 	shown := !a.sideHide
 	b := ui.ToggleBase(c.Key("sidebar-toggle"), &shown).Size(theme.ToggleButton+4, theme.ToggleButton).Shrink(0).
@@ -485,16 +521,16 @@ func (a *App) sidebarToggle(c *ui.Context) {
 // searchBox is the toolbar's search field, a capsule of glass with the
 // library's search icon and its clear button.
 func (a *App) searchBox(c *ui.Context) {
-	box := capsule(c).Width(214).Padding(0, 4, 0, 10).Gap(6).Tooltip("搜索艺人、巡演、场馆、城市、类型、来源")
+	box := capsule(c).Width(214).Padding(0, 4, 0, 10).Gap(6).Tooltip(locales.SearchTooltip())
 	box.Children(func() {
 		mygoicons.Image(c, icons.Search, 16)
 		in := ui.TextInputBase(c, &a.query).Grow(1).Shrink(1).MinWidth(0).FontSize(12.5).
-			Placeholder("搜索艺人、巡演、场馆").Label("搜索")
+			Placeholder(locales.SearchPlaceholder()).Label(locales.SearchLabel())
 		if in.Shortcut(0, ui.KeyEscape) {
 			a.query = ""
 		}
 		if a.query != "" {
-			if capsuleIcon(c, icons.Clear, "清除搜索", false).Size(24, 24).Clicked() {
+			if capsuleIcon(c, icons.Clear, locales.SearchClear(), false).Size(24, 24).Clicked() {
 				a.query = ""
 			}
 		} else {
@@ -558,35 +594,35 @@ func (a *App) filterPanel(c *ui.Context) {
 	}
 	ui.Column(c).Padding(14).Gap(10).Children(func() {
 		ui.Row(c).AlignItems(ui.Center).Children(func() {
-			ui.Text(c, "筛选").Bold()
+			ui.Text(c, locales.FilterTitle()).Bold()
 			ui.Spacer(c)
-			if ui.Button(c, "重置筛选").Disabled(!a.filtersActive()).Clicked() {
+			if ui.Button(c, locales.FilterReset()).Disabled(!a.filtersActive()).Clicked() {
 				a.resetFilters()
 			}
 		})
 		ui.Row(c).Gap(14).AlignItems(ui.Start).Children(func() {
 			ui.Column(c).Width(236).Gap(10).Children(func() {
-				caption(c, "类型")
+				caption(c, locales.FilterKinds())
 				for i, k := range domain.Kinds {
 					c.Key("kind:" + string(k))
 					ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
 						dot(c, theme.KindColor(k, ""), 7)
-						ui.Checkbox(c, &a.kindOn[i], k.Label())
+						ui.Checkbox(c, &a.kindOn[i], k.Label(lang()))
 					})
 				}
 				ui.Divider(c)
-				ui.Checkbox(c, &a.onlyChanged, "只看有更新的")
-				ui.Checkbox(c, &a.onlyReview, "只看需确认的")
-				caption(c, "搜索日期范围")
-				ui.Segmented(c, &a.scope, scopeLabels...).Label("搜索日期范围")
-				caption(c, "地区")
-				ui.Select(c, &a.region, regionOptions).Width(236).Label("地区")
-				caption(c, "城市（地区首府）")
-				cities := cityOptions(a.region)
+				ui.Checkbox(c, &a.onlyChanged, locales.FilterChanged())
+				ui.Checkbox(c, &a.onlyReview, locales.FilterReview())
+				caption(c, locales.FilterDateRange())
+				ui.Segmented(c, &a.scope, scopeLabels()...).Label(locales.FilterDateRange())
+				caption(c, locales.FilterRegion())
+				placeSelect(c, &a.region, regionIDs(), regionLabel, locales.FilterRegion(), 236)
+				caption(c, locales.FilterCity())
+				cities := cityIDs(a.region)
 				if !hasString(cities, a.city) {
 					a.city = allCities
 				}
-				ui.Select(c, &a.city, cities).Width(236).Label("城市")
+				placeSelect(c, &a.city, cities, cityLabel, locales.FilterCityLabel(), 236)
 			})
 			ui.Box(c).Width(1).AlignSelf(ui.Stretch).Background(theme.MistGray)
 			ui.Column(c).Width(250).Gap(8).Children(func() {
@@ -597,8 +633,8 @@ func (a *App) filterPanel(c *ui.Context) {
 						on++
 					}
 				}
-				caption(c, fmt.Sprintf("数据源（%d/%d）", on, len(sts)))
-				ui.Scroll(c).MaxHeight(390).Label("数据源").Children(func() {
+				caption(c, locales.FilterSources(on, len(sts)))
+				ui.Scroll(c).MaxHeight(390).Label(locales.FilterSourcesLabel()).Children(func() {
 					ui.Column(c).Gap(10).Padding(0, 8, 0, 0).Children(func() {
 						for _, st := range sts {
 							id := st.Config.ID
@@ -620,9 +656,20 @@ func (a *App) filterPanel(c *ui.Context) {
 }
 
 func (a *App) stepLabel(dir int) string {
-	unit := map[Mode]string{ModeMonth: "月", ModeWeek: "周", ModeDay: "天", ModeAgenda: "页"}[Mode(a.mode)]
+	prev := map[Mode]string{
+		ModeMonth:  locales.StepPrevMonth(),
+		ModeWeek:   locales.StepPrevWeek(),
+		ModeDay:    locales.StepPrevDay(),
+		ModeAgenda: locales.StepPrevPage(),
+	}[Mode(a.mode)]
+	next := map[Mode]string{
+		ModeMonth:  locales.StepNextMonth(),
+		ModeWeek:   locales.StepNextWeek(),
+		ModeDay:    locales.StepNextDay(),
+		ModeAgenda: locales.StepNextPage(),
+	}[Mode(a.mode)]
 	if dir < 0 {
-		return "上一" + unit
+		return prev
 	}
-	return "下一" + unit
+	return next
 }

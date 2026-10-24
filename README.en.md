@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <a href="#changelog"><img src="https://img.shields.io/badge/version-1.0.2-E85A3A?style=flat-square&labelColor=2E2A28" alt="Version 1.0.2"></a>
+  <a href="#changelog"><img src="https://img.shields.io/badge/version-1.1.0-E85A3A?style=flat-square&labelColor=2E2A28" alt="Version 1.1.0"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-2E2A28?style=flat-square" alt="License MIT"></a>
   <a href="https://go.dev"><img src="https://img.shields.io/badge/Go-1.27+-00ADD8?style=flat-square&logo=go&logoColor=white" alt="Go 1.27+"></a>
   <a href="https://github.com/egoist/mygo"><img src="https://img.shields.io/badge/MyGo-v0.5.5-3D86F5?style=flat-square&labelColor=2E2A28&logo=go&logoColor=white" alt="MyGo v0.5.5"></a>
@@ -22,7 +22,7 @@
 
 Live Calendar is a native desktop app for macOS and Windows that turns official announcements of Japanese music live shows, ticket lotteries and presales, result announcements, and general sales into a single calendar.
 
-![Month view](assets/screenshots/month-live.png)
+![Month view](assets/screenshots/en/month-live.png)
 
 ## Features
 
@@ -43,6 +43,9 @@ Live Calendar is a native desktop app for macOS and Windows that turns official 
 <td width="50%" valign="top"><img src="packages/spotlight-icons/svg/sync.svg" width="20" height="20" align="absmiddle">&nbsp;&nbsp;<code>07</code>&nbsp;<b>Background sync</b><br><sub>Stays in the menu bar (macOS) / system tray (Windows) and notifies you 3 days before a lottery deadline.</sub></td>
 <td width="50%" valign="top"><img src="packages/spotlight-icons/svg/download.svg" width="20" height="20" align="absmiddle">&nbsp;&nbsp;<code>08</code>&nbsp;<b>Local snapshot</b><br><sub>Shows the last results at launch, then refreshes in the background; one failing source never blocks the others.</sub></td>
 </tr>
+<tr>
+<td width="50%" valign="top"><img src="packages/spotlight-icons/svg/globe.svg" width="20" height="20" align="absmiddle">&nbsp;&nbsp;<code>09</code>&nbsp;<b>Interface language</b><br><sub>Follow the system, or choose Simplified Chinese, Japanese, or English; UI text, parser notes, and change logs switch together.</sub></td>
+</tr>
 </table>
 
 <p align="center">
@@ -59,12 +62,12 @@ Live Calendar is a native desktop app for macOS and Windows that turns official 
 
 <table width="100%">
   <tr>
-    <td width="50%" align="center" valign="top"><b><small>FIG. 1</small> Inspector</b><br><img src="assets/screenshots/inspector.png" width="100%" alt="Inspector: show details, ticket milestones, and change history"></td>
-    <td width="50%" align="center" valign="top"><b><small>FIG. 2</small> Map</b><br><img src="assets/screenshots/map.png" width="100%" alt="Map: live shows by prefecture"></td>
+    <td width="50%" align="center" valign="top"><b><small>FIG. 1</small> Inspector</b><br><img src="assets/screenshots/en/inspector.png" width="100%" alt="Inspector: show details, ticket milestones, and change history"></td>
+    <td width="50%" align="center" valign="top"><b><small>FIG. 2</small> Map</b><br><img src="assets/screenshots/en/map.png" width="100%" alt="Map: live shows by prefecture"></td>
   </tr>
   <tr>
-    <td width="50%" align="center" valign="top"><b><small>FIG. 3</small> Artists</b><br><img src="assets/screenshots/artists-live.png" width="100%" alt="Artists: shows grouped by tour"></td>
-    <td width="50%" align="center" valign="top"><b><small>FIG. 4</small> Sources</b><br><img src="assets/screenshots/sources.png" width="100%" alt="Sources: sync status grouped by artist"></td>
+    <td width="50%" align="center" valign="top"><b><small>FIG. 3</small> Artists</b><br><img src="assets/screenshots/en/artists-live.png" width="100%" alt="Artists: shows grouped by tour"></td>
+    <td width="50%" align="center" valign="top"><b><small>FIG. 4</small> Sources</b><br><img src="assets/screenshots/en/sources.png" width="100%" alt="Sources: sync status grouped by artist"></td>
   </tr>
 </table>
 
@@ -137,7 +140,15 @@ artists:
     color: "#3975AB"     # optional: theme color
 ```
 
-See the comments in [`config/sources.yaml`](config/sources.yaml) for all fields (`article` filters, `follow` / `feature` patterns, avatar settings, and more). Sources can also be added, disabled, or removed on the Sources page; comments are preserved when the file is written back.
+See the comments in [`config/sources.yaml`](config/sources.yaml) for all fields (`article` filters, `follow` / `feature` patterns, avatar settings, and more). `name` / `note` are written in Chinese; add `name_ja` / `name_en` (and `note_ja` / `note_en`) to show the source in the language the interface shows. Sources can also be added, disabled, or removed on the Sources page; comments are preserved when the file is written back.
+
+### Avatars
+
+Avatars are **a photo first, a cover last**: Deezer (`api.deezer.com`, the artist's photo) → QQ Music (`c.y.qq.com`, the artist's photo) → iTunes (`itunes.apple.com`, an album cover at 600 px). All three are keyless and matched exactly by name and aliases.
+
+Why the last one is a cover: in Apple's public Search / Lookup API, `entity=musicArtist` returns only `artistId`, `artistLinkUrl` and the genre — **there is no image field at all**; only albums and songs carry `artworkUrl100`. The artist images on Apple Music's website come from an internal, token-gated endpoint. So artist photos can only come from Deezer or QQ Music.
+
+`api.deezer.com` is not reachable from mainland China, so what you actually get there is QQ Music's photo (Tencent does not document that endpoint; write `avatars: itunes` if that bothers you). `avatars:` takes `deezer` (default, photo first), `qq` (skip Deezer), `itunes` (covers only) and `off`.
 
 ## Project layout
 
@@ -180,6 +191,7 @@ See [packages/spotlight-icons](packages/spotlight-icons/README.md) for adding or
 - Parsing rules cover common phrasings in Japanese announcements only; the original text is authoritative.
 - The map is accurate to the prefecture level only: shows are placed at the prefectural capital, not at the actual venue.
 - Tray, notifications, and title bar on Windows have not been fully verified on real hardware.
+- The interface switches between Simplified Chinese, Japanese, and English. Artist names, tours, venues, announcement text, and names in `sources.yaml` stay in their original language.
 
 ## Roadmap
 
@@ -189,6 +201,7 @@ See [packages/spotlight-icons](packages/spotlight-icons/README.md) for adding or
 
 ## Changelog
 
+- **1.1.0** (2026-10-25): UI in Simplified Chinese, Japanese and English, with new installers and website.
 - **1.0.2** (2026-10-23): added the map page with live counts by prefecture.
 - **1.0.1** (2026-10-22): Windows support; artist page grouped by tour; several parsing fixes; icon library expanded to 63 icons.
 - **1.0.0**: menu bar mode, deadline reminders, adding sources in the app, avatar cache.

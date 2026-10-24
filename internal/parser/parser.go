@@ -24,6 +24,7 @@ import (
 
 	"jpop-live-calendar/internal/domain"
 	"jpop-live-calendar/internal/normalize"
+	"jpop-live-calendar/locales"
 )
 
 // Input is one announcement to read.
@@ -36,6 +37,9 @@ type Input struct {
 	// dated line is a show, and the lines under it give its time and
 	// venue (see scheduleLines).
 	Schedule bool
+	// Locale is the language of the notes the parse writes; "" is the
+	// source language, zh-Hans.
+	Locale string
 }
 
 // Event is a show the text states.
@@ -247,7 +251,7 @@ func Parse(in Input) Result {
 			lines = append(lines, l)
 		}
 	}
-	p := &state{ref: ref, res: Result{Status: statusIn(title)}, schedule: in.Schedule}
+	p := &state{ref: ref, res: Result{Status: statusIn(title)}, schedule: in.Schedule, msgs: locales.In(in.Locale)}
 	if in.Schedule && guestElsewhere(title, in.ArtistHints) {
 		// A member's guest appearance at another artist's show: the dates
 		// on the page belong to the host's tour, not to this artist.
@@ -315,7 +319,7 @@ func Parse(in Input) Result {
 		}
 	}
 	if p.prose && len(res.Events) > 0 {
-		res.Notes = append(res.Notes, "公告没有结构化的日程段落，日期取自正文，需确认")
+		res.Notes = append(res.Notes, p.msgs.NoteProseDates())
 	}
 	return *res
 }
@@ -334,6 +338,7 @@ type state struct {
 	year      int // the year of a "2026年" line above, for the dates under it
 	yearMonth int // the month of the first date under it
 
+	msgs      locales.Messages // the language of the notes
 	schedule  bool
 	postTour  string    // the tour of a schedule page's post, from its title
 	venueHead [2]string // prefecture and venue of a "<大阪>NHK大阪ホール" over its dates
@@ -505,13 +510,13 @@ func (p *state) line(l string) {
 		pref, venue := normalize.SplitPrefecture(strings.TrimSpace(v))
 		for _, i := range last {
 			if i < len(p.res.Events) && p.res.Events[i].Venue == "" {
-				p.res.Events[i].setVenue(pref, venue)
+				p.res.Events[i].setVenue(pref, venue, p.msgs)
 			}
 		}
 	}
 }
 
-func (e *Event) setVenue(pref, venue string) {
+func (e *Event) setVenue(pref, venue string, msgs locales.Messages) {
 	if pref != "" && e.Prefecture == "" {
 		e.Prefecture = pref
 	}
@@ -523,7 +528,7 @@ func (e *Event) setVenue(pref, venue string) {
 	e.Venue = venue
 	var notes []string
 	for _, n := range e.Notes {
-		if n != "场地未公布" {
+		if n != msgs.NoteNoVenue() {
 			notes = append(notes, n)
 		}
 	}
@@ -601,9 +606,9 @@ func (p *state) eventLine(l string) ([]Event, bool) {
 	if v == "" && p.venueHead[1] != "" {
 		pref, v = p.venueHead[0], p.venueHead[1] // the "<大阪>NHK大阪ホール" above
 	}
-	base.setVenue(pref, v)
+	base.setVenue(pref, v, p.msgs)
 	if base.Venue == "" {
-		base.Notes = append(base.Notes, "场地未公布")
+		base.Notes = append(base.Notes, p.msgs.NoteNoVenue())
 	}
 	base.Tour = p.curTour()
 	var out []Event
@@ -625,7 +630,7 @@ func (p *state) eventLine(l string) ([]Event, bool) {
 			var ok bool
 			y, ok = normalize.InferYear(time.Month(month), d.day, wd, p.ref)
 			if !ok {
-				e.Notes = append(e.Notes, "星期与日期不一致，需确认")
+				e.Notes = append(e.Notes, p.msgs.NoteWeekdayMismatch())
 			}
 		}
 		e.Date = domain.Date{Year: y, Month: time.Month(month), Day: d.day}
@@ -692,7 +697,7 @@ func (p *state) proseEvents(l string) []Event {
 		if v := proseVenueRe.FindStringSubmatch(rest); v != nil {
 			e.Prefecture, e.Venue = normalize.SplitPrefecture(strings.TrimSpace(v[1]))
 		} else {
-			e.Notes = append(e.Notes, "场地未公布")
+			e.Notes = append(e.Notes, p.msgs.NoteNoVenue())
 		}
 		e.OpenAt, e.StartAt, _ = times(rest)
 		e.Status = statusIn(rest)
@@ -1171,7 +1176,7 @@ func (p *state) continuation(l string) bool {
 	}
 	if pref := normalize.Prefecture(l); pref != "" && len([]rune(l)) <= 4 {
 		for _, i := range p.last {
-			evs[i].setVenue(pref, "")
+			evs[i].setVenue(pref, "", p.msgs)
 		}
 		return true
 	}
@@ -1180,7 +1185,7 @@ func (p *state) continuation(l string) bool {
 	}
 	pref, venue := normalize.SplitPrefecture(l)
 	for _, i := range p.last {
-		evs[i].setVenue(pref, venue)
+		evs[i].setVenue(pref, venue, p.msgs)
 	}
 	return true
 }

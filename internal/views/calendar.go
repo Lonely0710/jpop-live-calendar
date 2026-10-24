@@ -11,6 +11,7 @@ import (
 
 	"jpop-live-calendar/internal/domain"
 	"jpop-live-calendar/internal/theme"
+	"jpop-live-calendar/locales"
 )
 
 func (a *App) calendar(c *ui.Context) {
@@ -34,20 +35,48 @@ func (a *App) calendar(c *ui.Context) {
 }
 
 // summaryBar is the line above the calendar: the legend, and, in a window
-// too narrow to keep the counts beside the title, the counts too.
+// too narrow to keep the counts beside the title, the counts too. Items
+// that do not fit are left out rather than clipped at the card's edge.
 func (a *App) summaryBar(c *ui.Context) {
+	avail := a.sheetWidth(c) - 2*theme.ContentPadding
+	showStats := !a.statsInToolbar(c)
+	used := float32(0)
+	if showStats {
+		used = a.statsWidth(c) + 14
+	}
+	measure := func(s string) float32 {
+		w, _ := c.MeasureText(0, ui.Span{Text: s, Size: float32(theme.CaptionSize)})
+		return w
+	}
+	fits := func(w float32) bool {
+		return avail <= 0 || used+w+20 <= avail
+	}
 	ui.Row(c).Gap(14).AlignItems(ui.Center).Children(func() {
-		if !a.statsInToolbar(c) {
+		if showStats {
 			a.statsLine(c)
 		}
-		ui.Row(c).Gap(5).Shrink(0).AlignItems(ui.Center).Tooltip("Live 以艺人主题色显示：取自头像中面积最大的色块").Children(func() {
+		liveW := 15 + 5 + measure(locales.CalendarLiveLegend())
+		if !fits(liveW) {
+			return
+		}
+		used += liveW
+		ui.Row(c).Gap(5).Shrink(0).AlignItems(ui.Center).Tooltip(locales.CalendarLiveTooltip()).Children(func() {
 			liveSwatch(c)
-			caption(c, "Live（艺人主题色）").SingleLine()
+			caption(c, locales.CalendarLiveLegend()).SingleLine()
 		})
-		for _, l := range theme.Legend[1:] {
+		labels := []string{
+			locales.LegendLottery(), locales.LegendResult(),
+			locales.LegendSale(), locales.LegendPostponed(),
+		}
+		for i, col := range theme.Legend[1:] {
+			w := 7 + 5 + measure(labels[i])
+			if !fits(w) {
+				break
+			}
+			used += 14 + w
 			ui.Row(c).Gap(5).Shrink(0).AlignItems(ui.Center).Children(func() {
-				dot(c, l.Color, 7)
-				caption(c, l.Label).SingleLine()
+				dot(c, col, 7)
+				caption(c, labels[i]).SingleLine()
 			})
 		}
 	})
@@ -57,14 +86,14 @@ func (a *App) summaryBar(c *ui.Context) {
 // the filter state.
 func (a *App) statsLine(c *ui.Context) ui.Element {
 	lives, tickets := a.visibleCounts()
-	return ui.Row(c).Gap(8).Shrink(0).AlignItems(ui.Center).Tooltip("当前视图范围内的公开事件统计 · Asia/Tokyo 时间").Children(func() {
+	return ui.Row(c).Gap(8).Shrink(0).AlignItems(ui.Center).Tooltip(locales.CalendarStatsTooltip()).Children(func() {
 		stat(c, fmt.Sprint(lives), "Live")
 		divider(c)
-		stat(c, fmt.Sprint(tickets), "票务")
+		stat(c, fmt.Sprint(tickets), locales.CalendarStatTickets())
 		divider(c)
 		zone(c)
 		if a.filtersActive() {
-			tag(c, "已筛选", theme.StatusInfo)
+			tag(c, locales.CalendarFiltered(), theme.StatusInfo)
 		}
 	})
 }
@@ -87,7 +116,10 @@ func zone(c *ui.Context) ui.Element {
 
 // toolbarStatsChrome is the room the toolbar's other parts take beside the
 // title: the navigation, view switch, search, actions, padding and gaps.
-const toolbarStatsChrome = 724
+// It is measured with a little to spare, so the counts never push the
+// toolbar's items into its overflow menu; English stays inside it by
+// abbreviating its month ("Oct 2026") and its views ("M / W / D / L").
+const toolbarStatsChrome = 700
 
 // statsInToolbar reports whether the counts fit beside the calendar's
 // title, left of the view switch.
@@ -116,8 +148,8 @@ func (a *App) statsWidth(c *ui.Context) float32 {
 	statW := func(n int, unit string) float32 {
 		return measure(fmt.Sprint(n), 13, 700) + 4 + measure(unit, float32(theme.CaptionSize), 400)
 	}
-	tagText := measure("已筛选", 10, 700) + 8 // tag's padding
-	return statW(lives, "Live") + statW(tickets, "票务") +
+	tagText := measure(locales.CalendarFiltered(), 10, 700) + 8 // tag's padding
+	return statW(lives, "Live") + statW(tickets, locales.CalendarStatTickets()) +
 		measure("Tokyo", float32(theme.CaptionSize), 400) + 1 + 1 + tagText + 8*5
 }
 
@@ -256,13 +288,13 @@ func (a *App) dayCell(c *ui.Context, d domain.Date, inMonth, isToday bool, evs [
 		ui.Row(c).Height(cellHeader).Gap(4).AlignItems(ui.Center).Children(func() {
 			dayNumber(c, d.Day, inMonth, isToday)
 			if isToday {
-				ui.Text(c, "今天").FontSize(10.5).Bold().TextColor(theme.LiveCoral).SingleLine()
+				ui.Text(c, locales.CommonToday()).FontSize(10.5).Bold().TextColor(theme.LiveCoral).SingleLine()
 			} else if d.Day == 1 {
-				caption(c, fmt.Sprintf("%d月", int(d.Month))).SingleLine()
+				caption(c, dateOf(d, "MMM")).SingleLine()
 			}
 			ui.Spacer(c)
 			if lives > 0 {
-				ui.Text(c, fmt.Sprintf("%d 场", lives)).FontSize(10.5).TextColor(theme.TextSecondary).SingleLine()
+				ui.Text(c, locales.CalendarLivesCount(lives)).FontSize(10.5).TextColor(theme.TextSecondary).SingleLine()
 			}
 		})
 		for _, e := range evs[:n] {
@@ -270,13 +302,16 @@ func (a *App) dayCell(c *ui.Context, d domain.Date, inMonth, isToday bool, evs [
 			a.chip(c, e, true)
 		}
 		if rest := evs[n:]; len(rest) > 0 {
-			unit := "场"
+			allLives := true
 			for _, e := range rest {
 				if e.Kind != domain.EntryLive {
-					unit = "项"
+					allLives = false
 				}
 			}
-			label := fmt.Sprintf("还有 %d %s", len(rest), unit)
+			label := locales.CalendarMoreItems(len(rest))
+			if allLives {
+				label = locales.CalendarMoreShows(len(rest))
+			}
 			more := ui.ButtonBase(c).Height(moreH).Padding(0, 4).Radius(4).Justify(ui.Start).
 				Label(shortDay(d) + " " + label)
 			if more.Hovered() {
@@ -314,11 +349,11 @@ func dayNumber(c *ui.Context, day int, inMonth, isToday bool) {
 
 // chipLabel names an entry for its button: kind, time and title.
 func chipLabel(e domain.Entry) string {
-	t := "时间未公布"
+	t := locales.CalendarTimeTba()
 	if e.At != nil {
 		t = e.At.String()
 	}
-	return fmt.Sprintf("%s %s %s %s", e.Kind.Label(), shortDay(e.Date), t, e.Title)
+	return fmt.Sprintf("%s %s %s %s", e.Kind.Label(lang()), shortDay(e.Date), t, e.Title)
 }
 
 // liveLine is a Live chip's time and venue: "19:00 · 大阪 大阪城ホール".
@@ -329,7 +364,7 @@ func liveTime(e domain.Entry) string {
 	if e.At != nil {
 		return e.At.String()
 	}
-	return "时间未定"
+	return locales.CalendarTimeTba()
 }
 
 // liveVenue is where a Live is: "大阪 大阪城ホール".
@@ -337,7 +372,7 @@ func liveVenue(e domain.Entry) string {
 	if v := strings.ReplaceAll(e.Detail, " · ", " "); v != "" {
 		return v
 	}
-	return "场地未公布"
+	return locales.CalendarVenueTba()
 }
 
 // chip is one entry in a calendar cell. Live shows are cards in their
@@ -355,7 +390,7 @@ func (a *App) chip(c *ui.Context, e domain.Entry, compact bool) {
 	selected := a.entryID == e.ID
 	tip := e.Title + " · " + e.Detail
 	if e.Changed {
-		tip += " · 有更新"
+		tip += " · " + locales.CalendarUpdated()
 	}
 	b := ui.ButtonBase(c).FillWidth().Gap(5).Radius(5).Justify(ui.Start).Label(chipLabel(e)).Tooltip(tip)
 	if compact {
@@ -377,11 +412,11 @@ func (a *App) chip(c *ui.Context, e domain.Entry, compact bool) {
 			ui.Text(c, e.At.String()).FontSize(10).TextColor(theme.TextSecondary).SingleLine().Shrink(0)
 		}
 		_, artist := a.entryArtist(e)
-		title := e.Kind.Short() + " " + e.Title
+		title := e.Kind.Short(lang()) + " " + e.Title
 		if artist != "" && compact {
-			title = e.Kind.Short() + " " + artist
+			title = e.Kind.Short(lang()) + " " + artist
 		} else if !compact {
-			title = e.Kind.Label() + " · " + e.Title
+			title = e.Kind.Label(lang()) + " · " + e.Title
 		}
 		t := ui.Text(c, title).FontSize(10.5).SingleLine().Shrink(1)
 		if e.Important {
@@ -390,10 +425,10 @@ func (a *App) chip(c *ui.Context, e domain.Entry, compact bool) {
 		if !compact {
 			t.FontSize(theme.CaptionSize)
 			if e.Changed {
-				tag(c, "更新", theme.StatusInfo)
+				tag(c, locales.CalendarUpdateTag(), theme.StatusInfo)
 			}
 			if e.NeedsReview {
-				tag(c, "需确认", theme.StatusWarning)
+				tag(c, locales.CalendarNeedsReview(), theme.StatusWarning)
 			}
 		}
 	}).Clicked() {
@@ -417,9 +452,9 @@ func (a *App) liveChip(c *ui.Context, e domain.Entry, compact bool) {
 	off := e.Status == domain.StatusPostponed || e.Status == domain.StatusCancelled
 	tip := e.Title + "\n" + liveLine(e)
 	if off {
-		tip += " · " + e.Status.Label()
+		tip += " · " + e.Status.Label(lang())
 	} else if e.Changed {
-		tip += " · 有更新"
+		tip += " · " + locales.CalendarUpdated()
 	}
 	b := ui.ButtonBase(c).FillWidth().Gap(5).Radius(6).Justify(ui.Start).AlignItems(ui.Stretch).
 		Label(chipLabel(e)).Tooltip(tip).Clip()
@@ -447,7 +482,7 @@ func (a *App) liveChip(c *ui.Context, e domain.Entry, compact bool) {
 		ui.Box(c).Width(3).Radius(1.5).Shrink(0).Margin(3, 0, 3, 3).Background(bar)
 		ui.Column(c).Grow(1).Shrink(1).MinWidth(0).Justify(ui.Center).Gap(1).Padding(2, 5, 2, 0).Children(func() {
 			ui.Row(c).Gap(4).AlignItems(ui.Center).Children(func() {
-				t := ui.Text(c, name).FontSize(11).Bold().TextColor(pal.Text).SingleLine().Shrink(1)
+				t := ui.Text(c, name).Lang("ja").FontSize(11).Bold().TextColor(pal.Text).SingleLine().Shrink(1)
 				if e.Status == domain.StatusCancelled {
 					t.Strikethrough()
 				}
@@ -455,12 +490,12 @@ func (a *App) liveChip(c *ui.Context, e domain.Entry, compact bool) {
 					t.FontSize(12.5)
 					ui.Spacer(c)
 					if off {
-						tag(c, e.Status.Label(), theme.StatusError)
+						tag(c, e.Status.Label(lang()), theme.StatusError)
 					} else if e.Changed {
-						tag(c, "更新", theme.StatusInfo)
+						tag(c, locales.CalendarUpdateTag(), theme.StatusInfo)
 					}
 					if e.NeedsReview {
-						tag(c, "需确认", theme.StatusWarning)
+						tag(c, locales.CalendarNeedsReview(), theme.StatusWarning)
 					}
 				}
 			})
@@ -468,14 +503,14 @@ func (a *App) liveChip(c *ui.Context, e domain.Entry, compact bool) {
 				// One line in a month's cell: the time, then the venue.
 				ui.Row(c).Gap(2).AlignItems(ui.Center).Children(func() {
 					if off {
-						ui.Text(c, e.Status.Label()).FontSize(10).Bold().TextColor(theme.StatusError).SingleLine().Shrink(0).Margin(0, 3, 0, 0)
+						ui.Text(c, e.Status.Label(lang())).FontSize(10).Bold().TextColor(theme.StatusError).SingleLine().Shrink(0).Margin(0, 3, 0, 0)
 					}
 					chipInfo(c, icons.Time, liveTime(e)+" "+liveVenue(e), info, 9).Shrink(1)
 				})
 				return
 			}
 			if artist != "" && e.Title != artist {
-				ui.Text(c, e.Title).FontSize(11).TextColor(pal.Text).SingleLine()
+				ui.Text(c, e.Title).Lang("ja").FontSize(11).TextColor(pal.Text).SingleLine()
 			}
 			chipInfo(c, icons.Venue, liveVenue(e), info, 11)
 			chipInfo(c, icons.Time, liveTime(e), info, 11)
@@ -546,8 +581,8 @@ func (a *App) timeGrid(c *ui.Context, first domain.Date, n int) {
 		})
 		ui.Grid(c).ColumnTracks(tracks...).BorderWidth(0, 0, 1, 0).BorderColor(theme.MistGray).Children(func() {
 			ui.Column(c).Padding(8, 8, 8, 0).AlignItems(ui.End).Children(func() {
-				caption(c, "全天 /")
-				caption(c, "时间未公布")
+				caption(c, locales.CalendarAllDay())
+				caption(c, locales.CalendarTimeTba())
 			})
 			for i := range n {
 				d := first.AddDays(i)
@@ -610,7 +645,7 @@ func (a *App) entryRow(c *ui.Context, e domain.Entry) {
 		b.Background(theme.CloudWhite)
 	}
 	if b.Children(func() {
-		t := "未公布"
+		t := locales.CommonTba()
 		if e.At != nil {
 			t = e.At.String()
 		}
@@ -626,8 +661,8 @@ func (a *App) entryRow(c *ui.Context, e domain.Entry) {
 		}
 		ui.Column(c).Grow(1).Shrink(1).Gap(2).Children(func() {
 			ui.Row(c).Gap(6).AlignItems(ui.Center).Children(func() {
-				ui.Text(c, e.Kind.Label()).FontSize(theme.CaptionSize).Bold().TextColor(col.Mix(theme.InkCharcoal, 0.3)).Shrink(0)
-				t := ui.Text(c, e.Title).SingleLine().Shrink(1)
+				ui.Text(c, e.Kind.Label(lang())).FontSize(theme.CaptionSize).Bold().TextColor(col.Mix(theme.InkCharcoal, 0.3)).Shrink(0)
+				t := ui.Text(c, e.Title).Lang("ja").SingleLine().Shrink(1)
 				if e.Important {
 					t.Bold()
 				}
@@ -635,16 +670,16 @@ func (a *App) entryRow(c *ui.Context, e domain.Entry) {
 					t.Strikethrough()
 				}
 			})
-			caption(c, a.entryDetail(e)).SingleLine()
+			caption(c, a.entryDetail(e)).Lang("ja").SingleLine()
 		})
 		if e.Status == domain.StatusPostponed || e.Status == domain.StatusCancelled {
-			tag(c, e.Status.Label(), theme.StatusError)
+			tag(c, e.Status.Label(lang()), theme.StatusError)
 		}
 		if e.Changed {
-			tag(c, "更新", theme.StatusInfo)
+			tag(c, locales.CalendarUpdateTag(), theme.StatusInfo)
 		}
 		if e.NeedsReview {
-			tag(c, "需确认", theme.StatusWarning)
+			tag(c, locales.CalendarNeedsReview(), theme.StatusWarning)
 		}
 	}).Clicked() {
 		a.selectEntry(e)
@@ -665,7 +700,7 @@ func (a *App) entryDetail(e domain.Entry) string {
 		s += e.Detail
 	}
 	if s == "" {
-		s = "场地未公布"
+		s = locales.CalendarVenueTba()
 	}
 	return s
 }
@@ -683,7 +718,7 @@ func (a *App) entryList(c *ui.Context, evs []domain.Entry, showYear bool) {
 						label = dayTitle(cur)
 					}
 					if cur == a.today() {
-						label += " · 今天"
+						label += locales.CalendarTodaySuffix()
 					}
 					ui.Text(c, label).Bold().Padding(10, 0, 2)
 				}
@@ -699,12 +734,12 @@ func (a *App) agendaView(c *ui.Context) {
 	evs := a.entries(first, last)
 	if len(evs) == 0 {
 		card(c).Grow(1).Children(func() {
-			emptyState(c, icons.List, "这段时间没有公开事件",
-				fmt.Sprintf("%s – %s 之间暂无 Live 或票务节点。可以切换月份，或在「数据源」开启更多数据源。", shortDay(first), shortDay(last)))
+			emptyState(c, icons.List, locales.CalendarEmptyTitle(),
+				locales.CalendarEmptyBody(shortDay(first), shortDay(last)))
 		})
 		return
 	}
-	caption(c, fmt.Sprintf("%s – %s，共 %d 项", shortDay(first), shortDay(last), len(evs)))
+	caption(c, locales.CalendarRangeCount(shortDay(first), shortDay(last), len(evs)))
 	a.entryList(c, evs, false)
 }
 
@@ -712,17 +747,17 @@ func (a *App) searchView(c *ui.Context) {
 	res := a.searchResults()
 	ui.Row(c).Gap(10).AlignItems(ui.Center).Children(func() {
 		mygoicons.Image(c, icons.Search, 16)
-		ui.Text(c, fmt.Sprintf("「%s」的搜索结果：%d 项", a.query, len(res))).Bold()
-		caption(c, scopeLabels[a.scope]+" · 可搜索艺人、巡演、场馆、城市、类型、来源")
+		ui.Text(c, locales.CalendarSearchResults(a.query, len(res))).Bold()
+		caption(c, scopeLabel(a.scope)+locales.CalendarSearchHint())
 		ui.Spacer(c)
-		ui.Segmented(c, &a.scope, scopeLabels...).Label("搜索日期范围")
-		if ui.Button(c, "清除搜索").Clicked() {
+		ui.Segmented(c, &a.scope, scopeLabels()...).Label(locales.FilterDateRange())
+		if ui.Button(c, locales.SearchClear()).Clicked() {
 			a.query = ""
 		}
 	})
 	if len(res) == 0 {
 		card(c).Grow(1).Children(func() {
-			emptyState(c, icons.Search, "没有找到匹配的事件", "试试艺人别名、场馆名、都道府县（如「東京」），或调整筛选与日期范围。")
+			emptyState(c, icons.Search, locales.CalendarNoResults(), locales.CalendarNoResultsBody())
 		})
 		return
 	}

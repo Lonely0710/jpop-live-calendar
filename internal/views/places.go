@@ -1,53 +1,137 @@
 package views
 
-import "jpop-live-calendar/internal/domain"
+import (
+	"github.com/egoist/mygo/ui"
+
+	icons "jpop-live-calendar/packages/spotlight-icons"
+	"jpop-live-calendar/packages/spotlight-icons/mygoicons"
+
+	"jpop-live-calendar/internal/domain"
+	"jpop-live-calendar/internal/geo"
+	"jpop-live-calendar/internal/theme"
+	"jpop-live-calendar/locales"
+)
 
 // The place filters use Japan's usual regions and the capital city of each,
 // because the data has a prefecture (and sometimes a venue) but not a
-// consistent city field.
+// consistent city field. The filters bind stable IDs, never the labels the
+// current language shows.
 const (
-	allRegions = "全部地区"
-	allCities  = "全部城市"
+	allRegions = "all"
+	allCities  = "all"
 )
 
 type regionInfo struct {
-	label       string
+	id          string
 	prefectures []string
-	city        string // the region's capital, in the filter's Chinese label
+	city        string // the capital's ID, as the filter binds it
 	cityPref    string // the prefecture the capital belongs to
 }
 
 var japanRegions = []regionInfo{
-	{"北海道", []string{"北海道"}, "札幌", "北海道"},
-	{"东北", []string{"青森", "岩手", "宮城", "秋田", "山形", "福島"}, "仙台", "宮城"},
-	{"关东", []string{"茨城", "栃木", "群馬", "埼玉", "千葉", "東京", "神奈川"}, "东京", "東京"},
-	{"中部", []string{"新潟", "富山", "石川", "福井", "山梨", "長野", "岐阜", "静岡", "愛知"}, "名古屋", "愛知"},
-	{"关西（近畿）", []string{"三重", "滋賀", "京都", "大阪", "兵庫", "奈良", "和歌山"}, "大阪", "大阪"},
-	{"中国", []string{"鳥取", "島根", "岡山", "広島", "山口"}, "广岛", "広島"},
-	{"四国", []string{"徳島", "香川", "愛媛", "高知"}, "高松", "香川"},
-	{"九州・冲绳", []string{"福岡", "佐賀", "長崎", "熊本", "大分", "宮崎", "鹿児島", "沖縄"}, "福冈", "福岡"},
+	{"hokkaido", []string{"北海道"}, "sapporo", "北海道"},
+	{"tohoku", []string{"青森", "岩手", "宮城", "秋田", "山形", "福島"}, "sendai", "宮城"},
+	{"kanto", []string{"茨城", "栃木", "群馬", "埼玉", "千葉", "東京", "神奈川"}, "tokyo", "東京"},
+	{"chubu", []string{"新潟", "富山", "石川", "福井", "山梨", "長野", "岐阜", "静岡", "愛知"}, "nagoya", "愛知"},
+	{"kansai", []string{"三重", "滋賀", "京都", "大阪", "兵庫", "奈良", "和歌山"}, "osaka", "大阪"},
+	{"chugoku", []string{"鳥取", "島根", "岡山", "広島", "山口"}, "hiroshima", "広島"},
+	{"shikoku", []string{"徳島", "香川", "愛媛", "高知"}, "takamatsu", "香川"},
+	{"kyushu", []string{"福岡", "佐賀", "長崎", "熊本", "大分", "宮崎", "鹿児島", "沖縄"}, "fukuoka", "福岡"},
 }
 
-var regionOptions = func() []string {
+// regionLabel names a region ID in the language the app shows.
+func regionLabel(id string) string {
+	switch id {
+	case "hokkaido":
+		return locales.RegionHokkaido()
+	case "tohoku":
+		return locales.RegionTohoku()
+	case "kanto":
+		return locales.RegionKanto()
+	case "chubu":
+		return locales.RegionChubu()
+	case "kansai":
+		return locales.RegionKansai()
+	case "chugoku":
+		return locales.RegionChugoku()
+	case "shikoku":
+		return locales.RegionShikoku()
+	case "kyushu":
+		return locales.RegionKyushu()
+	}
+	return locales.RegionAll()
+}
+
+// cityLabel names a region capital's ID in the language the app shows.
+func cityLabel(id string) string {
+	switch id {
+	case "sapporo":
+		return locales.CitySapporo()
+	case "sendai":
+		return locales.CitySendai()
+	case "tokyo":
+		return locales.CityTokyo()
+	case "nagoya":
+		return locales.CityNagoya()
+	case "osaka":
+		return locales.CityOsaka()
+	case "hiroshima":
+		return locales.CityHiroshima()
+	case "takamatsu":
+		return locales.CityTakamatsu()
+	case "fukuoka":
+		return locales.CityFukuoka()
+	}
+	return locales.CityAll()
+}
+
+// prefEN romanizes the prefectures whose data keeps their Japanese names.
+var prefEN = map[string]string{
+	"北海道": "Hokkaido", "青森": "Aomori", "岩手": "Iwate", "宮城": "Miyagi",
+	"秋田": "Akita", "山形": "Yamagata", "福島": "Fukushima", "茨城": "Ibaraki",
+	"栃木": "Tochigi", "群馬": "Gunma", "埼玉": "Saitama", "千葉": "Chiba",
+	"東京": "Tokyo", "神奈川": "Kanagawa", "新潟": "Niigata", "富山": "Toyama",
+	"石川": "Ishikawa", "福井": "Fukui", "山梨": "Yamanashi", "長野": "Nagano",
+	"岐阜": "Gifu", "静岡": "Shizuoka", "愛知": "Aichi", "三重": "Mie",
+	"滋賀": "Shiga", "京都": "Kyoto", "大阪": "Osaka", "兵庫": "Hyogo",
+	"奈良": "Nara", "和歌山": "Wakayama", "鳥取": "Tottori", "島根": "Shimane",
+	"岡山": "Okayama", "広島": "Hiroshima", "山口": "Yamaguchi", "徳島": "Tokushima",
+	"香川": "Kagawa", "愛媛": "Ehime", "高知": "Kochi", "福岡": "Fukuoka",
+	"佐賀": "Saga", "長崎": "Nagasaki", "熊本": "Kumamoto", "大分": "Oita",
+	"宮崎": "Miyazaki", "鹿児島": "Kagoshima", "沖縄": "Okinawa",
+}
+
+// prefLabel names a prefecture as the data stores it: its Japanese name,
+// or its romanization in English.
+func prefLabel(name string) string {
+	if lang() == "en" {
+		if en, ok := prefEN[name]; ok {
+			return en
+		}
+	}
+	return geo.Suffixed(name)
+}
+
+func regionIDs() []string {
 	out := []string{allRegions}
 	for _, r := range japanRegions {
-		out = append(out, r.label)
+		out = append(out, r.id)
 	}
 	return out
-}()
+}
 
-func regionInfoOf(label string) (regionInfo, bool) {
+func regionInfoOf(id string) (regionInfo, bool) {
 	for _, r := range japanRegions {
-		if r.label == label {
+		if r.id == id {
 			return r, true
 		}
 	}
 	return regionInfo{}, false
 }
 
-// cityOptions is the city select's choices: every region's capital, or only
+// cityIDs is the city select's choices: every region's capital, or only
 // the selected region's capital.
-func cityOptions(region string) []string {
+func cityIDs(region string) []string {
 	if r, ok := regionInfoOf(region); ok {
 		return []string{allCities, r.city}
 	}
@@ -58,9 +142,9 @@ func cityOptions(region string) []string {
 	return out
 }
 
-func cityPrefecture(label string) (string, bool) {
+func cityPrefecture(id string) (string, bool) {
 	for _, r := range japanRegions {
-		if r.city == label {
+		if r.city == id {
 			return r.cityPref, true
 		}
 	}
@@ -86,6 +170,34 @@ func hasString(xs []string, s string) bool {
 		}
 	}
 	return false
+}
+
+// placeSelect is a filter's drop-down: it binds a stable ID while showing
+// the label of the language the app shows, which ui.Select cannot, as it
+// binds the string it shows.
+func placeSelect(c *ui.Context, selected *string, ids []string, label func(string) string, aria string, width float32) {
+	sel := ui.SelectBase(c, selected)
+	sel.Trigger.Width(width).Padding(6, 10).Gap(6).Radius(theme.Radius).Border(1, theme.MistGray).
+		AlignItems(ui.Center).Label(aria)
+	if sel.Trigger.Hovered() {
+		sel.Trigger.Background(theme.Hover)
+	}
+	sel.Trigger.Children(func() {
+		ui.Text(c, label(*selected)).Grow(1).Shrink(1).SingleLine()
+		mygoicons.Image(c, icons.Next, 12).Rotate(90).Opacity(0.6)
+	})
+	sel.Popup(func(panel ui.Element) {
+		panel.Padding(4).Radius(theme.Radius).Background(theme.CloudWhite).Border(1, theme.MistGray)
+		for _, id := range ids {
+			item := sel.Item(id).Padding(6, 9).Radius(4)
+			if item.Highlighted() {
+				item.Background(theme.GlassSelected)
+			}
+			item.Children(func() {
+				ui.Text(c, label(id))
+			})
+		}
+	})
 }
 
 // entryPrefectures is every prefecture an entry happens in: a show has one,

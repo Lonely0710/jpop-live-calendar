@@ -1,6 +1,10 @@
 {
   "name": "Live Calendar",
   "identifier": "com.lonely.jpoplivecalendar",
-  "version": "1.0.2",
-  "out": "build"
+  "version": "1.1.0",
+  "out": "build",
+  "i18n": {
+    "dir": "locales",
+    "source": "zh-Hans"
+  }
 }

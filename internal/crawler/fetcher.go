@@ -17,6 +17,7 @@ import (
 	"golang.org/x/text/encoding/htmlindex"
 
 	"jpop-live-calendar/internal/sources"
+	"jpop-live-calendar/locales"
 )
 
 // UserAgent identifies the app to the sites it reads.
@@ -50,14 +51,35 @@ type hostState struct {
 
 type validators struct{ etag, lastModified string }
 
+// robotsVerdict is a robots.txt answer; its text follows the UI language
+// when the error is made, while errors.Is still tells the two apart.
+type robotsVerdict struct{ denied bool }
+
+func (v robotsVerdict) Error() string {
+	if v.denied {
+		return locales.CrawlRobotsDenied()
+	}
+	return locales.CrawlRobotsUnavailable()
+}
+
 // ErrDisallowed reports a page robots.txt forbids.
-var ErrDisallowed = errors.New("robots.txt 不允许抓取该页面")
+var ErrDisallowed = robotsVerdict{denied: true}
 
 // ErrRobotsUnavailable reports a page that cannot be read only because its
 // robots.txt is temporarily unavailable (a 5xx, as a site under maintenance,
 // or a network error). RFC 9309 says to crawl nothing until it can be read:
 // it is retried sooner than an ordinary robots.txt.
-var ErrRobotsUnavailable = errors.New("robots.txt 暂时不可用")
+var ErrRobotsUnavailable = robotsVerdict{}
+
+// retryError is an error written out in the UI language that still matches
+// its sentinel under errors.Is.
+type retryError struct {
+	target error
+	msg    string
+}
+
+func (e retryError) Error() string { return e.msg }
+func (e retryError) Unwrap() error { return e.target }
 
 const (
 	robotsCacheTTL = 24 * time.Hour  // a robots.txt that was read
@@ -97,7 +119,7 @@ func (f *Fetcher) ua() string {
 func (f *Fetcher) Get(ctx context.Context, raw string) (*sources.Response, error) {
 	u, err := url.Parse(raw)
 	if err != nil || (u.Scheme != "https" && u.Scheme != "http") || u.Host == "" {
-		return nil, fmt.Errorf("无效的地址 %q", raw)
+		return nil, errors.New(locales.CrawlBadUrl(raw))
 	}
 	hs := f.host(u.Host)
 	hs.mu.Lock()
@@ -114,13 +136,14 @@ func (f *Fetcher) Get(ctx context.Context, raw string) (*sources.Response, error
 		}
 		if !hs.robots.allowed(u.RequestURI()) {
 			if hs.robots.unavailable {
-				reason := "无法读取"
+				reason := locales.CrawlUnreadable()
 				if hs.robots.status != 0 {
 					reason = fmt.Sprintf("HTTP %d", hs.robots.status)
 				}
-				return nil, fmt.Errorf("%w（%s，站点可能维护中，稍后重试）：%s", ErrRobotsUnavailable, reason, raw)
+				msg := locales.CrawlRetry(locales.CrawlRobotsUnavailable(), reason, raw)
+				return nil, retryError{target: ErrRobotsUnavailable, msg: msg}
 			}
-			return nil, fmt.Errorf("%w：%s", ErrDisallowed, raw)
+			return nil, retryError{target: ErrDisallowed, msg: locales.CrawlRobotsDenied() + "：" + raw}
 		}
 	}
 
@@ -165,9 +188,9 @@ func (f *Fetcher) Get(ctx context.Context, raw string) (*sources.Response, error
 		}
 		if attempt >= retries || ctx.Err() != nil {
 			if err != nil {
-				return nil, fmt.Errorf("网络错误：%w", err)
+				return nil, errors.New(locales.CrawlNetwork(err.Error()))
 			}
-			return nil, fmt.Errorf("服务器返回 %s", resp.Status)
+			return nil, errors.New(locales.CrawlStatus(resp.Status))
 		}
 		backoff := time.Duration(1<<attempt) * time.Second
 		if resp != nil {
@@ -190,7 +213,7 @@ func (f *Fetcher) Get(ctx context.Context, raw string) (*sources.Response, error
 		out.ETag, out.LastModified = v.etag, v.lastModified
 		return out, nil
 	case resp.StatusCode >= 400:
-		return nil, fmt.Errorf("服务器返回 %s", resp.Status)
+		return nil, errors.New(locales.CrawlStatus(resp.Status))
 	}
 	out.Body = body
 	out.Text = decode(body, resp.Header.Get("Content-Type"))
@@ -247,10 +270,10 @@ func (f *Fetcher) read(resp *http.Response) ([]byte, error) {
 	}
 	b, err := io.ReadAll(io.LimitReader(resp.Body, max+1))
 	if err != nil {
-		return nil, fmt.Errorf("读取失败：%w", err)
+		return nil, errors.New(locales.CrawlReadFailed(err.Error()))
 	}
 	if int64(len(b)) > max {
-		return nil, fmt.Errorf("页面超过 %d MB 上限", max>>20)
+		return nil, errors.New(locales.CrawlTooLarge(int(max >> 20)))
 	}
 	return b, nil
 }

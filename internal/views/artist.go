@@ -6,6 +6,7 @@ import (
 	"jpop-live-calendar/internal/avatar"
 	"jpop-live-calendar/internal/domain"
 	"jpop-live-calendar/internal/theme"
+	"jpop-live-calendar/locales"
 )
 
 // artistColor is an artist's theme color: the largest block of color of
@@ -61,7 +62,7 @@ func (a *App) avatarView(c *ui.Context, id, name string, size float32) ui.Elemen
 	col := a.artistColor(id, name)
 	ring := max(1.5, size/22)
 	box := ui.Box(c).Size(size, size).Radius(size / 2).Shrink(0).Center().Background(col).
-		Role(ui.RoleImage).Label(name + " 的头像")
+		Role(ui.RoleImage).Label(locales.ArtistAvatarRole(name))
 	if bmp := a.bitmap(id); bmp != nil {
 		in := size - 2*ring
 		box.Children(func() {
