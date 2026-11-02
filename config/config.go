@@ -70,6 +70,9 @@ type fileSource struct {
 		BodyEnd     string   `yaml:"body_end"`
 		ArtistStart string   `yaml:"artist_start"`
 		ArtistEnd   string   `yaml:"artist_end"`
+		Item        string   `yaml:"item"`
+		ItemTitle   string   `yaml:"item_title"`
+		ItemDate    string   `yaml:"item_date"`
 		Keywords    []string `yaml:"keywords"`
 		Exclude     []string `yaml:"exclude"`
 		Include     string   `yaml:"include"`
@@ -233,6 +236,7 @@ func Parse(b []byte) (Config, error) {
 			Article: domain.ArticleOptions{
 				Enabled: s.Article.Enabled, BodyStart: s.Article.BodyStart, BodyEnd: s.Article.BodyEnd,
 				ArtistStart: s.Article.ArtistStart, ArtistEnd: s.Article.ArtistEnd,
+				Item: s.Article.Item, ItemTitle: s.Article.ItemTitle, ItemDate: s.Article.ItemDate,
 				Keywords: s.Article.Keywords, Exclude: s.Article.Exclude, Include: s.Article.Include,
 				TitleOnly: s.Article.TitleOnly, MaxAge: maxAge,
 				MaxPerSync: s.Article.MaxPerSync, Delay: delay,

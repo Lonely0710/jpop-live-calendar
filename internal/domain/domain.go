@@ -152,9 +152,13 @@ type PublicTicketRound struct {
 
 // PublicAnnouncement is the evidence an event comes from.
 type PublicAnnouncement struct {
-	ID          string
-	SourceID    string
-	URL         string
+	ID       string
+	SourceID string
+	URL      string
+	// Anchor tells apart announcements one page holds: a list page whose
+	// items are inline has no address per item, so the adapter gives each
+	// item a stable anchor while the URL stays the page a reader can open.
+	Anchor      string
 	Title       string
 	PublishedAt time.Time
 	FetchedAt   time.Time
@@ -288,13 +292,19 @@ type ArticleOptions struct {
 	BodyEnd     string
 	ArtistStart string // text marker of the source's artist list
 	ArtistEnd   string
-	Keywords    []string      // only titles with one of these are opened
-	Exclude     []string      // …and none of these ("グッズ", "配信")
-	Include     string        // only titles matching this regular expression are kept at all
-	TitleOnly   bool          // keep only the title until an article is opened; ignore the feed's description
-	MaxAge      time.Duration // skip items older than this (0 keeps every item)
-	MaxPerSync  int
-	Delay       time.Duration
+	// Item reads a list page whose announcements are inline instead of
+	// linked: every occurrence of this marker begins one announcement, and
+	// ItemTitle / ItemDate point at that announcement's own title and date.
+	Item       string
+	ItemTitle  string
+	ItemDate   string
+	Keywords   []string      // only titles with one of these are opened
+	Exclude    []string      // …and none of these ("グッズ", "配信")
+	Include    string        // only titles matching this regular expression are kept at all
+	TitleOnly  bool          // keep only the title until an article is opened; ignore the feed's description
+	MaxAge     time.Duration // skip items older than this (0 keeps every item)
+	MaxPerSync int
+	Delay      time.Duration
 }
 
 // SourceConfig configures one public data source.

@@ -23,6 +23,32 @@ const first = `▼ツアー情報
 受付期間：10月12日（月）12:00～10月20日（火）23:59
 当落発表：10月23日（金）18:00`
 
+// One page can hold several announcements; the anchor is what keeps them
+// apart, so they must not collapse into one.
+func TestStoreAnchorsOnOnePage(t *testing.T) {
+	s := NewStore()
+	page := "https://example.com/news/"
+	a := ann("x", page, "CM song", "body a", at(2, 9))
+	a.Anchor = "i-aaa"
+	b := ann("x", page, "Tour", "body b", at(1, 9))
+	b.Anchor = "i-bbb"
+	if s.Put(a) != New || s.Put(b) != New {
+		t.Fatal("two anchors on one page are two announcements")
+	}
+	if got := len(s.All()); got != 2 {
+		t.Fatalf("stored = %d, want 2", got)
+	}
+	// The same anchor twice is the same announcement.
+	c := a
+	c.RawText = "body a, updated"
+	if s.Put(c) != Updated || len(s.All()) != 2 {
+		t.Fatal("the same anchor should update its own announcement")
+	}
+	if !strings.HasPrefix(strings.TrimSpace(a.URL), page) {
+		t.Fatal("the page stays the link a reader opens")
+	}
+}
+
 func TestStoreRevisions(t *testing.T) {
 	s := NewStore()
 	a := ann("x", "https://example.com/n/1/?utm_source=rss", "t", "body", at(1, 9))

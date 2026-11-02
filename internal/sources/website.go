@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"jpop-live-calendar/internal/domain"
+	"jpop-live-calendar/internal/normalize"
 	"jpop-live-calendar/locales"
 )
 
@@ -65,6 +66,15 @@ func (Website) Fetch(ctx context.Context, src domain.SourceConfig, env Env) (Res
 	}
 	// The pages read, for the tour pages they link to.
 	bodies := []struct{ url, body string }{{base, resp.Text}}
+	// A list page whose announcements are inline (no address per post):
+	// every item is read from the page itself.
+	if src.Article.Item != "" {
+		res.Announcements = inlineItems(src, resp.Text, base, now)
+		if len(res.Announcements) == 0 {
+			res.Warnings = append(res.Warnings, locales.SiteNoItems())
+		}
+		return res, features(ctx, src, env, bodies, map[string]bool{src.URL: true, base: true}, &res, page)
+	}
 	if src.Follow == "" {
 		if _, ok := between(resp.Text, src.Article.BodyStart, src.Article.BodyEnd); !ok && src.Article.BodyStart != "" {
 			res.Warnings = append(res.Warnings, locales.SiteNoMarker())
@@ -112,7 +122,10 @@ func (Website) Fetch(ctx context.Context, src domain.SourceConfig, env Env) (Res
 			bodies = append(bodies, struct{ url, body string }{l.URL, detail.Text})
 		}
 	}
-	if opened == 0 && src.Feature == "" {
+	// A source whose list matches nothing says so, whether or not it also
+	// reads tour pages: silence here hid a pattern that no longer fits the
+	// site.
+	if opened == 0 {
 		res.Warnings = append(res.Warnings, locales.SiteNoLinks())
 	}
 	err = features(ctx, src, env, bodies, seen, &res, page)
@@ -243,4 +256,87 @@ func linkTitle(t string) string {
 	t = linkDateTailRe.ReplaceAllString(t, "")
 	t = linkDateHeadRe.ReplaceAllString(t, "")
 	return strings.TrimSpace(t)
+}
+
+// inlineItems reads a list page whose announcements are inline instead of
+// linked: every Item marker begins one announcement, which carries its own
+// title (ItemTitle) and date (ItemDate), and whose body is the chunk's
+// BodyStart…BodyEnd. Such a site has no address per post, so the page stays
+// the link a reader opens and each item gets an anchor of its own date and
+// title — the identity several announcements on one page need.
+func inlineItems(src domain.SourceConfig, page, base string, now time.Time) []domain.PublicAnnouncement {
+	chunks := strings.Split(page, src.Article.Item)
+	if len(chunks) < 2 {
+		return nil
+	}
+	max := src.Article.MaxPerSync
+	if max <= 0 {
+		max = 5
+	}
+	var out []domain.PublicAnnouncement
+	seen := map[string]bool{}
+	for _, chunk := range chunks[1:] {
+		title := itemField(chunk, src.Article.ItemTitle)
+		if title == "" || !wanted(title, src.Article) {
+			continue
+		}
+		if len(out) == max {
+			break
+		}
+		text, hints, _ := article(chunk, src.Article)
+		if strings.TrimSpace(text) == "" {
+			text = HTMLText(chunk)
+		}
+		when := now
+		if d, ok := itemDate(chunk, src.Article.ItemDate); ok {
+			when = d
+		}
+		anchor := normalize.ID("i-", when.Format("2006-01-02"), title)
+		if seen[anchor] {
+			continue
+		}
+		seen[anchor] = true
+		if src.Artist != "" {
+			hints = []string{src.Artist}
+		}
+		out = append(out, domain.PublicAnnouncement{
+			SourceID: src.ID, URL: base, Anchor: anchor, Title: title, RawText: text,
+			ArtistHints: hints, FetchedAt: now, PublishedAt: when, Schedule: src.Artist != "",
+		})
+	}
+	return out
+}
+
+// itemField is the text an item writes right after marker, up to its closing
+// tag: <p class="tit">…</p>.
+func itemField(chunk, marker string) string {
+	if marker == "" {
+		return ""
+	}
+	i := strings.Index(chunk, marker)
+	if i < 0 {
+		return ""
+	}
+	s := chunk[i+len(marker):]
+	if j := strings.IndexByte(s, '<'); j >= 0 {
+		s = s[:j]
+	}
+	return strings.TrimSpace(html.UnescapeString(s))
+}
+
+var itemDateRe = regexp.MustCompile(`^(\d{4})\s*[年./-]\s*(\d{1,2})\s*[月./-]\s*(\d{1,2})`)
+
+// itemDate reads an item's own date, written as 2026.11.02 or 2026年11月2日.
+func itemDate(chunk, marker string) (time.Time, bool) {
+	m := itemDateRe.FindStringSubmatch(itemField(chunk, marker))
+	if m == nil {
+		return time.Time{}, false
+	}
+	y, _ := strconv.Atoi(m[1])
+	mo, _ := strconv.Atoi(m[2])
+	d, _ := strconv.Atoi(m[3])
+	if mo < 1 || mo > 12 || d < 1 || d > 31 {
+		return time.Time{}, false
+	}
+	return time.Date(y, time.Month(mo), d, 12, 0, 0, 0, domain.Tokyo), true
 }

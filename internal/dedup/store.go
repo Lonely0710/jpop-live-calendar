@@ -31,6 +31,12 @@ func NewStore() *Store { return &Store{byKey: map[string]*domain.PublicAnnouncem
 
 func key(a domain.PublicAnnouncement) string {
 	if a.URL != "" {
+		// One page can hold several announcements (a list page whose items
+		// are inline): the anchor is what tells them apart, so it belongs
+		// to the identity the way a fragment belongs to a page.
+		if a.Anchor != "" {
+			return normalize.URL(a.URL) + "#" + a.Anchor
+		}
 		return normalize.URL(a.URL)
 	}
 	return a.SourceID + ":" + a.ID
