@@ -129,6 +129,10 @@ type Options struct {
 	Pinned   []string
 	SavePins func(ids []string) error
 
+	// SetWeekStart saves the first column of the calendar's week, which
+	// theme.WeekStart holds; nil keeps the choice in memory (tests).
+	SetWeekStart func(time.Weekday) error
+
 	// CachePath is the JSON snapshot of the announcements from the last
 	// sync: loaded before the first frame and rewritten after each sync.
 	// Empty disables the cache (tests).
@@ -392,13 +396,27 @@ func (a *App) Refresh(ids ...string) {
 	})
 }
 
+// sourceName is the name a source is known by in the language the app
+// shows: the sync log and the inspector's announcements name it too, so
+// they must not keep the wording of sources.yaml.
 func (a *App) sourceName(id string) string {
 	for _, s := range a.opt.Config.Sources {
 		if s.ID == id {
-			return s.Name
+			return s.DisplayName(lang())
 		}
 	}
 	return id
+}
+
+// sourceConfig is the source an announcement came from: its configured
+// address names the service whose mark the page shows.
+func (a *App) sourceConfig(an domain.PublicAnnouncement) domain.SourceConfig {
+	for _, s := range a.opt.Config.Sources {
+		if s.ID == an.SourceID {
+			return s
+		}
+	}
+	return domain.SourceConfig{ID: an.SourceID, URL: an.URL, Kind: a.sourceKind(an.SourceID)}
 }
 
 func (a *App) sourceKind(id string) domain.SourceKind {

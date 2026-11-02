@@ -95,6 +95,34 @@ func countLabel(c *ui.Context, s string) ui.Element {
 	return caption(c, s).SingleLine().Shrink(0)
 }
 
+// dateScopeChoice is the 全部日期 / 今天起 / 已过去 choice: one pill group, the
+// chosen one filled coral, so the day range the list shows reads at a
+// glance instead of as a pale chip.
+func dateScopeChoice(c *ui.Context, sel *int, labels []string, aria string) ui.Element {
+	seg := ui.SegmentedBase(c, sel, len(labels))
+	seg.Track.Height(28).Padding(2).Gap(2).Radius(theme.Radius).AlignItems(ui.Center).
+		Background(theme.PaperIvory).Border(1, theme.MistGray).Shrink(0).Label(aria).Children(func() {
+		for i, text := range labels {
+			s := seg.Segment(i).Height(24).Padding(0, 10).Radius(theme.Radius - 2).AlignItems(ui.Center).Label(text)
+			switch {
+			case *sel == i:
+				s.Background(theme.LiveCoral)
+			case s.Hovered():
+				s.Background(theme.Hover)
+			}
+			s.Children(func() {
+				t := ui.Text(c, text).FontSize(12).SingleLine()
+				if *sel == i {
+					t.Bold().TextColor(theme.CloudWhite)
+				} else {
+					t.TextColor(theme.TextSecondary)
+				}
+			})
+		}
+	})
+	return seg.Track
+}
+
 // emptyState is the centered placeholder of a page without content.
 func emptyState(c *ui.Context, name icons.Name, title, body string) ui.Element {
 	return ui.Column(c).Grow(1).Center().Gap(10).Padding(32).Children(func() {

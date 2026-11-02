@@ -10,6 +10,8 @@ import (
 
 	"github.com/egoist/mygo/ui"
 
+	icons "jpop-live-calendar/packages/spotlight-icons"
+
 	"jpop-live-calendar/internal/domain"
 	"jpop-live-calendar/internal/theme"
 	"jpop-live-calendar/locales"
@@ -28,6 +30,9 @@ type sourceDraft struct {
 	artist   string
 	note     string
 	err      string
+	// seg holds the indexes the segmented controls of kind, layer and
+	// interval bind, kept here so their pointers stay put between frames.
+	seg [3]int
 }
 
 var (
@@ -73,67 +78,158 @@ func parseSourceInterval(s string) time.Duration {
 	return 0
 }
 
-// sourceFormView is the folded-out form of the 数据源 page.
+// sourceFormView is the folded-out form of the 数据源 page: a label column
+// on the left, and on the right either a segmented choice or a text field
+// sized to what it holds, so choosing and typing read apart.
 func (a *App) sourceFormView(c *ui.Context) {
 	f := &a.sourceForm
-	card(c).Padding(14, 16).Gap(10).Children(func() {
-		ui.Row(c).Gap(10).AlignItems(ui.Center).Children(func() {
-			ui.Text(c, locales.SourceFormTitle()).Bold()
-			caption(c, locales.SourceFormNote())
-			ui.Spacer(c)
-			if ui.Button(c, locales.CommonCancel()).Clicked() {
+	card(c).Padding(16, 20).Gap(0).Children(func() {
+		ui.Row(c).Gap(12).AlignItems(ui.Start).Padding(0, 0, 14, 0).Children(func() {
+			ui.Column(c).Gap(3).Grow(1).Shrink(1).Children(func() {
+				ui.Text(c, locales.SourceFormTitle()).FontSize(15).Bold()
+				codeText(c, locales.SourceFormNote(), theme.CaptionSize).TextColor(theme.TextSecondary)
+			})
+			if iconButton(c, icons.Clear, locales.CommonCancel(), false, false).Clicked() {
 				f.open = false
 			}
 		})
-		fieldRow(c, locales.FieldName(), func() {
-			ui.TextInput(c, &f.name).Grow(1).Shrink(1).Label(locales.FieldName()).Placeholder(locales.FieldNamePlaceholder())
-		})
-		ui.Row(c).Gap(14).AlignItems(ui.End).Children(func() {
-			fieldRow(c, locales.FieldKind(), func() {
-				placeSelect(c, &f.kind, sourceKindIDs, sourceKindLabel, locales.FieldKind(), 150)
+		formDivider(c)
+		formSection(c, func() {
+			formLine(c, locales.FieldKind(), "", func() {
+				segChoice(c, &f.kind, &f.seg[0], sourceKindIDs, sourceKindLabel, locales.FieldKind())
 			})
-			fieldRow(c, locales.FieldLayer(), func() {
-				placeSelect(c, &f.layer, sourceLayerIDs, sourceLayerLabel, locales.FieldLayer(), 150)
-			})
-			fieldRow(c, locales.FieldInterval(), func() {
-				placeSelect(c, &f.interval, sourceIntervalIDs, sourceIntervalLabel, locales.FieldInterval(), 140)
-			})
-		})
-		fieldRow(c, locales.FieldUrl(), func() {
-			ui.TextInput(c, &f.url).Grow(1).Shrink(1).Label(locales.FieldUrl()).Placeholder("https://…")
-		})
-		ui.Row(c).Gap(14).AlignItems(ui.End).Children(func() {
-			ui.Column(c).Shrink(1).Children(func() {
-				fieldRow(c, locales.FieldArtistOptional(), func() {
-					ui.TextInput(c, &f.artist).Width(210).Label(locales.FieldArtistOptional()).Placeholder(locales.FieldArtistPlaceholder())
+			formLine(c, locales.FieldUrl(), "", func() {
+				ui.Column(c).Gap(5).Grow(1).Shrink(1).Children(func() {
+					ui.TextInput(c, &f.url).Width(460).MaxWidthPercent(100).Font("monospace").
+						Label(locales.FieldUrl()).Placeholder("https://")
+					help := locales.SourceFormHelpWebsite()
+					if f.kind == string(domain.SourceRSS) {
+						help = locales.SourceFormHelpRss()
+					}
+					caption(c, help)
 				})
 			})
-			ui.Column(c).Grow(1).Children(func() {
-				fieldRow(c, locales.FieldNoteOptional(), func() {
-					ui.TextInput(c, &f.note).Grow(1).Label(locales.FieldNoteOptional()).Placeholder(locales.FieldNotePlaceholder())
-				})
+			formLine(c, locales.FieldName(), "", func() {
+				ui.TextInput(c, &f.name).Width(300).MaxWidthPercent(100).Label(locales.FieldName()).
+					Placeholder(locales.FieldNamePlaceholder())
 			})
 		})
-		ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
-			caption(c, locales.SourceFormHelp())
+		formDivider(c)
+		formSection(c, func() {
+			formLine(c, locales.FieldLayer(), "", func() {
+				ui.Row(c).Gap(12).AlignItems(ui.Center).Shrink(1).Children(func() {
+					segChoice(c, &f.layer, &f.seg[1], sourceLayerIDs, sourceLayerLabel, locales.FieldLayer())
+					hint := locales.SourceLayerLiveHint()
+					if f.layer == domain.LayerNews {
+						hint = locales.SourceLayerNewsHint()
+					}
+					caption(c, hint).Shrink(1)
+				})
+			})
+			formLine(c, locales.FieldInterval(), "", func() {
+				segChoice(c, &f.interval, &f.seg[2], sourceIntervalIDs, sourceIntervalLabel, locales.FieldInterval())
+			})
 		})
-		if f.err != "" {
-			ui.Text(c, f.err).FontSize(12.5).TextColor(theme.StatusError)
-		}
-		ui.Row(c).Gap(10).AlignItems(ui.Center).Children(func() {
-			if ui.Button(c, locales.SourceFormAdd()).Clicked() {
+		formDivider(c)
+		formSection(c, func() {
+			formLine(c, locales.FieldArtist(), locales.FieldOptional(), func() {
+				ui.TextInput(c, &f.artist).Width(240).MaxWidthPercent(100).Label(locales.FieldArtistOptional()).
+					Placeholder(locales.FieldArtistPlaceholder())
+			})
+			formLine(c, locales.FieldNote(), locales.FieldOptional(), func() {
+				ui.TextInput(c, &f.note).Width(460).MaxWidthPercent(100).Label(locales.FieldNoteOptional()).
+					Placeholder(locales.FieldNotePlaceholder())
+			})
+		})
+		formDivider(c)
+		ui.Row(c).Gap(10).AlignItems(ui.Center).Padding(14, 0, 0, 0).Children(func() {
+			ui.Column(c).Gap(3).Grow(1).Shrink(1).Children(func() {
+				if f.err != "" {
+					ui.Text(c, f.err).FontSize(12.5).Bold().TextColor(theme.StatusError)
+				}
+				caption(c, locales.SourceFormAfter())
+			})
+			if ui.Button(c, locales.CommonCancel()).Clicked() {
+				f.open = false
+			}
+			if primaryButton(c, locales.SourceFormAdd()).Clicked() {
 				a.addSource(c)
 			}
-			caption(c, locales.SourceFormAfter())
 		})
 	})
 }
 
-// fieldRow is a labelled form control.
-func fieldRow(c *ui.Context, label string, body func()) {
-	ui.Column(c).Gap(4).Children(func() {
-		ui.Text(c, label).FontSize(12).TextColor(theme.TextSecondary)
-		body()
+// formLabelW is the width of the form's label column.
+const formLabelW = 104
+
+// formSection is a block of form lines between two dividers.
+func formSection(c *ui.Context, lines func()) {
+	ui.Column(c).Gap(12).Padding(14, 0).Children(lines)
+}
+
+// formDivider is the hairline between the blocks of a form.
+func formDivider(c *ui.Context) {
+	ui.Box(c).Height(1).FillWidth().Background(theme.MistGray.Alpha(0.8))
+}
+
+// formLine is one labelled control: the label, and a note such as 可选 under
+// it, in the label column; the control on the right.
+func formLine(c *ui.Context, label, note string, control func()) {
+	ui.Row(c).Gap(16).AlignItems(ui.Start).Children(func() {
+		ui.Column(c).Width(formLabelW).Shrink(0).Gap(1).Padding(6, 0, 0, 0).Children(func() {
+			ui.Text(c, label).FontSize(13).Bold()
+			if note != "" {
+				caption(c, note)
+			}
+		})
+		ui.Row(c).Grow(1).Shrink(1).AlignItems(ui.Center).MinHeight(30).Children(control)
+	})
+}
+
+// segChoice is a segmented control over stable IDs: idx is the index it
+// binds, kept beside *sel so its pointer is stable.
+func segChoice(c *ui.Context, sel *string, idx *int, ids []string, label func(string) string, aria string) {
+	*idx = 0
+	labels := make([]string, len(ids))
+	for i, id := range ids {
+		labels[i] = label(id)
+		if id == *sel {
+			*idx = i
+		}
+	}
+	seg := ui.SegmentedBase(c, idx, len(ids))
+	seg.Track.Height(30).Padding(2).Gap(2).Radius(theme.Radius).AlignItems(ui.Center).
+		Background(theme.PaperIvory).Border(1, theme.MistGray).Shrink(0).Label(aria).Children(func() {
+		for i, text := range labels {
+			s := seg.Segment(i).Height(24).Padding(0, 12).Radius(theme.Radius - 2).AlignItems(ui.Center).Label(text)
+			switch {
+			case *idx == i:
+				s.Background(theme.LiveCoral)
+			case s.Hovered():
+				s.Background(theme.Hover)
+			}
+			s.Children(func() {
+				t := ui.Text(c, text).FontSize(12.5).SingleLine()
+				if *idx == i {
+					t.Bold().TextColor(theme.CloudWhite)
+				}
+			})
+		}
+	})
+	*sel = ids[*idx]
+}
+
+// primaryButton is the coral button of a form's main action.
+func primaryButton(c *ui.Context, text string) ui.Element {
+	b := ui.ButtonBase(c).Height(30).Padding(0, 16).Radius(theme.Radius).Label(text).Background(theme.LiveCoral)
+	switch {
+	case b.Pressed():
+		b.Background(theme.LiveCoral.Alpha(0.8).Over(theme.InkCharcoal))
+	case b.Hovered():
+		b.Background(theme.LiveCoral.Alpha(0.88).Over(theme.InkCharcoal))
+	}
+	return b.Children(func() {
+		ui.Text(c, text).FontSize(13).Bold().TextColor(theme.CloudWhite).SingleLine()
 	})
 }
 

@@ -70,6 +70,9 @@ func renderedTexts(t *testing.T, tag string) []string {
 	collect()
 	app.langOpen = false
 	app.userOpen = false
+	app.filterOpen = true
+	collect()
+	app.filterOpen = false
 	app.section = SectionSources
 	app.sourceForm.open = true
 	collect()
@@ -79,6 +82,28 @@ func renderedTexts(t *testing.T, tag string) []string {
 	}
 	sort.Strings(out)
 	return out
+}
+
+// TestSourceNamesFollowLocale checks that no page names a source the way
+// sources.yaml writes it once the language has its own wording: the
+// sources page, the filter's list and the inspector's announcements all
+// say it in the language the app shows.
+func TestSourceNamesFollowLocale(t *testing.T) {
+	for _, tag := range []string{"ja", "en"} {
+		var base []string
+		for _, s := range config.Default().Sources {
+			if name := s.DisplayName(tag); name != s.Name {
+				base = append(base, s.Name)
+			}
+		}
+		for _, line := range renderedTexts(t, tag) {
+			for _, name := range base {
+				if strings.Contains(line, name) {
+					t.Errorf("%s shows %q, the source's name as written in sources.yaml", tag, line)
+				}
+			}
+		}
+	}
 }
 
 // TestNoTextLeftUntranslated checks that the interface is written in the

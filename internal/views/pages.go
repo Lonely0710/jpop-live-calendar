@@ -2,6 +2,7 @@ package views
 
 import (
 	"fmt"
+	"log"
 	"sort"
 	"strings"
 	"time"
@@ -101,7 +102,7 @@ func (a *App) artistsPage(c *ui.Context) {
 			sel = &sums[0]
 		}
 		ui.Row(c).Grow(1).Shrink(1).MinHeight(0).Gap(16).AlignItems(ui.Stretch).Children(func() {
-			ui.Scroll(c).Width(250).Shrink(0).ScrollbarInsets(12, 6, 12).Label(locales.ArtistsListLabel()).Children(func() {
+			ui.Scroll(c).Width(284).Shrink(0).ScrollbarInsets(12, 6, 12).Label(locales.ArtistsListLabel()).Children(func() {
 				card(c).FillWidth().Padding(6).Gap(2).Children(func() {
 					for _, s := range sums {
 						c.Key(s.Artist.ID)
@@ -120,13 +121,13 @@ func (a *App) artistsPage(c *ui.Context) {
 									ui.Text(c, s.Artist.Name).Lang("ja").Bold().SingleLine()
 									next := locales.ArtistNoUpcoming()
 									if s.Next != nil {
-										next = locales.ArtistNext(shortDay(s.Next.StartDate))
+										next = locales.ArtistNext(a.nextDay(s.Next.StartDate))
 									}
 									line := locales.ArtistLine(s.Shows, next)
 									if s.Shows == 0 && len(s.Tours) == 0 {
 										line = locales.ArtistPending()
 									}
-									caption(c, line).SingleLine()
+									caption(c, line).SingleLine().Tooltip(line)
 								})
 							}).Clicked() {
 								a.artistID = s.Artist.ID
@@ -544,11 +545,8 @@ func (a *App) sourcesPage(c *ui.Context) {
 				a.sourceForm.open = !a.sourceForm.open
 				a.sourceForm.err = ""
 			}
-			path := a.opt.Config.Path
-			if path == config.Embedded {
-				path = locales.SourcesDefaultConfig()
-			}
-			caption(c, locales.SourcesConfigFile(path))
+			codeText(c, locales.SourcesConfigFile(configPathText(a.opt.Config.Path)), theme.CaptionSize).
+				TextColor(theme.TextSecondary)
 		})
 		if a.sourceForm.open {
 			a.sourceFormView(c)
@@ -657,7 +655,7 @@ func (a *App) sourceRow(c *ui.Context, st crawler.SourceStatus) {
 	c.Key(src.ID)
 	ui.Column(c).FillWidth().Padding(9, 11).Gap(6).Radius(theme.Radius).Background(theme.PaperIvory).Children(func() {
 		ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
-			mygoicons.Image(c, sourceKindIcon(src.Kind), 16).Tooltip(kindLabel(src.Kind))
+			sourceMark(c, src, 18)
 			ui.Row(c).Gap(6).AlignItems(ui.Center).Shrink(1).Children(func() {
 				ui.Text(c, name).FontSize(13).Bold().SingleLine()
 				if layer := layerName(src); layer != "" {
@@ -709,7 +707,7 @@ func (a *App) sourceRow(c *ui.Context, st crawler.SourceStatus) {
 			if src.Interval > 0 {
 				tip = locales.SourcesEveryAuto(shortDuration(src.Interval))
 			}
-			ui.Text(c, everyLabel(src)).FontSize(10).TextColor(theme.TextSecondary).SingleLine().Tooltip(tip)
+			ui.Text(c, everyLabel(src)).Font("monospace").FontSize(10).TextColor(theme.TextSecondary).SingleLine().Tooltip(tip)
 		})
 		if note != "" {
 			ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
@@ -851,34 +849,55 @@ func (a *App) syncLog(c *ui.Context) {
 func (a *App) settingsPage(c *ui.Context) {
 	page(c, func() {
 		pageHeader(c, locales.SettingsTitle())
-		card(c).Padding(6, 16).Children(func() {
-			row := func(label, value string) {
-				ui.Row(c).Padding(10, 0).Gap(12).AlignItems(ui.Center).Children(func() {
-					ui.Text(c, label).Width(170).Shrink(0)
-					ui.Text(c, value).TextColor(theme.TextSecondary).Shrink(1)
+		// General and Artists share a row; the sources of data get a row of
+		// their own, its rows in two columns so the card is not one long
+		// list of short lines.
+		ui.Row(c).Gap(14).AlignItems(ui.Stretch).Children(func() {
+			settingsCard(c, locales.SettingsGroupGeneral(), "", 1, func(r *settingsRows) {
+				// The version reads with the card's name: a number to look
+				// up, not a setting.
+				r.note(func() {
+					codeText(c, locales.SettingsVersion()+" `"+a.opt.Version+"`", theme.CaptionSize).
+						TextColor(theme.TextSecondary)
 				})
-			}
-			row(locales.SettingsVersion(), "Live Calendar "+a.opt.Version)
-			row(locales.SettingsTimezone(), locales.SettingsTimezoneValue())
-			row(locales.SettingsWeekStart(), locales.SettingsMonday())
-			path := a.opt.Config.Path
-			if path == config.Embedded {
-				path = locales.SourcesDefaultConfig()
-			}
-			row(locales.SettingsConfigFile(), path)
-			row(locales.SettingsDataStorage(), locales.SettingsDataStorageValue())
-			row(locales.SettingsAvatarCache(), locales.SettingsAvatarCacheValue())
-			row(platformText(locales.SettingsMenuBarLabel(), locales.SettingsTrayLabel()), platformText(
-				locales.SettingsMenuBarValue(),
-				locales.SettingsTrayValue()))
+				r.row(locales.SettingsTimezone(), func() { settingsValue(c, locales.SettingsTimezoneValue()) })
+				r.row(locales.SettingsWeekStart(), func() { a.weekStartChoice(c) })
+				r.row(locales.SettingsSidebar(), func() {
+					settingsValue(c, locales.SettingsSidebarValue(sidebarShortcut, inspectorShortcut))
+				})
+				r.row(locales.SettingsAccount(), func() { settingsValue(c, locales.SettingsAccountValue()) })
+			}).Grow(1)
+			settingsCard(c, locales.SettingsGroupArtists(), "", 1, func(r *settingsRows) {
+				avatars := locales.SettingsAvatarsValue()
+				switch a.opt.Config.Avatars {
+				case config.AvatarsOff:
+					avatars = locales.SettingsAvatarsOff()
+				case config.AvatarsQQ:
+					avatars = locales.SettingsAvatarsQq()
+				case config.AvatarsITunes:
+					avatars = locales.SettingsAvatarsItunes()
+				}
+				r.row(locales.SettingsAvatars(), func() { settingsValue(c, avatars) })
+				r.row(locales.SettingsThemeColor(), func() { settingsValue(c, locales.SettingsThemeColorValue()) })
+				r.row(locales.SettingsDefaultAvatar(), func() { settingsValue(c, locales.SettingsDefaultAvatarValue()) })
+				r.row(locales.SettingsPins(), func() { settingsValue(c, locales.SettingsPinsValue()) })
+			}).Grow(1)
+		})
+		settingsCard(c, locales.SettingsGroupData(), "", 2, func(r *settingsRows) {
+			r.row(locales.SettingsConfigFile(), func() { settingsValue(c, configPathText(a.opt.Config.Path)) })
+			r.row(locales.SettingsMapData(), func() { settingsValue(c, locales.MapSource()) })
+			r.row(locales.SettingsDataStorage(), func() { settingsValue(c, locales.SettingsDataStorageValue()) })
+			r.row(locales.SettingsAvatarCache(), func() { settingsValue(c, locales.SettingsAvatarCacheValue()) })
+			r.row(platformText(locales.SettingsMenuBarLabel(), locales.SettingsTrayLabel()), func() {
+				settingsValue(c, platformText(locales.SettingsMenuBarValue(), locales.SettingsTrayValue()))
+			})
 			notify := locales.SettingsDeadlinesValue()
 			if a.notifyOff {
 				notify = locales.SettingsDeadlinesUnavailable()
 			}
-			row(locales.SettingsDeadlines(), notify)
-			row(locales.SettingsDefaultAvatar(), locales.SettingsDefaultAvatarValue())
-			ui.Row(c).Padding(10, 0).Gap(12).AlignItems(ui.Center).Children(func() {
-				ui.Text(c, locales.SettingsDemo()).Width(170).Shrink(0)
+			r.row(locales.SettingsDeadlines(), func() { settingsValue(c, notify) })
+			r.row(locales.SettingsDemo(), func() {
+				settingsValue(c, locales.SettingsDemoNote())
 				sched := a.opt.Scheduler
 				on, ok := a.srcOn["demo"]
 				if !ok {
@@ -886,41 +905,185 @@ func (a *App) settingsPage(c *ui.Context) {
 					a.srcOn["demo"] = on
 				}
 				*on = sched.Enabled("demo")
-				ui.Switch(c, on).Label(locales.SettingsDemo())
+				ui.Switch(c, on).Shrink(0).Label(locales.SettingsDemo())
 				if *on != sched.Enabled("demo") {
 					sched.SetEnabled("demo", *on)
 					if *on {
 						a.Refresh("demo")
 					}
 				}
-				caption(c, locales.SettingsDemoNote())
 			})
-			avatars := locales.SettingsAvatarsValue()
-			switch a.opt.Config.Avatars {
-			case config.AvatarsOff:
-				avatars = locales.SettingsAvatarsOff()
-			case config.AvatarsQQ:
-				avatars = locales.SettingsAvatarsQq()
-			case config.AvatarsITunes:
-				avatars = locales.SettingsAvatarsItunes()
-			}
-			row(locales.SettingsAvatars(), avatars)
-			row(locales.SettingsThemeColor(), locales.SettingsThemeColorValue())
-			row(locales.SettingsPins(), locales.SettingsPinsValue())
-			row(locales.SettingsSidebar(), locales.SettingsSidebarValue(sidebarShortcut, inspectorShortcut))
-			row(locales.SettingsAccount(), locales.SettingsAccountValue())
 		})
-		card(c).Padding(14, 16).Gap(6).Children(func() {
-			ui.Text(c, locales.SettingsPrinciples()).Bold()
-			for _, s := range []string{
-				locales.SettingsPrincipleRobots(),
-				locales.SettingsPrincipleAvatars(),
-				locales.SettingsPrincipleTba(),
-				locales.SettingsPrincipleChanges(),
-				locales.SettingsPrincipleSources(),
-			} {
-				ui.Text(c, "· "+s).FontSize(12.5)
+		card(c).FillWidth().Padding(12, 16, 14).Children(func() {
+			settingsHeading(c, locales.SettingsPrinciples(), icons.Announcement)
+			ui.Box(c).Height(1).FillWidth().Margin(10, 0, 8, 0).Background(theme.MistGray)
+			ui.Column(c).Gap(8).Children(func() {
+				for i, s := range []string{
+					locales.SettingsPrincipleRobots(),
+					locales.SettingsPrincipleAvatars(),
+					locales.SettingsPrincipleTba(),
+					locales.SettingsPrincipleChanges(),
+					locales.SettingsPrincipleSources(),
+				} {
+					ui.Row(c).Gap(9).AlignItems(ui.Start).Children(func() {
+						ui.Text(c, fmt.Sprintf("%02d", i+1)).Font("monospace").FontSize(11).Bold().
+							TextColor(theme.LiveCoral).Width(16).Shrink(0)
+						settingsValue(c, s)
+					})
+				}
+			})
+		})
+	})
+}
+
+// weekStartChoice is the first column of the calendar's week: 周日 or 周一.
+// The choice redraws the month and week grids, and is written down for the
+// next launch through Options.SetWeekStart.
+func (a *App) weekStartChoice(c *ui.Context) ui.Element {
+	choices := []time.Weekday{time.Sunday, time.Monday}
+	sel := 1
+	if theme.WeekStart == time.Sunday {
+		sel = 0
+	}
+	el := dateScopeChoice(c, &sel, []string{locales.SettingsSunday(), locales.SettingsMonday()}, locales.SettingsWeekStart())
+	if w := choices[sel]; w != theme.WeekStart {
+		theme.WeekStart = w
+		if a.opt.SetWeekStart != nil {
+			if err := a.opt.SetWeekStart(w); err != nil {
+				log.Printf("prefs.json: %v", err)
+			}
+		}
+		a.opt.Post(func() {}) // one more frame, laid out for the new first column
+	}
+	return el
+}
+
+// settingsLabelW is the width of the label column of the settings: enough
+// for "Deadline reminders" at the value's own size.
+const settingsLabelW = 120
+
+// settingsHeading is the title of a card of settings: coral, the size of
+// a page group's name, with an icon when the block has one.
+func settingsHeading(c *ui.Context, title string, icon icons.Name) {
+	ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
+		if icon != "" {
+			mygoicons.Image(c, icon, 17)
+		}
+		ui.Text(c, title).FontSize(15).Bold().TextColor(theme.LiveCoral).SingleLine()
+	})
+}
+
+// settingsField is one labeled value of a card of settings.
+type settingsField struct {
+	label string
+	value func()
+}
+
+// settingsRows collects the rows of a card, and the note set beside its
+// heading.
+type settingsRows struct {
+	fields []settingsField
+	aside  func() // drawn at the right of the card's heading
+}
+
+func (r *settingsRows) row(label string, value func()) {
+	r.fields = append(r.fields, settingsField{label: label, value: value})
+}
+
+// note is drawn at the right of the card's heading, as the version is.
+func (r *settingsRows) note(fn func()) { r.aside = fn }
+
+// settingsCard is a card of settings: a heading, its rule, and the rows of
+// label / value under it. A wide card lays its rows in two columns, the
+// columns set apart by a hairline.
+func settingsCard(c *ui.Context, title string, icon icons.Name, cols int, rows func(r *settingsRows)) ui.Element {
+	var list settingsRows
+	rows(&list)
+	if cols < 1 {
+		cols = 1
+	}
+	per := (len(list.fields) + cols - 1) / cols
+	return card(c).Padding(12, 16, 14).Children(func() {
+		ui.Row(c).Gap(10).AlignItems(ui.Center).Children(func() {
+			settingsHeading(c, title, icon)
+			if list.aside != nil {
+				ui.Spacer(c)
+				list.aside()
+			}
+		})
+		ui.Box(c).Height(1).FillWidth().Margin(10, 0, 4, 0).Background(theme.MistGray)
+		ui.Row(c).Gap(0).AlignItems(ui.Stretch).Children(func() {
+			for i := 0; i < cols; i++ {
+				from, to := i*per, min((i+1)*per, len(list.fields))
+				if from >= to {
+					continue
+				}
+				if i > 0 {
+					ui.Box(c).Width(1).AlignSelf(ui.Stretch).Background(theme.MistGray.Alpha(0.55))
+				}
+				ui.Column(c).Grow(1).Shrink(1).Padding(0, 12).Children(func() {
+					for _, f := range list.fields[from:to] {
+						settingsRow(c, f)
+					}
+				})
 			}
 		})
 	})
+}
+
+// settingsRow is one label and its value side by side: the label column a
+// fixed width, so every value of a card starts at the same place.
+func settingsRow(c *ui.Context, f settingsField) {
+	ui.Row(c).Gap(12).Padding(7, 0).MinHeight(34).AlignItems(ui.Center).Children(func() {
+		ui.Text(c, f.label).FontSize(12.5).Width(settingsLabelW).Shrink(0).SingleLine()
+		ui.Row(c).Grow(1).Gap(10).AlignItems(ui.Center).Children(f.value)
+	})
+}
+
+// settingsValue is the secondary text on the right of a settings row, its
+// `file names` and `keys` in monospace.
+func settingsValue(c *ui.Context, s string) ui.Element {
+	return codeText(c, s, 12.5).TextColor(theme.TextSecondary).Grow(1).Shrink(1)
+}
+
+// configPathText is the configuration file as a settings value: its path
+// as code, or the words for the built-in defaults.
+func configPathText(path string) string {
+	if path == config.Embedded {
+		return locales.SourcesDefaultConfig()
+	}
+	return "`" + path + "`"
+}
+
+// codeText is a text whose `backquoted` runs are code: a file name, a
+// key, a shortcut, set in monospace on a light tint.
+func codeText(c *ui.Context, s string, size float32) ui.Element {
+	return codeTextSize(c, s, size, size-1)
+}
+
+// codeTextSize is codeText with the size of the code runs given.
+func codeTextSize(c *ui.Context, s string, size, codeSize float32) ui.Element {
+	parts := strings.Split(s, "`")
+	spans := make([]ui.Span, 0, len(parts))
+	for i, p := range parts {
+		if p == "" {
+			continue
+		}
+		if i%2 == 0 {
+			spans = append(spans, ui.Span{Text: p})
+			continue
+		}
+		// A keystroke reads as keys: its glyphs set apart, a size above the
+		// words around it. A file name or a key of a file keeps its size.
+		text, spanSize := p, codeSize
+		if isKeys(p) {
+			text, spanSize = spacedKeys(p), size+1
+		}
+		// An empty inline object on each side keeps the tint off the words
+		// around it.
+		gap := ui.Span{Text: "￼", ObjectWidth: 4, ObjectHeight: 1}
+		spans = append(spans, gap, ui.Span{Text: text, Font: "monospace", Size: spanSize,
+			Color: theme.InkCharcoal, Background: theme.MistGray.Alpha(0.45), Radius: 3}, gap)
+	}
+	return ui.RichText(c, spans...).FontSize(size)
 }

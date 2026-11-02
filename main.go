@@ -57,6 +57,12 @@ func main() {
 	if pinErr != nil {
 		log.Printf("pins.json: %v", pinErr)
 	}
+	// 每周起始日：prefs.json 里记着用户的选择，默认周一。
+	prefs, prefsErr := config.LoadPrefs()
+	if prefsErr != nil {
+		log.Printf("prefs.json: %v; the week starts on Monday", prefsErr)
+	}
+	theme.WeekStart = prefs.Weekday()
 	cachePath, cacheErr := config.CachePath()
 	if cacheErr != nil {
 		log.Printf("cache: %v", cacheErr)
@@ -81,14 +87,16 @@ func main() {
 	}
 	var win *mygo.Window
 	app := views.New(views.Options{
-		Config:     cfg,
-		ConfigErr:  cfgErr,
-		Version:    version,
-		Pinned:     pins,
-		SavePins:   config.SavePins,
-		LocalePref: localePref,
-		SetLocale:  mygo.App.SetLocale,
-		SaveLocale: config.SaveLocale,
+		Config:    cfg,
+		ConfigErr: cfgErr,
+		Version:   version,
+		Pinned:    pins,
+		SavePins:  config.SavePins,
+		// 每周起始日（周日 / 周一）：改了之后写进 prefs.json，下次启动照旧。
+		SetWeekStart: config.SaveWeekStart,
+		LocalePref:   localePref,
+		SetLocale:    mygo.App.SetLocale,
+		SaveLocale:   config.SaveLocale,
 		// 上次同步的公告快照：启动时先显示，之后每次同步完成再写回。
 		CachePath: cachePath,
 		// 抽选截止提醒：系统通知；同一截止只提醒一次（notified.json）。

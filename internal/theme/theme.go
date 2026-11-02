@@ -69,8 +69,9 @@ const (
 	TimeGutter  = 76
 )
 
-// WeekStart is the first column of the month and week views.
-const WeekStart = time.Monday
+// WeekStart is the first column of the month and week views: Monday, or
+// Sunday when the user chose it on the settings page.
+var WeekStart = time.Monday
 
 // DisplayZone is the zone every time is shown in.
 var DisplayZone = domain.Tokyo

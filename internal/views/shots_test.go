@@ -2,6 +2,7 @@ package views
 
 import (
 	"context"
+	"fmt"
 	"image/png"
 	"os"
 	"path/filepath"
@@ -34,10 +35,7 @@ import (
 // with the app's own rules, but leaves a real 更新于 in the footer and real
 // rows on the sources page.
 func TestScreenshots(t *testing.T) {
-	out := os.Getenv("LIVE_CALENDAR_SHOTS")
-	if out == "" {
-		t.Skip("LIVE_CALENDAR_SHOTS not set")
-	}
+	out := shotDir(t)
 
 	cfg := config.Default()
 	cat := catalog.New(dedup.Options{Artists: cfg.Artists, SourceNames: sourceNames(cfg.Sources), Locale: localeChoices[0]})
@@ -96,6 +94,45 @@ func TestScreenshots(t *testing.T) {
 	i18n.SetLocaleFunc(nil)
 }
 
+// shotDir is where the pictures are written. LIVE_CALENDAR_SHOTS is spelled
+// from the repository root ("assets/screenshots"), but go test runs in the
+// package directory, so a relative value is resolved against the module root:
+// taken literally it would leave a second set under internal/views/assets.
+func shotDir(t *testing.T) string {
+	t.Helper()
+	dir := os.Getenv("LIVE_CALENDAR_SHOTS")
+	if dir == "" {
+		t.Skip("LIVE_CALENDAR_SHOTS not set")
+	}
+	if filepath.IsAbs(dir) {
+		return dir
+	}
+	root, err := moduleRoot()
+	if err != nil {
+		t.Fatalf("LIVE_CALENDAR_SHOTS=%s is relative, and %v", dir, err)
+	}
+	return filepath.Join(root, dir)
+}
+
+// moduleRoot is the directory of the go.mod that owns this package: the walk
+// goes up from the package directory go test starts in.
+func moduleRoot() (string, error) {
+	dir, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+	for {
+		if _, err := os.Stat(filepath.Join(dir, "go.mod")); err == nil {
+			return dir, nil
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			return "", fmt.Errorf("no go.mod above %s", dir)
+		}
+		dir = parent
+	}
+}
+
 // shotLang is the language tag as the website and the screenshot folders
 // spell it; zh-Hans is simply zh there.
 func shotLang(tag string) string {
@@ -103,6 +140,18 @@ func shotLang(tag string) string {
 		return "zh"
 	}
 	return tag
+}
+
+// TestModuleRoot keeps the resolution above honest: a relative
+// LIVE_CALENDAR_SHOTS must land on the repository, not inside the package.
+func TestModuleRoot(t *testing.T) {
+	root, err := moduleRoot()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(filepath.Join(root, "mygo.json")); err != nil {
+		t.Fatalf("moduleRoot = %s, want the repository holding mygo.json: %v", root, err)
+	}
 }
 
 // shotPages walks the pages the READMEs and the site show, saving each one.

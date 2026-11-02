@@ -50,6 +50,20 @@ func dayTitle(d domain.Date) string { return dateOf(d, "yMMMMEEEEd") }
 
 func shortDay(d domain.Date) string { return dateOf(d, "MMMd") }
 
+// dayAndWeekday is a day with its weekday: "11月3日 周二", "11月3日(月)"
+// or "Tue, Nov 3" — the order and the weekday's form are the language's,
+// so they come from the formatter, not from joining two parts.
+func dayAndWeekday(d domain.Date) string { return dateOf(d, "MMMdE") }
+
+// nextDay is a day still ahead, as the artist list says it: "1月15日",
+// with the year once it is not this year's.
+func (a *App) nextDay(d domain.Date) string {
+	if d.Year != a.today().Year {
+		return dateOf(d, "yMMMd")
+	}
+	return shortDay(d)
+}
+
 func weekTitle(d domain.Date) string {
 	s := d.WeekStart(theme.WeekStart)
 	e := s.AddDays(6)
@@ -103,7 +117,7 @@ func momentLabel(m *domain.Moment) string {
 	if m == nil {
 		return locales.CommonTba()
 	}
-	s := shortDay(m.Date) + " " + weekdayName(m.Date.Weekday())
+	s := dayAndWeekday(m.Date)
 	if m.Clock != nil {
 		s += " " + m.Clock.String()
 	}

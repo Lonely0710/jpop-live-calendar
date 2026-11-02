@@ -713,7 +713,7 @@ func (a *App) entryList(c *ui.Context, evs []domain.Entry, showYear bool) {
 				if e.Date != cur {
 					cur = e.Date
 					c.Key(cur)
-					label := shortDay(cur) + " " + weekdayName(cur.Weekday())
+					label := dayAndWeekday(cur)
 					if showYear || cur.Year != a.today().Year {
 						label = dayTitle(cur)
 					}
@@ -746,12 +746,11 @@ func (a *App) agendaView(c *ui.Context) {
 func (a *App) searchView(c *ui.Context) {
 	res := a.searchResults()
 	ui.Row(c).Gap(10).AlignItems(ui.Center).Children(func() {
-		mygoicons.Image(c, icons.Search, 16)
-		ui.Text(c, locales.CalendarSearchResults(a.query, len(res))).Bold()
-		caption(c, scopeLabel(a.scope)+locales.CalendarSearchHint())
+		mygoicons.Image(c, icons.Search, 16).Shrink(0)
+		ui.Text(c, locales.CalendarSearchResults(a.query, len(res))).Bold().SingleLine().Shrink(1)
 		ui.Spacer(c)
-		ui.Segmented(c, &a.scope, scopeLabels()...).Label(locales.FilterDateRange())
-		if ui.Button(c, locales.SearchClear()).Clicked() {
+		dateScopeChoice(c, &a.scope, scopeLabels(), locales.FilterDateRange())
+		if iconButton(c, icons.Clear, locales.SearchClear(), false, false).Clicked() {
 			a.query = ""
 		}
 	})

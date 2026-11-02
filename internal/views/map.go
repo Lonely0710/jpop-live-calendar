@@ -70,6 +70,8 @@ type mapView struct {
 	// box changes.
 	paths []*ui.Path
 	key   [5]float32
+	// ring and clipBuf are the scratch of clipping the outlines.
+	ring, clipBuf []ui.Point
 }
 
 // mapStats are the shows on the map: the Live entries that the search,
@@ -175,13 +177,13 @@ func (a *App) mapPage(c *ui.Context) {
 	ui.Column(c).Grow(1).Shrink(1).FillWidth().Padding(22, theme.ContentPadding+4).Gap(14).Children(func() {
 		ui.Row(c).Gap(12).AlignItems(ui.Center).Children(func() {
 			pageHeader(c, locales.MapTitle())
-			ui.Row(c).Gap(8).Shrink(0).AlignItems(ui.Center).Tooltip(locales.MapStatsTooltip()).Children(func() {
+			ui.Row(c).Gap(8).Shrink(0).AlignItems(ui.Center).Tooltip(locales.MapStatsTooltip() + " · " + locales.MapSource()).Children(func() {
 				stat(c, fmt.Sprint(st.total), "Live")
 				divider(c)
 				stat(c, fmt.Sprint(len(st.prefs())), locales.MapPrefectures())
 			})
 			ui.Spacer(c)
-			ui.Segmented(c, &a.mapScope, mapScopeLabels()...).Label(locales.MapDateRange())
+			dateScopeChoice(c, &a.mapScope, mapScopeLabels(), locales.MapDateRange())
 		})
 		card(c).Grow(1).Shrink(1).MinHeight(0).Background(mapSea).Clip().Children(func() {
 			a.mapCanvas(c, st)
@@ -273,23 +275,104 @@ func (m *mapView) reset() {
 }
 
 // hitMarker returns the prefecture whose marker is under (x, y), local
-// to the box, the topmost (the busiest) first, or -1.
+// to the box, where the markers are laid out, the topmost first, or -1.
 func (m *mapView) hitMarker(st mapStats, x, y float32) int {
+	ms := m.layoutMarkers(st, ui.Rect{W: m.box.W, H: m.box.H})
+	for k := len(ms) - 1; k >= 0; k-- { // drawn last, on top
+		mk := ms[k]
+		rad := mk.r + 2
+		if (x-mk.x)*(x-mk.x)+(y-mk.y)*(y-mk.y) <= rad*rad {
+			return mk.pref
+		}
+	}
+	return -1
+}
+
+// mapMarker is one prefecture's count marker: its anchor at the capital
+// and where it is drawn, in DIPs.
+type mapMarker struct {
+	pref, n int
+	ax, ay  float32 // the capital
+	x, y, r float32 // the marker
+}
+
+// moved says the marker was pushed so far that it no longer covers its
+// capital, which a dot and a leader line then show.
+func (mk mapMarker) moved() bool {
+	return float32(math.Hypot(float64(mk.x-mk.ax), float64(mk.y-mk.ay))) > mk.r-1
+}
+
+// mapMarkerGap is the room left between two markers.
+const mapMarkerGap = 3
+
+// layoutMarkers places the markers of the prefectures holding shows so
+// that none covers another: Tokyo and Kanagawa, or the six of Kansai, sit
+// closer together than their markers are wide. Each starts on its capital
+// and overlapping pairs push apart, the busier one moving less, while a
+// spring pulls each back home; it settles where the markers just touch.
+// Zoomed in, the capitals are far enough apart and nothing moves. The
+// result is in drawing order, the busiest last.
+func (m *mapView) layoutMarkers(st mapStats, r ui.Rect) []mapMarker {
 	jp := geo.Japan()
-	s, ox, oy := m.camera(ui.Rect{W: m.box.W, H: m.box.H})
-	best, bestN := -1, -1
-	for i, p := range jp.Prefectures {
-		n := len(st.byPref[p.Name])
+	s, ox, oy := m.camera(r)
+	ms := make([]mapMarker, 0, len(st.byPref))
+	for i, pr := range jp.Prefectures {
+		n := len(st.byPref[pr.Name])
 		if n == 0 {
 			continue
 		}
-		cx, cy := ox+p.Capital.X*s, oy+p.Capital.Y*s
-		rad := markerRadius(n) + 2
-		if (x-cx)*(x-cx)+(y-cy)*(y-cy) <= rad*rad && n > bestN {
-			best, bestN = i, n
+		x, y := ox+pr.Capital.X*s, oy+pr.Capital.Y*s
+		ms = append(ms, mapMarker{pref: i, n: n, ax: x, ay: y, x: x, y: y, r: markerRadius(n)})
+	}
+	// Busiest first while laying out, so they claim their capitals.
+	sort.SliceStable(ms, func(i, j int) bool { return ms[i].n > ms[j].n })
+	const springIters, maxIters = 40, 160
+	for it := 0; it < maxIters; it++ {
+		overlap := false
+		for i := range ms {
+			for j := i + 1; j < len(ms); j++ {
+				a, b := &ms[i], &ms[j]
+				dx, dy := b.x-a.x, b.y-a.y
+				d := float32(math.Hypot(float64(dx), float64(dy)))
+				need := a.r + b.r + mapMarkerGap
+				if d >= need-0.01 {
+					continue
+				}
+				overlap = true
+				if d < 0.5 {
+					// On top of each other: part along their capitals,
+					// or straight down and right when those coincide.
+					dx, dy = b.ax-a.ax, b.ay-a.ay
+					if d = float32(math.Hypot(float64(dx), float64(dy))); d < 0.5 {
+						dx, dy, d = 0.6, 0.8, 1
+					}
+				}
+				ux, uy := dx/d, dy/d
+				push := need - d
+				// The share each moves goes against its area.
+				wa := b.r * b.r / (a.r*a.r + b.r*b.r)
+				a.x -= ux * push * wa
+				a.y -= uy * push * wa
+				b.x += ux * push * (1 - wa)
+				b.y += uy * push * (1 - wa)
+			}
+		}
+		if it < springIters {
+			for k := range ms {
+				ms[k].x += (ms[k].ax - ms[k].x) * 0.12
+				ms[k].y += (ms[k].ay - ms[k].y) * 0.12
+			}
+			continue
+		}
+		if !overlap {
+			break
 		}
 	}
-	return best
+	// Draw the quiet ones first, the busiest on top.
+	for i, j := 0, len(ms)-1; i < j; i, j = i+1, j-1 {
+		ms[i], ms[j] = ms[j], ms[i]
+	}
+	return ms
 }
 
 // mapCanvas is the map itself: drag to move it, scroll (or ⌘ and the
@@ -398,27 +481,42 @@ func (a *App) drawMap(p *ui.Painter, r ui.Rect, st mapStats, selected map[string
 	m := &a.mapCam
 	jp := geo.Japan()
 	s, ox, oy := m.camera(r)
+	// The outlines are remade rather than reset in place: a frame's paint
+	// may run more than once, so a path already handed to the painter keeps
+	// its own geometry.
+	//
+	// Zoomed in, a prefecture spans thousands of pixels, and MyGo drops a
+	// path whose mask passes 4096 pixels a side: the land vanished, leaving
+	// the markers in the sea. So each outline is clipped to the box, with a
+	// margin that keeps the cut edges and their strokes out of sight.
 	if key := [5]float32{s, ox, oy, r.W, r.H}; key != m.key || len(m.paths) != len(jp.Prefectures) {
 		m.key = key
-		if len(m.paths) != len(jp.Prefectures) {
-			m.paths = make([]*ui.Path, len(jp.Prefectures))
-			for i := range m.paths {
-				m.paths[i] = new(ui.Path)
-			}
-		}
+		const margin = 24
+		view := ui.Rect{X: r.X - margin, Y: r.Y - margin, W: r.W + 2*margin, H: r.H + 2*margin}
+		paths := make([]*ui.Path, len(jp.Prefectures))
 		for i, pr := range jp.Prefectures {
-			path := m.paths[i].Reset()
+			path := new(ui.Path)
 			for _, ring := range pr.Rings {
-				for j, pt := range ring {
+				m.ring = m.ring[:0]
+				for _, pt := range ring {
+					m.ring = append(m.ring, ui.Point{X: ox + pt.X*s, Y: oy + pt.Y*s})
+				}
+				pts := clipRing(m.ring, view, &m.clipBuf)
+				if len(pts) < 3 {
+					continue
+				}
+				for j, pt := range pts {
 					if j == 0 {
-						path.MoveTo(ox+pt.X*s, oy+pt.Y*s)
+						path.MoveTo(pt.X, pt.Y)
 					} else {
-						path.LineTo(ox+pt.X*s, oy+pt.Y*s)
+						path.LineTo(pt.X, pt.Y)
 					}
 				}
 				path.Close()
 			}
+			paths[i] = path
 		}
+		m.paths = paths
 	}
 	p.Clip(r, theme.CardRadius, func() {
 		// The inset of the Nansei Islands.
@@ -445,21 +543,30 @@ func (a *App) drawMap(p *ui.Painter, r ui.Rect, st mapStats, selected map[string
 				p.StrokePath(m.paths[i], 1.2, theme.InkCharcoal.Alpha(0.35))
 			}
 		}
-		// The markers, the busiest last so they draw on top.
-		order := make([]int, 0, len(jp.Prefectures))
-		for i, pr := range jp.Prefectures {
-			if len(st.byPref[pr.Name]) > 0 {
-				order = append(order, i)
+		// The markers, laid out so none covers another, the busiest last
+		// so they draw on top. One pushed off its capital keeps a dot
+		// there and a leader line to it.
+		ms := m.layoutMarkers(st, r)
+		// The leaders belong to this draw, as the outlines do: a frame's
+		// paint may run more than once, and a path reset under an earlier
+		// run paints the later one's lines.
+		lead := new(ui.Path)
+		for _, mk := range ms {
+			if mk.moved() {
+				lead.MoveTo(mk.ax, mk.ay)
+				lead.LineTo(mk.x, mk.y)
 			}
 		}
-		sort.SliceStable(order, func(x, y int) bool {
-			return len(st.byPref[jp.Prefectures[order[x]].Name]) < len(st.byPref[jp.Prefectures[order[y]].Name])
-		})
-		for _, i := range order {
+		p.StrokePath(lead, 1.2, theme.InkCharcoal.Alpha(0.45))
+		for _, mk := range ms {
+			if mk.moved() {
+				p.Fill(ui.Rect{X: mk.ax - 3.5, Y: mk.ay - 3.5, W: 7, H: 7}, theme.CloudWhite, 3.5)
+				p.Fill(ui.Rect{X: mk.ax - 2.5, Y: mk.ay - 2.5, W: 5, H: 5}, theme.LiveCoral, 2.5)
+			}
+		}
+		for _, mk := range ms {
+			i, n, cx, cy, rad := mk.pref, mk.n, mk.x, mk.y, mk.r
 			pr := jp.Prefectures[i]
-			n := len(st.byPref[pr.Name])
-			cx, cy := ox+pr.Capital.X*s, oy+pr.Capital.Y*s
-			rad := markerRadius(n)
 			ring := theme.CloudWhite
 			if selected[pr.Name] {
 				ring = theme.InkCharcoal
@@ -501,6 +608,74 @@ func (a *App) drawMap(p *ui.Painter, r ui.Rect, st mapStats, selected map[string
 	})
 }
 
+// clipRing clips a closed ring to the rectangle v (Sutherland–Hodgman),
+// one edge of v at a time; buf holds the scratch. A ring wholly inside v
+// comes back as it is, one wholly outside as nothing.
+func clipRing(pts []ui.Point, v ui.Rect, buf *[]ui.Point) []ui.Point {
+	if len(pts) == 0 {
+		return nil
+	}
+	minX, minY, maxX, maxY := pts[0].X, pts[0].Y, pts[0].X, pts[0].Y
+	for _, p := range pts[1:] {
+		minX, maxX = min(minX, p.X), max(maxX, p.X)
+		minY, maxY = min(minY, p.Y), max(maxY, p.Y)
+	}
+	x0, y0, x1, y1 := v.X, v.Y, v.X+v.W, v.Y+v.H
+	switch {
+	case maxX < x0 || minX > x1 || maxY < y0 || minY > y1:
+		return nil
+	case minX >= x0 && maxX <= x1 && minY >= y0 && maxY <= y1:
+		return pts
+	}
+	in := append((*buf)[:0], pts...)
+	var out []ui.Point
+	for edge := range 4 {
+		inside := func(p ui.Point) bool {
+			switch edge {
+			case 0:
+				return p.X >= x0
+			case 1:
+				return p.X <= x1
+			case 2:
+				return p.Y >= y0
+			}
+			return p.Y <= y1
+		}
+		cross := func(a, b ui.Point) ui.Point {
+			var t float32
+			switch edge {
+			case 0:
+				t = (x0 - a.X) / (b.X - a.X)
+			case 1:
+				t = (x1 - a.X) / (b.X - a.X)
+			case 2:
+				t = (y0 - a.Y) / (b.Y - a.Y)
+			default:
+				t = (y1 - a.Y) / (b.Y - a.Y)
+			}
+			return ui.Point{X: a.X + (b.X-a.X)*t, Y: a.Y + (b.Y-a.Y)*t}
+		}
+		out = out[:0]
+		for k, cur := range in {
+			prev := in[(k+len(in)-1)%len(in)]
+			switch ci, pi := inside(cur), inside(prev); {
+			case ci && pi:
+				out = append(out, cur)
+			case ci:
+				out = append(out, cross(prev, cur), cur)
+			case pi:
+				out = append(out, cross(prev, cur))
+			}
+		}
+		if len(out) == 0 {
+			return nil
+		}
+		in, out = out, in
+	}
+	*buf = in
+	return in
+}
+
 // mapLegend is the key, in the Pacific next to the zoom buttons: the shades, the shows without a known
 // prefecture, and the outlines' source.
 func (a *App) mapLegend(c *ui.Context, st mapStats) {
@@ -529,7 +704,6 @@ func (a *App) mapLegend(c *ui.Context, st mapStats) {
 				a.selectPref(mapUnknown)
 			}
 		}
-		ui.Text(c, locales.MapSource()).FontSize(9.5).TextColor(theme.TextDisabled)
 	})
 }
 
@@ -622,7 +796,7 @@ func (a *App) mapInspector(c *ui.Context) {
 					if e.Date != cur {
 						cur = e.Date
 						c.Key(cur)
-						label := shortDay(cur) + " " + weekdayName(cur.Weekday())
+						label := dayAndWeekday(cur)
 						if cur.Year != a.today().Year {
 							label = dayTitle(cur)
 						}

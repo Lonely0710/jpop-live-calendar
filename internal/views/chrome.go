@@ -614,7 +614,7 @@ func (a *App) filterPanel(c *ui.Context) {
 				ui.Checkbox(c, &a.onlyChanged, locales.FilterChanged())
 				ui.Checkbox(c, &a.onlyReview, locales.FilterReview())
 				caption(c, locales.FilterDateRange())
-				ui.Segmented(c, &a.scope, scopeLabels()...).Label(locales.FilterDateRange())
+				dateScopeChoice(c, &a.scope, scopeLabels(), locales.FilterDateRange())
 				caption(c, locales.FilterRegion())
 				placeSelect(c, &a.region, regionIDs(), regionLabel, locales.FilterRegion(), 236)
 				caption(c, locales.FilterCity())
@@ -645,7 +645,7 @@ func (a *App) filterPanel(c *ui.Context) {
 							}
 							on := !*off
 							c.Key("src:" + id)
-							ui.Checkbox(c, &on, st.Config.Name)
+							ui.Checkbox(c, &on, st.Config.DisplayName(lang()))
 							*off = !on
 						}
 					})

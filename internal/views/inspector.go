@@ -1,8 +1,6 @@
 package views
 
 import (
-	"fmt"
-
 	"github.com/egoist/mygo/ui"
 
 	icons "jpop-live-calendar/packages/spotlight-icons"
@@ -328,7 +326,7 @@ func (a *App) showRow(c *ui.Context, ev domain.PublicEvent, withTitle bool) {
 		col = theme.StatusError
 	}
 	ended := a.endedEvent(ev)
-	when := fmt.Sprintf("%s %s", shortDay(ev.StartDate), weekdayName(ev.StartDate.Weekday()))
+	when := dayAndWeekday(ev.StartDate)
 	if ev.StartAt != nil {
 		when += " " + ev.StartAt.String()
 	}
@@ -388,11 +386,13 @@ func (a *App) reviewBox(c *ui.Context, notes []string) {
 		ui.Row(c).Gap(6).AlignItems(ui.Center).Children(func() {
 			mygoicons.Image(c, icons.ParseError, 14)
 			ui.Text(c, locales.InspectorReviewTitle()).FontSize(theme.CaptionSize).Bold()
+			// 出处提示贴在右上角，不占正文一行。
+			ui.Spacer(c)
+			caption(c, locales.InspectorReviewHint()).SingleLine()
 		})
 		for _, n := range notes {
 			ui.Text(c, "· "+n).FontSize(theme.CaptionSize)
 		}
-		caption(c, locales.InspectorReviewBody())
 	})
 }
 
@@ -483,7 +483,7 @@ func (a *App) sourceList(c *ui.Context, annIDs []string) {
 			c.Key(an.ID)
 			ui.Column(c).Gap(4).Padding(10, 12).Radius(theme.Radius).Background(theme.PaperIvory).Children(func() {
 				ui.Row(c).Gap(6).AlignItems(ui.Center).Children(func() {
-					mygoicons.Image(c, sourceKindIcon(a.sourceKind(an.SourceID)), 14)
+					sourceMark(c, a.sourceConfig(an), 16)
 					caption(c, a.sourceName(an.SourceID)).Bold()
 				})
 				ui.Text(c, an.Title).Lang("ja").FontSize(12.5).MaxLines(3)

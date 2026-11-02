@@ -993,16 +993,6 @@ func (msgs Messages) CalendarSearchResults(q string, n int) string {
 	return Catalog.Format(msgs.locale, "calendar_search_results", map[string]any{"q": q, "n": n})
 }
 
-// CalendarSearchHint says " · 可搜索艺人、巡演、场馆、城市、类型、来源"
-// in the language the app shows.
-func CalendarSearchHint() string { return In(i18n.Locale()).CalendarSearchHint() }
-
-// CalendarSearchHint says " · 可搜索艺人、巡演、场馆、城市、类型、来源"
-// in the language of msgs.
-func (msgs Messages) CalendarSearchHint() string {
-	return Catalog.Format(msgs.locale, "calendar_search_hint", nil)
-}
-
 // CalendarNoResults says "没有找到匹配的事件"
 // in the language the app shows.
 func CalendarNoResults() string { return In(i18n.Locale()).CalendarNoResults() }
@@ -1497,14 +1487,14 @@ func (msgs Messages) InspectorReviewTitle() string {
 	return Catalog.Format(msgs.locale, "inspector_review_title", nil)
 }
 
-// InspectorReviewBody says "以下信息未经猜测补全，请以原文为准。"
+// InspectorReviewHint says "请以原文为准"
 // in the language the app shows.
-func InspectorReviewBody() string { return In(i18n.Locale()).InspectorReviewBody() }
+func InspectorReviewHint() string { return In(i18n.Locale()).InspectorReviewHint() }
 
-// InspectorReviewBody says "以下信息未经猜测补全，请以原文为准。"
+// InspectorReviewHint says "请以原文为准"
 // in the language of msgs.
-func (msgs Messages) InspectorReviewBody() string {
-	return Catalog.Format(msgs.locale, "inspector_review_body", nil)
+func (msgs Messages) InspectorReviewHint() string {
+	return Catalog.Format(msgs.locale, "inspector_review_hint", nil)
 }
 
 // InspectorCopyLink says "复制链接 {label}"
@@ -1791,11 +1781,11 @@ func (msgs Messages) MapUnknownCaption(n int) string {
 	return Catalog.Format(msgs.locale, "map_unknown_caption", map[string]any{"n": n})
 }
 
-// MapSource says "底图：地球地图日本（国土地理院）"
+// MapSource says "地球地图日本（国土地理院）"
 // in the language the app shows.
 func MapSource() string { return In(i18n.Locale()).MapSource() }
 
-// MapSource says "底图：地球地图日本（国土地理院）"
+// MapSource says "地球地图日本（国土地理院）"
 // in the language of msgs.
 func (msgs Messages) MapSource() string {
 	return Catalog.Format(msgs.locale, "map_source", nil)
@@ -2983,11 +2973,11 @@ func (msgs Messages) SettingsTimezone() string {
 	return Catalog.Format(msgs.locale, "settings_timezone", nil)
 }
 
-// SettingsTimezoneValue says "Asia/Tokyo（固定）"
+// SettingsTimezoneValue says "`Asia/Tokyo`（固定）"
 // in the language the app shows.
 func SettingsTimezoneValue() string { return In(i18n.Locale()).SettingsTimezoneValue() }
 
-// SettingsTimezoneValue says "Asia/Tokyo（固定）"
+// SettingsTimezoneValue says "`Asia/Tokyo`（固定）"
 // in the language of msgs.
 func (msgs Messages) SettingsTimezoneValue() string {
 	return Catalog.Format(msgs.locale, "settings_timezone_value", nil)
@@ -3013,6 +3003,16 @@ func (msgs Messages) SettingsMonday() string {
 	return Catalog.Format(msgs.locale, "settings_monday", nil)
 }
 
+// SettingsSunday says "周日"
+// in the language the app shows.
+func SettingsSunday() string { return In(i18n.Locale()).SettingsSunday() }
+
+// SettingsSunday says "周日"
+// in the language of msgs.
+func (msgs Messages) SettingsSunday() string {
+	return Catalog.Format(msgs.locale, "settings_sunday", nil)
+}
+
 // SettingsConfigFile says "配置文件"
 // in the language the app shows.
 func SettingsConfigFile() string { return In(i18n.Locale()).SettingsConfigFile() }
@@ -3021,6 +3021,16 @@ func SettingsConfigFile() string { return In(i18n.Locale()).SettingsConfigFile()
 // in the language of msgs.
 func (msgs Messages) SettingsConfigFile() string {
 	return Catalog.Format(msgs.locale, "settings_config_file", nil)
+}
+
+// SettingsMapData says "地图数据"
+// in the language the app shows.
+func SettingsMapData() string { return In(i18n.Locale()).SettingsMapData() }
+
+// SettingsMapData says "地图数据"
+// in the language of msgs.
+func (msgs Messages) SettingsMapData() string {
+	return Catalog.Format(msgs.locale, "settings_map_data", nil)
 }
 
 // SettingsDataStorage says "数据存储"
@@ -3033,11 +3043,11 @@ func (msgs Messages) SettingsDataStorage() string {
 	return Catalog.Format(msgs.locale, "settings_data_storage", nil)
 }
 
-// SettingsDataStorageValue says "公开公告保存在 cache.json；启动先显示上次同步的结果，再后台同步（不使用数据库）"
+// SettingsDataStorageValue says "公告存于 `cache.json`，启动先显示上次结果，再后台同步"
 // in the language the app shows.
 func SettingsDataStorageValue() string { return In(i18n.Locale()).SettingsDataStorageValue() }
 
-// SettingsDataStorageValue says "公开公告保存在 cache.json；启动先显示上次同步的结果，再后台同步（不使用数据库）"
+// SettingsDataStorageValue says "公告存于 `cache.json`，启动先显示上次结果，再后台同步"
 // in the language of msgs.
 func (msgs Messages) SettingsDataStorageValue() string {
 	return Catalog.Format(msgs.locale, "settings_data_storage_value", nil)
@@ -3053,11 +3063,11 @@ func (msgs Messages) SettingsAvatarCache() string {
 	return Catalog.Format(msgs.locale, "settings_avatar_cache", nil)
 }
 
-// SettingsAvatarCacheValue says "公开头像与主题色保存在 avatars.json；启动先用缓存，条件请求只替换有变化的图片"
+// SettingsAvatarCacheValue says "头像与主题色存于 `avatars.json`，只替换有变化的图片"
 // in the language the app shows.
 func SettingsAvatarCacheValue() string { return In(i18n.Locale()).SettingsAvatarCacheValue() }
 
-// SettingsAvatarCacheValue says "公开头像与主题色保存在 avatars.json；启动先用缓存，条件请求只替换有变化的图片"
+// SettingsAvatarCacheValue says "头像与主题色存于 `avatars.json`，只替换有变化的图片"
 // in the language of msgs.
 func (msgs Messages) SettingsAvatarCacheValue() string {
 	return Catalog.Format(msgs.locale, "settings_avatar_cache_value", nil)
@@ -3083,21 +3093,21 @@ func (msgs Messages) SettingsTrayLabel() string {
 	return Catalog.Format(msgs.locale, "settings_tray_label", nil)
 }
 
-// SettingsMenuBarValue says "关闭窗口后留在菜单栏继续同步；点击菜单栏图标或 Dock 图标重新打开，⌘Q 才退出"
+// SettingsMenuBarValue says "关闭窗口后留在菜单栏继续同步，`⌘Q` 退出"
 // in the language the app shows.
 func SettingsMenuBarValue() string { return In(i18n.Locale()).SettingsMenuBarValue() }
 
-// SettingsMenuBarValue says "关闭窗口后留在菜单栏继续同步；点击菜单栏图标或 Dock 图标重新打开，⌘Q 才退出"
+// SettingsMenuBarValue says "关闭窗口后留在菜单栏继续同步，`⌘Q` 退出"
 // in the language of msgs.
 func (msgs Messages) SettingsMenuBarValue() string {
 	return Catalog.Format(msgs.locale, "settings_menu_bar_value", nil)
 }
 
-// SettingsTrayValue says "关闭窗口后留在系统托盘继续同步；点击托盘图标打开窗口，或在托盘菜单退出"
+// SettingsTrayValue says "关闭窗口后留在系统托盘继续同步，从托盘菜单退出"
 // in the language the app shows.
 func SettingsTrayValue() string { return In(i18n.Locale()).SettingsTrayValue() }
 
-// SettingsTrayValue says "关闭窗口后留在系统托盘继续同步；点击托盘图标打开窗口，或在托盘菜单退出"
+// SettingsTrayValue says "关闭窗口后留在系统托盘继续同步，从托盘菜单退出"
 // in the language of msgs.
 func (msgs Messages) SettingsTrayValue() string {
 	return Catalog.Format(msgs.locale, "settings_tray_value", nil)
@@ -3113,21 +3123,21 @@ func (msgs Messages) SettingsDeadlines() string {
 	return Catalog.Format(msgs.locale, "settings_deadlines", nil)
 }
 
-// SettingsDeadlinesValue says "系统通知：抽选截止前 3 天提醒（首次会请求授权；同一截止只提醒一次）"
+// SettingsDeadlinesValue says "抽选截止前 3 天发系统通知，每个截止只提醒一次"
 // in the language the app shows.
 func SettingsDeadlinesValue() string { return In(i18n.Locale()).SettingsDeadlinesValue() }
 
-// SettingsDeadlinesValue says "系统通知：抽选截止前 3 天提醒（首次会请求授权；同一截止只提醒一次）"
+// SettingsDeadlinesValue says "抽选截止前 3 天发系统通知，每个截止只提醒一次"
 // in the language of msgs.
 func (msgs Messages) SettingsDeadlinesValue() string {
 	return Catalog.Format(msgs.locale, "settings_deadlines_value", nil)
 }
 
-// SettingsDeadlinesUnavailable says "系统通知：本次运行不可用（未授权或不是打包后的 App）"
+// SettingsDeadlinesUnavailable says "本次运行不可用（未授权或不是打包后的 App）"
 // in the language the app shows.
 func SettingsDeadlinesUnavailable() string { return In(i18n.Locale()).SettingsDeadlinesUnavailable() }
 
-// SettingsDeadlinesUnavailable says "系统通知：本次运行不可用（未授权或不是打包后的 App）"
+// SettingsDeadlinesUnavailable says "本次运行不可用（未授权或不是打包后的 App）"
 // in the language of msgs.
 func (msgs Messages) SettingsDeadlinesUnavailable() string {
 	return Catalog.Format(msgs.locale, "settings_deadlines_unavailable", nil)
@@ -3143,11 +3153,11 @@ func (msgs Messages) SettingsDefaultAvatar() string {
 	return Catalog.Format(msgs.locale, "settings_default_avatar", nil)
 }
 
-// SettingsDefaultAvatarValue says "没有头像或尚未加载时，按艺人主题色绘制三种默认插画之一"
+// SettingsDefaultAvatarValue says "无头像时，按艺人主题色绘制默认插画"
 // in the language the app shows.
 func SettingsDefaultAvatarValue() string { return In(i18n.Locale()).SettingsDefaultAvatarValue() }
 
-// SettingsDefaultAvatarValue says "没有头像或尚未加载时，按艺人主题色绘制三种默认插画之一"
+// SettingsDefaultAvatarValue says "无头像时，按艺人主题色绘制默认插画"
 // in the language of msgs.
 func (msgs Messages) SettingsDefaultAvatarValue() string {
 	return Catalog.Format(msgs.locale, "settings_default_avatar_value", nil)
@@ -3163,11 +3173,11 @@ func (msgs Messages) SettingsDemo() string {
 	return Catalog.Format(msgs.locale, "settings_demo", nil)
 }
 
-// SettingsDemoNote says "虚构的艺人与公告，用于离线体验各种合并规则"
+// SettingsDemoNote says "虚构的艺人与公告，用于离线体验"
 // in the language the app shows.
 func SettingsDemoNote() string { return In(i18n.Locale()).SettingsDemoNote() }
 
-// SettingsDemoNote says "虚构的艺人与公告，用于离线体验各种合并规则"
+// SettingsDemoNote says "虚构的艺人与公告，用于离线体验"
 // in the language of msgs.
 func (msgs Messages) SettingsDemoNote() string {
 	return Catalog.Format(msgs.locale, "settings_demo_note", nil)
@@ -3183,21 +3193,21 @@ func (msgs Messages) SettingsAvatars() string {
 	return Catalog.Format(msgs.locale, "settings_avatars", nil)
 }
 
-// SettingsAvatarsValue says "Deezer 公开接口（按艺人名查找；连不上或查不到时用 QQ 音乐的艺人照片，再没有才用 iTu…"
+// SettingsAvatarsValue says "Deezer → QQ 音乐 → iTunes 封面，依次回退"
 // in the language the app shows.
 func SettingsAvatarsValue() string { return In(i18n.Locale()).SettingsAvatarsValue() }
 
-// SettingsAvatarsValue says "Deezer 公开接口（按艺人名查找；连不上或查不到时用 QQ 音乐的艺人照片，再没有才用 iTu…"
+// SettingsAvatarsValue says "Deezer → QQ 音乐 → iTunes 封面，依次回退"
 // in the language of msgs.
 func (msgs Messages) SettingsAvatarsValue() string {
 	return Catalog.Format(msgs.locale, "settings_avatars_value", nil)
 }
 
-// SettingsAvatarsOff says "关闭（只用 sources.yaml 中的 avatar_url / color）"
+// SettingsAvatarsOff says "关闭，只用 `sources.yaml` 的 `avatar_url` / `color`"
 // in the language the app shows.
 func SettingsAvatarsOff() string { return In(i18n.Locale()).SettingsAvatarsOff() }
 
-// SettingsAvatarsOff says "关闭（只用 sources.yaml 中的 avatar_url / color）"
+// SettingsAvatarsOff says "关闭，只用 `sources.yaml` 的 `avatar_url` / `color`"
 // in the language of msgs.
 func (msgs Messages) SettingsAvatarsOff() string {
 	return Catalog.Format(msgs.locale, "settings_avatars_off", nil)
@@ -3213,11 +3223,11 @@ func (msgs Messages) SettingsThemeColor() string {
 	return Catalog.Format(msgs.locale, "settings_theme_color", nil)
 }
 
-// SettingsThemeColorValue says "取头像中面积最大的色块（忽略占比不高时的白底与黑影）；可在 sources.yaml 用 color 指定"
+// SettingsThemeColorValue says "取头像的主色，可用 `sources.yaml` 的 `color` 指定"
 // in the language the app shows.
 func SettingsThemeColorValue() string { return In(i18n.Locale()).SettingsThemeColorValue() }
 
-// SettingsThemeColorValue says "取头像中面积最大的色块（忽略占比不高时的白底与黑影）；可在 sources.yaml 用 color 指定"
+// SettingsThemeColorValue says "取头像的主色，可用 `sources.yaml` 的 `color` 指定"
 // in the language of msgs.
 func (msgs Messages) SettingsThemeColorValue() string {
 	return Catalog.Format(msgs.locale, "settings_theme_color_value", nil)
@@ -3233,11 +3243,11 @@ func (msgs Messages) SettingsPins() string {
 	return Catalog.Format(msgs.locale, "settings_pins", nil)
 }
 
-// SettingsPinsValue says "艺人列表右侧的图钉把艺人放到最前；保存在本地 pins.json，不属于账号数据"
+// SettingsPinsValue says "艺人列表的图钉，存于本地 `pins.json`"
 // in the language the app shows.
 func SettingsPinsValue() string { return In(i18n.Locale()).SettingsPinsValue() }
 
-// SettingsPinsValue says "艺人列表右侧的图钉把艺人放到最前；保存在本地 pins.json，不属于账号数据"
+// SettingsPinsValue says "艺人列表的图钉，存于本地 `pins.json`"
 // in the language of msgs.
 func (msgs Messages) SettingsPinsValue() string {
 	return Catalog.Format(msgs.locale, "settings_pins_value", nil)
@@ -3253,13 +3263,13 @@ func (msgs Messages) SettingsSidebar() string {
 	return Catalog.Format(msgs.locale, "settings_sidebar", nil)
 }
 
-// SettingsSidebarValue says "{sidebar} 展开 / 收起为图标栏；详情面板 {inspector}"
+// SettingsSidebarValue says "`{sidebar}` 收起侧边栏 · `{inspector}` 详情面板"
 // in the language the app shows.
 func SettingsSidebarValue(sidebar string, inspector string) string {
 	return In(i18n.Locale()).SettingsSidebarValue(sidebar, inspector)
 }
 
-// SettingsSidebarValue says "{sidebar} 展开 / 收起为图标栏；详情面板 {inspector}"
+// SettingsSidebarValue says "`{sidebar}` 收起侧边栏 · `{inspector}` 详情面板"
 // in the language of msgs.
 func (msgs Messages) SettingsSidebarValue(sidebar string, inspector string) string {
 	return Catalog.Format(msgs.locale, "settings_sidebar_value", map[string]any{"sidebar": sidebar, "inspector": inspector})
@@ -3275,14 +3285,44 @@ func (msgs Messages) SettingsAccount() string {
 	return Catalog.Format(msgs.locale, "settings_account", nil)
 }
 
-// SettingsAccountValue says "后续版本开放（当前无需登录）"
+// SettingsAccountValue says "后续版本开放，当前无需登录"
 // in the language the app shows.
 func SettingsAccountValue() string { return In(i18n.Locale()).SettingsAccountValue() }
 
-// SettingsAccountValue says "后续版本开放（当前无需登录）"
+// SettingsAccountValue says "后续版本开放，当前无需登录"
 // in the language of msgs.
 func (msgs Messages) SettingsAccountValue() string {
 	return Catalog.Format(msgs.locale, "settings_account_value", nil)
+}
+
+// SettingsGroupGeneral says "通用"
+// in the language the app shows.
+func SettingsGroupGeneral() string { return In(i18n.Locale()).SettingsGroupGeneral() }
+
+// SettingsGroupGeneral says "通用"
+// in the language of msgs.
+func (msgs Messages) SettingsGroupGeneral() string {
+	return Catalog.Format(msgs.locale, "settings_group_general", nil)
+}
+
+// SettingsGroupData says "数据与同步"
+// in the language the app shows.
+func SettingsGroupData() string { return In(i18n.Locale()).SettingsGroupData() }
+
+// SettingsGroupData says "数据与同步"
+// in the language of msgs.
+func (msgs Messages) SettingsGroupData() string {
+	return Catalog.Format(msgs.locale, "settings_group_data", nil)
+}
+
+// SettingsGroupArtists says "艺人"
+// in the language the app shows.
+func SettingsGroupArtists() string { return In(i18n.Locale()).SettingsGroupArtists() }
+
+// SettingsGroupArtists says "艺人"
+// in the language of msgs.
+func (msgs Messages) SettingsGroupArtists() string {
+	return Catalog.Format(msgs.locale, "settings_group_artists", nil)
 }
 
 // SettingsPrinciples says "数据原则"
@@ -3295,51 +3335,51 @@ func (msgs Messages) SettingsPrinciples() string {
 	return Catalog.Format(msgs.locale, "settings_principles", nil)
 }
 
-// SettingsPrincipleRobots says "只读取公开的官方或新闻信息，按 RFC 9309 遵守 robots.txt，同一站点请求间隔 ≥ 1 秒。"
+// SettingsPrincipleRobots says "只读公开的官方或新闻信息，遵守 `robots.txt`（RFC 9309），同站请求间隔 ≥ 1 秒"
 // in the language the app shows.
 func SettingsPrincipleRobots() string { return In(i18n.Locale()).SettingsPrincipleRobots() }
 
-// SettingsPrincipleRobots says "只读取公开的官方或新闻信息，按 RFC 9309 遵守 robots.txt，同一站点请求间隔 ≥ 1 秒。"
+// SettingsPrincipleRobots says "只读公开的官方或新闻信息，遵守 `robots.txt`（RFC 9309），同站请求间隔 ≥ 1 秒"
 // in the language of msgs.
 func (msgs Messages) SettingsPrincipleRobots() string {
 	return Catalog.Format(msgs.locale, "settings_principle_robots", nil)
 }
 
-// SettingsPrincipleAvatars says "头像查询调用的是 Deezer 面向程序的公开 JSON 接口，不抓取网页；可用 avatars: off 关闭。"
+// SettingsPrincipleAvatars says "头像走 Deezer 公开 JSON 接口，不抓网页；`avatars: off` 可关闭"
 // in the language the app shows.
 func SettingsPrincipleAvatars() string { return In(i18n.Locale()).SettingsPrincipleAvatars() }
 
-// SettingsPrincipleAvatars says "头像查询调用的是 Deezer 面向程序的公开 JSON 接口，不抓取网页；可用 avatars: off 关闭。"
+// SettingsPrincipleAvatars says "头像走 Deezer 公开 JSON 接口，不抓网页；`avatars: off` 可关闭"
 // in the language of msgs.
 func (msgs Messages) SettingsPrincipleAvatars() string {
 	return Catalog.Format(msgs.locale, "settings_principle_avatars", nil)
 }
 
-// SettingsPrincipleTba says "公告没写的时间、场地不做猜测，显示为「未公布」；无法确定的内容标记为「需确认」。"
+// SettingsPrincipleTba says "公告没写的时间、场地显示「未公布」，不确定的标为「需确认」"
 // in the language the app shows.
 func SettingsPrincipleTba() string { return In(i18n.Locale()).SettingsPrincipleTba() }
 
-// SettingsPrincipleTba says "公告没写的时间、场地不做猜测，显示为「未公布」；无法确定的内容标记为「需确认」。"
+// SettingsPrincipleTba says "公告没写的时间、场地显示「未公布」，不确定的标为「需确认」"
 // in the language of msgs.
 func (msgs Messages) SettingsPrincipleTba() string {
 	return Catalog.Format(msgs.locale, "settings_principle_tba", nil)
 }
 
-// SettingsPrincipleChanges says "延期、中止、截止时间变化会保留变更记录，不会静默覆盖。"
+// SettingsPrincipleChanges says "延期、中止、截止变化保留变更记录，不静默覆盖"
 // in the language the app shows.
 func SettingsPrincipleChanges() string { return In(i18n.Locale()).SettingsPrincipleChanges() }
 
-// SettingsPrincipleChanges says "延期、中止、截止时间变化会保留变更记录，不会静默覆盖。"
+// SettingsPrincipleChanges says "延期、中止、截止变化保留变更记录，不静默覆盖"
 // in the language of msgs.
 func (msgs Messages) SettingsPrincipleChanges() string {
 	return Catalog.Format(msgs.locale, "settings_principle_changes", nil)
 }
 
-// SettingsPrincipleSources says "每条信息都能追溯到来源公告，可打开原文核对。"
+// SettingsPrincipleSources says "每条信息都能追溯到来源公告，可打开原文核对"
 // in the language the app shows.
 func SettingsPrincipleSources() string { return In(i18n.Locale()).SettingsPrincipleSources() }
 
-// SettingsPrincipleSources says "每条信息都能追溯到来源公告，可打开原文核对。"
+// SettingsPrincipleSources says "每条信息都能追溯到来源公告，可打开原文核对"
 // in the language of msgs.
 func (msgs Messages) SettingsPrincipleSources() string {
 	return Catalog.Format(msgs.locale, "settings_principle_sources", nil)
@@ -3437,11 +3477,11 @@ func (msgs Messages) SourceFormTitle() string {
 	return Catalog.Format(msgs.locale, "source_form_title", nil)
 }
 
-// SourceFormNote says "写入 sources.yaml；只添加公开、允许访问的官方或 RSS 来源"
+// SourceFormNote says "写入 `sources.yaml`，只添加公开、允许访问的官网或 RSS"
 // in the language the app shows.
 func SourceFormNote() string { return In(i18n.Locale()).SourceFormNote() }
 
-// SourceFormNote says "写入 sources.yaml；只添加公开、允许访问的官方或 RSS 来源"
+// SourceFormNote says "写入 `sources.yaml`，只添加公开、允许访问的官网或 RSS"
 // in the language of msgs.
 func (msgs Messages) SourceFormNote() string {
 	return Catalog.Format(msgs.locale, "source_form_note", nil)
@@ -3487,11 +3527,11 @@ func (msgs Messages) FieldLayer() string {
 	return Catalog.Format(msgs.locale, "field_layer", nil)
 }
 
-// FieldInterval says "间隔"
+// FieldInterval says "同步间隔"
 // in the language the app shows.
 func FieldInterval() string { return In(i18n.Locale()).FieldInterval() }
 
-// FieldInterval says "间隔"
+// FieldInterval says "同步间隔"
 // in the language of msgs.
 func (msgs Messages) FieldInterval() string {
 	return Catalog.Format(msgs.locale, "field_interval", nil)
@@ -3517,11 +3557,11 @@ func (msgs Messages) FieldArtistOptional() string {
 	return Catalog.Format(msgs.locale, "field_artist_optional", nil)
 }
 
-// FieldArtistPlaceholder says "sources.yaml 中的艺人名"
+// FieldArtistPlaceholder says "与配置中的艺人名一致"
 // in the language the app shows.
 func FieldArtistPlaceholder() string { return In(i18n.Locale()).FieldArtistPlaceholder() }
 
-// FieldArtistPlaceholder says "sources.yaml 中的艺人名"
+// FieldArtistPlaceholder says "与配置中的艺人名一致"
 // in the language of msgs.
 func (msgs Messages) FieldArtistPlaceholder() string {
 	return Catalog.Format(msgs.locale, "field_artist_placeholder", nil)
@@ -3545,16 +3585,6 @@ func FieldNotePlaceholder() string { return In(i18n.Locale()).FieldNotePlacehold
 // in the language of msgs.
 func (msgs Messages) FieldNotePlaceholder() string {
 	return Catalog.Format(msgs.locale, "field_note_placeholder", nil)
-}
-
-// SourceFormHelp says "官网地址请填 LIVE / SCHEDULE / NEWS 列表页；RSS 填 feed …"
-// in the language the app shows.
-func SourceFormHelp() string { return In(i18n.Locale()).SourceFormHelp() }
-
-// SourceFormHelp says "官网地址请填 LIVE / SCHEDULE / NEWS 列表页；RSS 填 feed …"
-// in the language of msgs.
-func (msgs Messages) SourceFormHelp() string {
-	return Catalog.Format(msgs.locale, "source_form_help", nil)
 }
 
 // SourceFormAdd says "添加数据源"
@@ -3629,11 +3659,11 @@ func (msgs Messages) SourceAddedError(name string, err string) string {
 	return Catalog.Format(msgs.locale, "source_added_error", map[string]any{"name": name, "err": err})
 }
 
-// SourceKindWebsiteOption says "官网 website"
+// SourceKindWebsiteOption says "官网"
 // in the language the app shows.
 func SourceKindWebsiteOption() string { return In(i18n.Locale()).SourceKindWebsiteOption() }
 
-// SourceKindWebsiteOption says "官网 website"
+// SourceKindWebsiteOption says "官网"
 // in the language of msgs.
 func (msgs Messages) SourceKindWebsiteOption() string {
 	return Catalog.Format(msgs.locale, "source_kind_website_option", nil)
@@ -3649,21 +3679,21 @@ func (msgs Messages) SourceKindRssOption() string {
 	return Catalog.Format(msgs.locale, "source_kind_rss_option", nil)
 }
 
-// SourceLayerLiveOption says "日程 live"
+// SourceLayerLiveOption says "日程"
 // in the language the app shows.
 func SourceLayerLiveOption() string { return In(i18n.Locale()).SourceLayerLiveOption() }
 
-// SourceLayerLiveOption says "日程 live"
+// SourceLayerLiveOption says "日程"
 // in the language of msgs.
 func (msgs Messages) SourceLayerLiveOption() string {
 	return Catalog.Format(msgs.locale, "source_layer_live_option", nil)
 }
 
-// SourceLayerNewsOption says "公告 news"
+// SourceLayerNewsOption says "公告"
 // in the language the app shows.
 func SourceLayerNewsOption() string { return In(i18n.Locale()).SourceLayerNewsOption() }
 
-// SourceLayerNewsOption says "公告 news"
+// SourceLayerNewsOption says "公告"
 // in the language of msgs.
 func (msgs Messages) SourceLayerNewsOption() string {
 	return Catalog.Format(msgs.locale, "source_layer_news_option", nil)
@@ -4257,6 +4287,16 @@ func (msgs Messages) SiteNoLinks() string {
 	return Catalog.Format(msgs.locale, "site_no_links", nil)
 }
 
+// SiteNoItems says "列表页里没有找到内联的公告条目（页面结构可能已变化）"
+// in the language the app shows.
+func SiteNoItems() string { return In(i18n.Locale()).SiteNoItems() }
+
+// SiteNoItems says "列表页里没有找到内联的公告条目（页面结构可能已变化）"
+// in the language of msgs.
+func (msgs Messages) SiteNoItems() string {
+	return Catalog.Format(msgs.locale, "site_no_items", nil)
+}
+
 // SiteBadFeature says "feature 正则无效：{err}"
 // in the language the app shows.
 func SiteBadFeature(err string) string { return In(i18n.Locale()).SiteBadFeature(err) }
@@ -4715,22 +4755,92 @@ func (msgs Messages) DateRange(from string, to string) string {
 	return Catalog.Format(msgs.locale, "date_range", map[string]any{"from": from, "to": to})
 }
 
-// SettingsAvatarsItunes says "iTunes 公开接口（用专辑封面当头像）"
+// SettingsAvatarsItunes says "iTunes 专辑封面"
 // in the language the app shows.
 func SettingsAvatarsItunes() string { return In(i18n.Locale()).SettingsAvatarsItunes() }
 
-// SettingsAvatarsItunes says "iTunes 公开接口（用专辑封面当头像）"
+// SettingsAvatarsItunes says "iTunes 专辑封面"
 // in the language of msgs.
 func (msgs Messages) SettingsAvatarsItunes() string {
 	return Catalog.Format(msgs.locale, "settings_avatars_itunes", nil)
 }
 
-// SettingsAvatarsQq says "QQ 音乐公开接口（按艺人名查找；查不到时用 iTunes 的专辑封面）"
+// SettingsAvatarsQq says "QQ 音乐 → iTunes 封面，依次回退"
 // in the language the app shows.
 func SettingsAvatarsQq() string { return In(i18n.Locale()).SettingsAvatarsQq() }
 
-// SettingsAvatarsQq says "QQ 音乐公开接口（按艺人名查找；查不到时用 iTunes 的专辑封面）"
+// SettingsAvatarsQq says "QQ 音乐 → iTunes 封面，依次回退"
 // in the language of msgs.
 func (msgs Messages) SettingsAvatarsQq() string {
 	return Catalog.Format(msgs.locale, "settings_avatars_qq", nil)
+}
+
+// FieldArtist says "艺人"
+// in the language the app shows.
+func FieldArtist() string { return In(i18n.Locale()).FieldArtist() }
+
+// FieldArtist says "艺人"
+// in the language of msgs.
+func (msgs Messages) FieldArtist() string {
+	return Catalog.Format(msgs.locale, "field_artist", nil)
+}
+
+// FieldNote says "备注"
+// in the language the app shows.
+func FieldNote() string { return In(i18n.Locale()).FieldNote() }
+
+// FieldNote says "备注"
+// in the language of msgs.
+func (msgs Messages) FieldNote() string {
+	return Catalog.Format(msgs.locale, "field_note", nil)
+}
+
+// FieldOptional says "可选"
+// in the language the app shows.
+func FieldOptional() string { return In(i18n.Locale()).FieldOptional() }
+
+// FieldOptional says "可选"
+// in the language of msgs.
+func (msgs Messages) FieldOptional() string {
+	return Catalog.Format(msgs.locale, "field_optional", nil)
+}
+
+// SourceFormHelpWebsite says "填 LIVE / SCHEDULE / NEWS 列表页；不要添加机器翻译或需登录的页面"
+// in the language the app shows.
+func SourceFormHelpWebsite() string { return In(i18n.Locale()).SourceFormHelpWebsite() }
+
+// SourceFormHelpWebsite says "填 LIVE / SCHEDULE / NEWS 列表页；不要添加机器翻译或需登录的页面"
+// in the language of msgs.
+func (msgs Messages) SourceFormHelpWebsite() string {
+	return Catalog.Format(msgs.locale, "source_form_help_website", nil)
+}
+
+// SourceFormHelpRss says "填 RSS / Atom 的 feed 地址"
+// in the language the app shows.
+func SourceFormHelpRss() string { return In(i18n.Locale()).SourceFormHelpRss() }
+
+// SourceFormHelpRss says "填 RSS / Atom 的 feed 地址"
+// in the language of msgs.
+func (msgs Messages) SourceFormHelpRss() string {
+	return Catalog.Format(msgs.locale, "source_form_help_rss", nil)
+}
+
+// SourceLayerLiveHint says "演出与票务日程，进入日历"
+// in the language the app shows.
+func SourceLayerLiveHint() string { return In(i18n.Locale()).SourceLayerLiveHint() }
+
+// SourceLayerLiveHint says "演出与票务日程，进入日历"
+// in the language of msgs.
+func (msgs Messages) SourceLayerLiveHint() string {
+	return Catalog.Format(msgs.locale, "source_layer_live_hint", nil)
+}
+
+// SourceLayerNewsHint says "新闻、票务公告，较频繁地检查"
+// in the language the app shows.
+func SourceLayerNewsHint() string { return In(i18n.Locale()).SourceLayerNewsHint() }
+
+// SourceLayerNewsHint says "新闻、票务公告，较频繁地检查"
+// in the language of msgs.
+func (msgs Messages) SourceLayerNewsHint() string {
+	return Catalog.Format(msgs.locale, "source_layer_news_hint", nil)
 }
