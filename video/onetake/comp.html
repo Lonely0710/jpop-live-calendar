@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<!-- Live Calendar promo · built with onetake (github.com/feitangyuan/onetake, PolyForm Noncommercial 1.0.0).
+     One announcement becomes the calendar. Every value is a function of t: window.__seek(t). -->
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>Live Calendar · one announcement</title>
+<link rel="stylesheet" href="build/fonts.css">
+<style>
+:root{
+  --paper:#F3ECDF; --paper2:#FBF6EE; --card:#FFFDF8; --line:#E6DED2;
+  --ink:#2E2A28; --ash:#8C847B; --mist:#D8D1C7; --coral:#E85A3A; --spot:#FFD9A8; --hl:#FFC9B5;
+  --sans:-apple-system,"PingFang SC","Hiragino Sans","Noto Sans SC",sans-serif;
+  --jp:"Hiragino Sans","Hiragino Kaku Gothic ProN","PingFang SC",sans-serif;
+  --serif:"Hiragino Mincho ProN","Songti SC","Noto Serif JP",serif;
+  --mono:"SF Mono",Menlo,monospace;
+}
+html:lang(ja){--sans:-apple-system,"Hiragino Sans","PingFang SC",sans-serif}
+html,body{margin:0;width:1920px;height:1080px;overflow:hidden;background:var(--paper)}
+body{font-family:var(--sans);color:var(--ink);-webkit-font-smoothing:antialiased}
+#ground{position:absolute;inset:0;background:
+  radial-gradient(circle at 78% 12%,#FFD9A8aa 0%,#FFD9A800 42%),
+  radial-gradient(circle at 8% 96%,#F8C6B088 0%,#F8C6B000 40%),
+  linear-gradient(160deg,var(--paper2) 0%,var(--paper) 100%)}
+#lat{position:absolute;inset:0}
+#world{position:absolute;left:0;top:0;width:1px;height:1px;transform-origin:0 0}
+.abs{position:absolute;left:0;top:0}
+
+/* A · the announcement card */
+#ann{position:absolute;left:-1500px;top:-430px;width:1020px;background:var(--card);border:1px solid var(--line);
+  border-radius:26px;box-shadow:0 40px 90px -40px rgba(46,42,40,.28),0 2px 8px rgba(46,42,40,.05);padding:40px 48px 36px;box-sizing:border-box;font-family:var(--jp)}
+#ann .src{display:flex;align-items:center;gap:12px;font:600 21px var(--sans);color:var(--ash)}
+#ann .src img{height:16px;opacity:.75}
+#ann .title{font-weight:700;font-size:36px;line-height:1.38;margin:18px 0 0;min-height:100px;white-space:pre-wrap}
+#ann .title i{display:inline-block;width:3px;height:36px;background:var(--coral);vertical-align:-6px;margin-left:3px}
+#ann .lead{font-size:22px;line-height:1.6;color:#5d5650;margin-top:14px}
+#ann .lab{font-size:20px;font-weight:600;color:var(--ash);margin:26px 0 8px}
+#ann .row{font-size:27px;height:46px;line-height:46px;white-space:nowrap}
+#ann .row span,#ann .per span{display:inline-block;position:relative;padding:0 3px;margin:0 -3px;border-radius:6px;transform-origin:50% 60%}
+#ann .row .d{font-family:var(--mono);font-size:25px}
+#ann .per{font-size:24px;line-height:1.5;margin-top:2px}
+#ann .foot{margin-top:28px;padding-top:18px;border-top:1px solid var(--line);font:18px var(--mono);color:var(--ash);display:flex;justify-content:space-between}
+#ann .mask{overflow:hidden}
+#ann .mask>div{will-change:transform}
+#ring{position:absolute;border:3px solid var(--coral);border-radius:16px;box-shadow:0 0 0 8px #E85A3A22,0 0 40px #E85A3A55;pointer-events:none}
+
+/* C · the calendar */
+#cal{position:absolute;left:0;top:0;width:868px;height:828px;background:var(--card);border:1px solid var(--line);border-radius:26px;
+  box-shadow:0 40px 90px -40px rgba(46,42,40,.28),0 2px 8px rgba(46,42,40,.05);overflow:hidden;box-sizing:border-box}
+#calIn{position:absolute;left:0;top:0;width:868px;height:828px}
+#cal .hd{position:absolute;left:28px;top:22px;font:700 34px var(--sans);letter-spacing:.01em}
+#cal .hd small{font:600 22px var(--mono);color:var(--coral);margin-left:16px}
+#cal .hd small b{font-weight:600;display:inline-block;min-width:1.2em;text-align:right}
+#slot{position:absolute;right:20px;top:14px;width:368px;height:60px;border:1.5px dashed var(--mist);border-radius:12px;box-sizing:border-box}
+#cal .wk{position:absolute;top:92px;width:123px;text-align:center;font:600 16px var(--sans);color:var(--ash)}
+#cal .wk.sat{color:#3D86F5}#cal .wk.sun{color:var(--coral)}
+.cell{position:absolute;width:123px;height:116px;border-top:1px solid var(--line);border-left:1px solid var(--line);box-sizing:border-box}
+.cell .n{position:absolute;left:8px;top:6px;font:600 16px var(--sans)}
+.cell.out .n{color:#bdb5aa}
+.cell .more{position:absolute;left:9px;top:98px;font:600 13px var(--sans);color:var(--ash);white-space:nowrap}
+.cell .flash{position:absolute;inset:0;background:var(--spot)}
+#capHead{position:absolute;left:0;top:0;width:868px;height:0;background:#FC9073}
+
+/* chips (pills while flying) */
+.chip{position:absolute;left:0;top:0;width:115px;height:36px;border-radius:7px;box-sizing:border-box;overflow:hidden;transform-origin:50% 50%;
+  font-family:var(--sans);white-space:nowrap}
+.chip .bar{position:absolute;left:0;top:0;bottom:0;width:4px}
+.chip .a{position:absolute;left:9px;top:3px;font-weight:700;font-size:13px;line-height:16px;right:4px;overflow:hidden;text-overflow:ellipsis}
+.chip .b{position:absolute;left:9px;top:18px;font-size:11.5px;line-height:15px;color:#5d5650;right:4px;overflow:hidden;text-overflow:ellipsis}
+.chip .tok{position:absolute;inset:0;display:flex;align-items:center;font:25px var(--mono);padding:0 3px;color:var(--ink);white-space:nowrap;background:var(--hl)}
+.chip.x .a{text-decoration:line-through;color:var(--ash)}
+#stub{position:absolute;left:0;top:0;border-radius:12px;background:#FFF1EA;border:1.5px solid #F5B9A6;box-sizing:border-box;overflow:hidden}
+#stub .bar{position:absolute;left:0;top:0;bottom:0;width:6px;background:var(--coral)}
+#stub .a{position:absolute;left:18px;top:7px;font:700 17px var(--jp);white-space:nowrap}
+#stub .a em{font-style:normal;font:600 13px var(--sans);color:#fff;background:var(--coral);border-radius:5px;padding:1px 7px;margin-left:8px;vertical-align:2px}
+#stub .b{position:absolute;left:18px;top:32px;font:15px var(--mono);color:#5d5650;white-space:nowrap}
+#stub .tok{position:absolute;inset:0;display:flex;align-items:center;font:24px var(--jp);padding:0 3px;white-space:nowrap;background:var(--hl)}
+
+/* M · the map */
+#map{position:absolute;left:0;top:0;overflow:visible}
+#map path{stroke:#FBF6EE;stroke-width:1.1;stroke-linejoin:round}
+.badge{position:absolute;left:0;top:0;width:44px;height:44px;margin:-22px 0 0 -22px;border-radius:50%;background:var(--coral);color:#fff;
+  font:700 19px var(--sans);text-align:center;line-height:44px;box-shadow:0 0 0 3px #fff,0 6px 14px -4px rgba(150,40,10,.5)}
+.ppill{position:absolute;left:0;top:0;height:34px;padding:0 14px;border-radius:17px;background:var(--coral);color:#fff;font:700 18px var(--jp);line-height:34px;white-space:nowrap}
+
+/* threads, pulses */
+#threads{position:absolute;left:0;top:0;overflow:visible}
+#threads path{fill:none;stroke:var(--coral);stroke-linecap:round}
+#threads circle{fill:var(--coral)}
+
+/* end lockup */
+#icon{position:absolute;left:0;top:0;transform-origin:50% 50%}
+#mark{position:absolute;left:0;top:0;font:112px 'Pacifico';white-space:nowrap;line-height:1}
+#mark span{display:inline-block;transform-origin:50% 88%}
+#tag,#meta,#url{position:absolute;left:0;top:0;white-space:nowrap;text-align:center}
+#tag{font:700 40px var(--serif);letter-spacing:.12em}
+#meta{font:500 25px var(--sans);color:var(--ash)}
+#url{font:22px var(--mono);color:var(--ash)}
+
+/* screen space */
+#cap{position:absolute;left:88px;bottom:72px;overflow:hidden;height:64px}
+#cap div{font:600 34px var(--sans);line-height:64px;white-space:nowrap}
+#cap b{font:600 22px var(--mono);color:var(--coral);margin-right:18px;vertical-align:3px}
+#hud{position:absolute;right:14px;bottom:10px;font:13px var(--mono);color:#c00;display:none}
+</style>
+</head>
+<body>
+<div id="ground"></div>
+<canvas id="lat" width="1920" height="1080"></canvas>
+<div id="world"></div>
+<div id="cap"><div></div></div>
+<div id="hud"></div>
+<script src="build/data.js"></script>
+<script src="build/motion.js"></script>
+<script src="strings.js"></script>
+<script src="build.js"></script>
+<script src="timeline.js"></script>
+<script src="film.js"></script>
+<script src="seek.js"></script>
+<script src="seek2.js"></script>
+</body>
+</html>
