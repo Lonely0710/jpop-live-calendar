@@ -99,8 +99,8 @@ var (
 	roundKVRe     = regexp.MustCompile(`^[■◆●・*\-]*\s*([^:]{0,40}?(?:先行|一般発売|一般販売|先着販売|抽選販売|抽選受付|プレリザーブ|プレオーダー))\s*(?:受付|日)?\s*:\s*(.*)$`)
 	eventRe       = regexp.MustCompile(`^(?:(?:日程|日時|公演日時|公演日|開催日時|開催日|振替公演|振替日|DATE|Date)\s*:\s*)?[・■◆●*\-]?\s*(?:(\d{4})\s*[年./-]\s*)?(\d{1,2})\s*[月/.]\s*(\d{1,2})\s*日?\s*(\([^)]{1,8}\))?\s*(.*)$`)
 	extraDayRe    = regexp.MustCompile(`^(?:[・,、&]\s*(\d{1,2})\s*日?\s*(\([^)]{1,8}\))?|\s*(\d{1,2})\s*日?\s*(\((?i:[月火水木金土日]|mon|tue|wed|thu|fri|sat|sun)[^)]{0,6}\)))\s*`)
-	openRe        = regexp.MustCompile(`(?i)(?:OPEN|開場)\s*:?\s*(\d{1,2}\s*(?::|時)\s*\d{0,2})\s*分?`)
-	startRe       = regexp.MustCompile(`(?i)(?:START|開演|スタート)\s*:?\s*(\d{1,2}\s*(?::|時)\s*\d{0,2})\s*分?`)
+	openRe        = regexp.MustCompile(`(?i)(?:OPEN|開場)(?:[/／]|\s*:)?\s*(\d{1,2}\s*(?::|時)\s*\d{0,2})\s*分?`)
+	startRe       = regexp.MustCompile(`(?i)(?:START|開演|スタート)(?:[/／]|\s*:)?\s*(\d{1,2}\s*(?::|時)\s*\d{0,2})\s*分?`)
 	bareTimeRe    = regexp.MustCompile(`(\d{1,2}:\d{2})\s*(?:~|開演|スタート)?`)
 	emptyAngleRe  = regexp.MustCompile(`<[\s/~-]*>`)
 	bracketRe     = regexp.MustCompile(`【[^】]*】|\[[^\]]*\]|※.*$`)
@@ -110,6 +110,7 @@ var (
 	timeOnlyRe    = regexp.MustCompile(`^\s*(\d{1,2})\s*(?::|時)\s*(\d{2})?`)
 	quoteRe       = regexp.MustCompile(`^(?:「([^「」]+)」|『([^『』]+)』|“([^“”]+)”|"([^"]+)")$`)
 	venueHeadRe   = regexp.MustCompile(`^[<＜〈]\s*([^<>＜＞〈〉]{2,5})\s*[>＞〉]\s*(\S.{1,60})$`)
+	listVenueRe   = regexp.MustCompile(`^[・•●]\s*([^/／]{1,12})\s*[/／]\s*(\S.{1,60})$`)
 	postStampRe   = regexp.MustCompile(`^\d{4}\.\d{1,2}\.\d{1,2}\s+\d{1,2}:\d{2}$`)
 	newsBadgeRe   = regexp.MustCompile(`(?i)^new[!！]*$`)
 	weekdayLineRe = regexp.MustCompile(`^[(（]?(?:(?i:sun|mon|tue|wed|thu|fri|sat)[a-z]*\.?|[月火水木金土日](?:[・/][祝休])?)[)）]?$`)
@@ -251,7 +252,7 @@ func Parse(in Input) Result {
 			lines = append(lines, l)
 		}
 	}
-	p := &state{ref: ref, res: Result{Status: statusIn(title)}, schedule: in.Schedule, msgs: locales.In(in.Locale)}
+	p := &state{ref: ref, title: title, res: Result{Status: statusIn(title)}, schedule: in.Schedule, msgs: locales.In(in.Locale)}
 	if in.Schedule && guestElsewhere(title, in.ArtistHints) {
 		// A member's guest appearance at another artist's show: the dates
 		// on the page belong to the host's tour, not to this artist.
@@ -277,6 +278,7 @@ func Parse(in Input) Result {
 	}
 	p.flushRound()
 	if p.schedule {
+		p.onlyAppearanceDays()
 		p.dropBareDates()
 	}
 	p.dedupEvents()
@@ -338,13 +340,19 @@ type state struct {
 	year      int // the year of a "2026年" line above, for the dates under it
 	yearMonth int // the month of the first date under it
 
-	msgs      locales.Messages // the language of the notes
-	schedule  bool
-	postTour  string    // the tour of a schedule page's post, from its title
-	venueHead [2]string // prefecture and venue of a "<大阪>NHK大阪ホール" over its dates
-	stamped   bool      // the last line was a post's "2026.10.02 13:00"
-	last      []int     // events of the last dated line (schedule)
-	since     int       // lines read since it
+	title      string           // the announcement's own title
+	msgs       locales.Messages // the language of the notes
+	schedule   bool
+	postTour   string        // the tour of a schedule page's post, from its title
+	venueHead  [2]string     // prefecture and venue of a "<大阪>NHK大阪ホール" over its dates
+	sales      bool          // the lines are a goods block's pickups and sales hours
+	appear     []domain.Date // the days a festival's text says the artist plays
+	appearNext bool          // "出演日：" asked for its days
+	venueNext  bool          // "会場：" asked for the hall's name
+	stamped    bool          // the last line was a post's "2026.10.02 13:00"
+	last       []int         // events of the last dated line (schedule)
+	afterDate  int           // lines read since the last dated line
+	since      int           // lines read since it
 }
 
 var (
@@ -353,6 +361,13 @@ var (
 	otherWords     = regexp.MustCompile(`(?i)リリース|RELEASE|配信|CD|DVD|Blu-ray|グッズ|GOODS|特典|放送|配布|書籍|プロフィール`)
 	ticketURLWords = regexp.MustCompile(`(?i)チケット|TICKET|LivePocket|ぴあ|イープラス|e\+|ローチケ|ローソン|ZAIKO|tiget|teket|購入|予約`)
 	festWords      = regexp.MustCompile(`(?i)フェス|FES|対バン|イベント|EVENT`)
+	// salesHeadRe and salesLabelRe mark a goods block and its windows —
+	// pickup days, sales hours — which pages write under a show's name
+	// ("■ 台北公演（Taipei Arena）") and with dates that look like shows.
+	salesHeadRe     = regexp.MustCompile(`(?i)グッズ|GOODS|物販|受け取り|受取|販売時間|販売日|販売場所`)
+	salesLabelRe    = regexp.MustCompile(`^(?i)(?:予約)?販売(?:期間|時間|日|場所)|会場販売|グッズ|物販|受け取り?(?:日程|日時|時間|場所|方法)|受取(?:日程|日時|時間|場所|方法)`)
+	ampmRe          = regexp.MustCompile(`(?i)\d{1,2}(?::\d{2})?\s*(?:AM|PM)`)
+	openStartWordRe = regexp.MustCompile(`(?i)OPEN|START|開場|開演`)
 )
 
 func header(l string) (string, bool) {
@@ -372,6 +387,14 @@ func header(l string) (string, bool) {
 }
 
 func (p *state) line(l string) {
+	p.afterDate++
+	if m := appearProseRe.FindStringSubmatch(l); p.schedule && m != nil && len(p.res.Events) > 0 {
+		// "YOASOBIは、8月6日(土)に出演します。": a festival's other days
+		// are not the artist's.
+		p.appear = append(p.appear, p.daysIn(m[1])...)
+		return
+	}
+
 	if p.schedule {
 		// A page of posts: "2026.10.02 13:00" over the post's title, as
 		// "美波「Timesick Traveler 2027」国内・アジアツアーの開催が決定".
@@ -386,10 +409,18 @@ func (p *state) line(l string) {
 	if h, ok := header(l); ok && !((strings.HasPrefix(l, "【") || strings.HasPrefix(l, "<")) && isRoundName(h)) {
 		p.flushRound()
 		p.tour, p.block, p.prose = "", nil, false
-		p.venueHead = [2]string{}
+		p.sales = salesHeadRe.MatchString(h)
+		if !plainHeadRe.MatchString(l) {
+			// "日程・会場" under a "<大阪>NHK大阪ホール" keeps it.
+			p.venueHead = [2]string{}
+		}
 		switch {
 		case ticketWords.MatchString(h) && !otherWords.MatchString(h):
 			p.sec = secTicket
+		case p.sales:
+			// "＜受け取り日程＞": a goods block's pickup days, not shows,
+			// even though the words hold 日程.
+			p.sec = secOther
 		case liveWords.MatchString(h):
 			p.sec = secLive
 			p.secType = domain.TypeLive
@@ -399,6 +430,35 @@ func (p *state) line(l string) {
 		default:
 			p.sec = secOther
 		}
+		return
+	}
+	if p.venueLine(l) {
+		return
+	}
+	if p.venueNext {
+		// "▪️会場：" over "幕張メッセ国際展示場": the hall of the shows above.
+		p.venueNext = false
+		pref, venue := normalize.SplitPrefecture(l)
+		last := p.last
+		if len(last) == 0 && len(p.res.Events) > 0 {
+			last = []int{len(p.res.Events) - 1}
+		}
+		for _, i := range last {
+			if i < len(p.res.Events) && p.res.Events[i].Venue == "" {
+				p.res.Events[i].setVenue(pref, venue, p.msgs)
+			}
+		}
+		return
+	}
+	if p.appearNext {
+		// "▪️出演日：" over "12月26日(土)": the days the artist plays.
+		p.appearNext = false
+		p.appear = append(p.appear, p.daysIn(l)...)
+		return
+	}
+	if m := appearRe.FindStringSubmatch(label(l)); p.schedule && m != nil {
+		p.appear = append(p.appear, p.daysIn(m[1])...)
+		p.appearNext = strings.TrimSpace(m[1]) == ""
 		return
 	}
 	if p.sec == secOther && venueHeadRe.MatchString(l) {
@@ -430,14 +490,26 @@ func (p *state) line(l string) {
 		}
 		return
 	}
-	if bareRoundName(l) {
+	if bareRoundName(l) && !p.headline(l) {
 		// A round's name on a line of its own, its dates below:
 		// "ゆーりんち限定最速先行(抽選)" over "受付期間:7月25日(土)21:00~".
+		// The page's own headline is never a round, even when it says
+		// 抽選受付: the date under it is the day it was posted.
 		p.flushRound()
 		p.round = newRound(l)
 		return
 	}
 	if p.round != nil && p.roundLine(l) {
+		return
+	}
+	if p.round == nil && salesLabelRe.MatchString(l) {
+		// "受け取り日程：" / "会場販売時間：" under a show's name: the
+		// dates below are goods pickups or sales hours, not shows.
+		p.flushRound()
+		p.sales = true
+		if !p.schedule {
+			p.sec = secOther
+		}
 		return
 	}
 	if p.sec == secTicket || (p.sec == secNone && ticketWords.MatchString(l)) {
@@ -467,7 +539,7 @@ func (p *state) line(l string) {
 		return
 	}
 	if evs, ok := p.eventLine(l); ok {
-		p.last, p.since = nil, 0
+		p.last, p.since, p.afterDate = nil, 0, 0
 		for _, e := range evs {
 			p.last = append(p.last, len(p.res.Events))
 			p.res.Events = append(p.res.Events, e)
@@ -502,18 +574,103 @@ func (p *state) line(l string) {
 		}
 		return
 	}
-	if v, ok := strings.CutPrefix(l, "会場:"); ok && len(p.res.Events) > 0 {
-		last := p.last
-		if len(last) == 0 {
-			last = []int{len(p.res.Events) - 1}
-		}
-		pref, venue := normalize.SplitPrefecture(strings.TrimSpace(v))
-		for _, i := range last {
-			if i < len(p.res.Events) && p.res.Events[i].Venue == "" {
-				p.res.Events[i].setVenue(pref, venue, p.msgs)
+
+	if m := listVenueRe.FindStringSubmatch(l); m != nil {
+		// "・台北 / Taipei Arena" over the tour's dates: the venue of the
+		// shows below, written as a city and a hall on one line.
+		if city := strings.TrimSpace(m[1]); len([]rune(city)) <= 12 && !hasDigit(city) {
+			if venue := strings.TrimSpace(m[2]); venueLike(venue) {
+				p.venueHead = [2]string{normalize.Prefecture(city), venue}
+				p.block = nil
 			}
 		}
 	}
+}
+
+// venueLine reads "会場：…" and "▪️会場：" over the hall's name, giving it to
+// the shows above it, or to the ones below when their dates follow.
+func (p *state) venueLine(l string) bool {
+	v, ok := strings.CutPrefix(label(l), "会場:")
+	if !ok {
+		return false
+	}
+	if strings.TrimSpace(v) == "" {
+		p.venueNext = true // "▪️会場：" over the hall's name
+		return true
+	}
+	pref, venue := normalize.SplitPrefecture(strings.TrimSpace(v))
+	open := 0
+	for _, i := range p.last {
+		if i < len(p.res.Events) && p.res.Events[i].Venue == "" {
+			open++
+		}
+	}
+	if open == 0 {
+		// "会場：KSPO DOME" over "日時：" over the dates: the hall of the
+		// shows below, not a second naming of the ones above.
+		p.venueHead = [2]string{pref, venue}
+		if n := len(p.res.Events); p.afterDate <= 3 && n > 0 && p.res.Events[n-1].Venue == "" {
+			// "8月20日(土) 21日(日)" then "会場：東京ドーム".
+			p.res.Events[n-1].setVenue(pref, venue, p.msgs)
+		}
+		return true
+	}
+	for _, i := range p.last {
+		if i < len(p.res.Events) && p.res.Events[i].Venue == "" {
+			p.res.Events[i].setVenue(pref, venue, p.msgs)
+		}
+	}
+	return true
+}
+
+// label drops a bullet before a field's name, as "▪️会場：".
+func label(l string) string {
+	return strings.TrimLeft(l, "▪️■◆●☆★・ 　")
+}
+
+// appearRe is a festival's "出演日：12月26日(土)": the only day of it the
+// artist plays, whatever the festival's own dates are. appearProseRe is
+// the same fact in a sentence: "YOASOBIは、8月6日(土)に出演します。".
+var (
+	appearRe      = regexp.MustCompile(`^出演日\s*[:：]?\s*(.*)$`)
+	appearProseRe = regexp.MustCompile(`は、?\s*((?:\d{4}年)?\d{1,2}月\d{1,2}日(?:\([^)]{1,8}\))?)[^。]{0,40}?出演`)
+)
+
+// daysIn reads the days of a "12月26日(土)・27日(日)" list.
+func (p *state) daysIn(s string) []domain.Date {
+	var out []domain.Date
+	for _, m := range p.moments(s) {
+		out = append(out, m.Date)
+	}
+	return out
+}
+
+// onlyAppearanceDays keeps the shows of the days the text says the artist
+// plays: a festival's other days are not its shows.
+func (p *state) onlyAppearanceDays() {
+	if len(p.appear) == 0 {
+		return
+	}
+	var keep []Event
+	for _, e := range p.res.Events {
+		for _, d := range p.appear {
+			if d.Month == e.Date.Month && d.Day == e.Date.Day {
+				keep = append(keep, e)
+				break
+			}
+		}
+	}
+	p.res.Events = keep
+}
+
+// hasDigit reports whether a string holds an ASCII digit.
+func hasDigit(s string) bool {
+	for _, r := range s {
+		if r >= '0' && r <= '9' {
+			return true
+		}
+	}
+	return false
 }
 
 func (e *Event) setVenue(pref, venue string, msgs locales.Messages) {
@@ -554,6 +711,11 @@ func (p *state) eventLine(l string) ([]Event, bool) {
 	if p.schedule && rangeRe.MatchString(rest) {
 		return nil, false // "2027.01.15(Fri)~2027.05.23(Sun)": a tour's period, not a show
 	}
+	if ampmRe.MatchString(rest) && !openStartWordRe.MatchString(rest) {
+		// "8月7日(金) 2:00 PM ~ 8:00 PM": goods or a ticket window, which
+		// overseas pages write in a 12-hour clock; shows are 24-hour.
+		return nil, false
+	}
 	if ticketWords.MatchString(rest) && !liveWords.MatchString(rest) {
 		return nil, false // "2/4(木)より受付開始" is not a show
 	}
@@ -589,13 +751,18 @@ func (p *state) eventLine(l string) ([]Event, bool) {
 			}
 		}
 	}
-	venue := timeWordRe.ReplaceAllString(rest, "")
+	venue := rest
+	venue = timePhraseRe.ReplaceAllString(venue, "")
+	venue = timeWordRe.ReplaceAllString(venue, "")
+	venue = tzNoteRe.ReplaceAllString(venue, "")
+	venue = dayListRe.ReplaceAllString(venue, "")
+	venue = enDaysRe.ReplaceAllString(venue, "")
 	venue = openRe.ReplaceAllString(venue, "")
 	venue = startRe.ReplaceAllString(venue, "")
 	venue = bareTimeRe.ReplaceAllString(venue, "")
 	venue = bracketRe.ReplaceAllString(venue, "")
 	venue = emptyAngleRe.ReplaceAllString(venue, "") // "<Open 16:30 / Start 18:30>" once the times are out
-	venue = strings.Trim(strings.TrimSpace(venue), "/~ :")
+	venue = strings.Trim(strings.TrimSpace(venue), "/~ :・")
 	for _, suf := range []string{"公演", "にて開催", "にて"} {
 		venue = strings.TrimSpace(strings.TrimSuffix(venue, suf))
 	}
@@ -738,6 +905,15 @@ var (
 	timeWordRe  = regexp.MustCompile(`(\d{1,2}:\d{2})\s*(開場|開演)`)
 	wordTimeRe  = regexp.MustCompile(`(?i)(?:OPEN|START|開場|開演|スタート)\s*:?\s*$`)
 	wordAfterRe = regexp.MustCompile(`^\s*(?:開場|開演)`)
+	// timePhraseRe is a time with its word, as "開場/17:30" or "OPEN 17:30".
+	timePhraseRe = regexp.MustCompile(`(?i)(?:OPEN|START|開場|開演|スタート)(?:[/／]|\s*:)?\s*\d{1,2}\s*(?::|時)\s*\d{0,2}\s*分?`)
+	// dayListRe is what is left of a festival's dates on a show's line:
+	// "/11日(木・祝)・12日(金)" after the day the line starts with.
+	dayListRe = regexp.MustCompile(`[／/・]\s*\d{1,2}\s*日(?:[(（][^)）]{1,8}[)）])?(?:\s*[／/・]\s*\d{1,2}\s*日(?:[(（][^)）]{1,8}[)）])?)*`)
+	// enDaysRe is a hall's weekday group: "(Thu, Sat, Sun)".
+	enDaysRe = regexp.MustCompile(`[(（](?i:mon|tue|wed|thu|fri|sat|sun)[a-z]*\.?(?:\s*[,、・]\s*(?i:mon|tue|wed|thu|fri|sat|sun)[a-z]*\.?)*[)）]`)
+	// tzNoteRe is the zone note of an overseas show: "(現地時間)".
+	tzNoteRe = regexp.MustCompile(`[(（]\s*(?:現地時間|日本時間|現地時刻|当地时间|現地)\s*[)）]`)
 )
 
 // afterStyle reports whether a line's first time is followed by its word,
@@ -803,6 +979,11 @@ func (p *state) roundsBeforeShows() {
 		back(r.ClosesAt)
 		back(r.ResultAt)
 	}
+}
+
+// headline reports whether a line is the announcement's own title.
+func (p *state) headline(l string) bool {
+	return p.title != "" && normalize.Key(l) == normalize.Key(p.title)
 }
 
 // bareRoundName reports whether a line is only a round's name: short, with
@@ -934,8 +1115,8 @@ func (p *state) dedupEvents() {
 				if f.TicketURL == "" {
 					f.TicketURL = e.TicketURL
 				}
-				continue
 			}
+			continue
 		}
 		seen[k] = len(out)
 		out = append(out, e)
@@ -1095,7 +1276,7 @@ var (
 	dayCountRe  = regexp.MustCompile(`\d{1,2}\s*日?\s*\([^)]{1,6}\)`)
 	timePairRe  = regexp.MustCompile(`^(?:OPEN\s*/\s*START\s*[:：]?\s*)?(\d{1,2}:\d{2})\s*/\s*(\d{1,2}:\d{2})$`)
 	venueURLRe  = regexp.MustCompile(`\s*[(（]\s*https?://[^)）]*[)）]`)
-	notVenueRe  = regexp.MustCompile(`(?i)^会場|立ち見|着席|SOLD ?OUT|https?:|OPEN|START|開場|開演|詳細|MORE|SHARE|お問い合わせ|問合せ|INFO|決定|発表|受付|販売|発売|チケット|TICKET|TOUR|ツアー|公演|presents|配信|放送|[。!?「」『』“”"]|^[(\[].*[)\]]$|^[~-]$`)
+	notVenueRe  = regexp.MustCompile(`(?i)^会場|立ち見|着席|SOLD ?OUT|https?:|OPEN|START|開場|開演|詳細|MORE|SHARE|お問い合わせ|問合せ|INFO|決定|発表|受付|販売|発売|チケット|TICKET|TOUR|ツアー|公演|presents|配信|放送|はこちら|確認中|未定|TBD|[:：]$|[。!?「」『』“”"]|^[(\[].*[)\]]$|^[~-]$`)
 )
 
 // scheduleLines joins what a site's layout splits over lines, so that each

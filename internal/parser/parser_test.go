@@ -415,3 +415,188 @@ LIVE/EVENT
 		t.Errorf("rounds = %+v", res.Rounds)
 	}
 }
+
+// A page that names a hall above its dates, as an overseas show does with
+// "会場：" then "日時：", and writes the times as "開場/17:30・開演/19:00".
+func TestVenueAboveDatesAndSlashTimes(t *testing.T) {
+	res := Parse(Input{
+		Title:     "ASIA TOUR 2026",
+		Published: published,
+		Text: `【公演情報】
+会場：KSPO DOME
+日時：
+2026年8月8日(土) 開場/17:30・開演/19:00 (現地時間)
+2026年8月9日(日) 開場/17:30・開演/19:00 (現地時間)`,
+	})
+	if len(res.Events) != 2 {
+		t.Fatalf("events = %+v", res.Events)
+	}
+	for _, e := range res.Events {
+		if e.Venue != "KSPO DOME" || clock(e.OpenAt) != "17:30" || clock(e.StartAt) != "19:00" {
+			t.Errorf("event = %+v open=%s start=%s", e, clock(e.OpenAt), clock(e.StartAt))
+		}
+	}
+}
+
+// A tour list that names each stop's hall on its own line: the dates under
+// it are that hall's.
+func TestTourListVenueLine(t *testing.T) {
+	res := Parse(Input{
+		Title:     "ASIA TOUR 2026",
+		Published: published,
+		Text: `▼ツアー日程
+・ソウル / KSPO DOME
+2026年8月8日(土)・9日(日)
+・台北 / Taipei Arena
+2026年8月29日(土)・30日(日)`,
+	})
+	if len(res.Events) != 4 {
+		t.Fatalf("events = %+v", res.Events)
+	}
+	want := []string{"KSPO DOME", "KSPO DOME", "Taipei Arena", "Taipei Arena"}
+	for i, e := range res.Events {
+		if e.Venue != want[i] {
+			t.Errorf("event %d venue = %q, want %q", i, e.Venue, want[i])
+		}
+	}
+}
+
+// The goods block of a tour page: pickup days and sales hours are dated
+// lines that look like shows, and a 12-hour clock is not a show time.
+func TestGoodsWindowsAreNotShows(t *testing.T) {
+	res := Parse(Input{
+		Title:     "ASIA TOUR 2026",
+		Published: published,
+		Text: `【会場販売情報】
+■ 台北公演（Taipei Arena）
+予約販売期間：
+7月31日(金) 12:00 PM 〜 8月14日(金) 11:59 PM (TST)
+受け取り日程：
+8月27日(金)・28日(土)・29日(日) 11:00 AM 〜 9:00 PM
+会場販売時間：
+8月28日(土)・29日(日)
+・11:00 AM 〜 2:00 PM ※チケットをお持ちの方のみ
+【公演情報】
+会場：Taipei Arena
+日時：
+2026年8月29日(土) 開場/17:00・開演/18:00 (現地時間)`,
+	})
+	if len(res.Events) != 1 {
+		t.Fatalf("events = %+v", res.Events)
+	}
+	e := res.Events[0]
+	if e.Date.String() != "2026-08-29" || e.Venue != "Taipei Arena" || clock(e.StartAt) != "18:00" {
+		t.Errorf("event = %+v start=%s", e, clock(e.StartAt))
+	}
+}
+
+// A schedule page of an artist: a dated line is a show, but the goods
+// block under it is not.
+func TestScheduleGoodsBlock(t *testing.T) {
+	res := Parse(Input{
+		Title:     "ASIA TOUR 2026",
+		Published: published,
+		Schedule:  true,
+		Text: `2026.08.08(sat)
+18:00 / 19:00
+KSPO DOME
+【グッズ販売・CD/DVD販売】
+■事前予約グッズ会場受取
+＜受け取り場所＞
+KSPO DOME
+＜受け取り日程＞
+・8月7日(金) 2:00 PM 〜 8:00 PM
+・8月8日(土) 12:00 PM 〜 9:30 PM`,
+	})
+	if len(res.Events) != 1 {
+		t.Fatalf("events = %+v", res.Events)
+	}
+	e := res.Events[0]
+	if e.Date.String() != "2026-08-08" || e.Venue != "KSPO DOME" || clock(e.OpenAt) != "18:00" || clock(e.StartAt) != "19:00" {
+		t.Errorf("event = %+v", e)
+	}
+}
+
+// A festival page: the festival's own dates are several, the artist plays
+// one of them, and the page says which ("★…は、8月6日(土)に出演します。").
+func TestFestivalAppearanceDay(t *testing.T) {
+	res := Parse(Input{
+		Title:     "ROCK IN JAPAN FESTIVAL 2022",
+		Published: published,
+		Schedule:  true,
+		Text: `ROCK IN JAPAN FESTIVAL 2022
+2022.08.06(土) 千葉県 千葉市蘇我スポーツ公園
+■チケット・公演情報
+★YOASOBIは、8月6日(土)に出演します。
+【公演概要】
+開催日:2022年8月6日(土)・7日(日)/11日(木・祝)・12日(金)・13日(土)
+会場:千葉市蘇我スポーツ公園`,
+	})
+	if len(res.Events) != 1 {
+		t.Fatalf("events = %+v", res.Events)
+	}
+	if e := res.Events[0]; e.Date.String() != "2022-08-06" || e.Venue != "千葉市蘇我スポーツ公園" {
+		t.Errorf("event = %+v", e)
+	}
+}
+
+// "▪️会場：" on a line of its own, the hall's name under it.
+func TestVenueLabelOnItsOwnLine(t *testing.T) {
+	res := Parse(Input{
+		Title:     "COUNTDOWN JAPAN 26/27",
+		Published: published,
+		Schedule:  true,
+		Text: `2026.12.29(tue)
+▪️会場：
+幕張メッセ国際展示場
+▪️出演日：
+12月29日(火)`,
+	})
+	if len(res.Events) != 1 {
+		t.Fatalf("events = %+v", res.Events)
+	}
+	if e := res.Events[0]; e.Venue != "幕張メッセ国際展示場" {
+		t.Errorf("event = %+v", e)
+	}
+}
+
+// A news article whose headline says 抽選受付: the headline is not a round's
+// name, and the date under it is the day the article was posted.
+func TestHeadlineIsNotARound(t *testing.T) {
+	res := Parse(Input{
+		Title:     "Prema World Tour 日本公演のチケット2次抽選受付決定！",
+		Published: published,
+		Schedule:  true,
+		Text: `Prema World Tour 日本公演のチケット2次抽選受付決定！
+Prema World Tour 日本公演のチケット2次抽選受付決定！ 2026.08.10
+🎫 Prema World Tourチケット2次抽選受付 ※日本公演のみ
+受付期間：8/14(金)12:00～8/23(日)23:59まで`,
+	})
+	if len(res.Rounds) != 1 {
+		t.Fatalf("rounds = %+v", res.Rounds)
+	}
+	r := res.Rounds[0]
+	o, c := r.OpensAt, r.ClosesAt
+	if o == nil || c == nil || o.Date.Month != 8 || o.Date.Day != 14 || o.Clock == nil || o.Clock.Hour != 12 ||
+		c.Date.Day != 23 || c.Clock == nil || c.Clock.Minute != 59 {
+		t.Errorf("round = %+v (%s – %s)", r, moment(o), moment(c))
+	}
+}
+
+// A week's dates with the English weekday group in front of the hall.
+func TestEnglishWeekdayGroupInVenue(t *testing.T) {
+	res := Parse(Input{
+		Title:     "Prema World Tour",
+		Published: published,
+		Schedule:  true,
+		Text:      `2026/12/10,12,13 (Thu, Sat, Sun)：KYOCERA DOME OSAKA`,
+	})
+	if len(res.Events) != 3 {
+		t.Fatalf("events = %+v", res.Events)
+	}
+	for _, e := range res.Events {
+		if e.Venue != "KYOCERA DOME OSAKA" {
+			t.Errorf("%s venue = %q", e.Date, e.Venue)
+		}
+	}
+}
