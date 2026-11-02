@@ -25,6 +25,11 @@
 #            （以 ^ 开头表示“以此开头”）、不含 exclude 的详情页，最多 max_per_sync 页。
 #            feature（正则）：从已读的页面里找到地址匹配的巡演专题页并一并读取
 #            （每次最多 3 页）——巡演专题由公告链接发现，不写死在配置里。
+#            article.item：有些站没有单篇地址，列表页把每条的标题、日期、正文都
+#            内联在同一页。写了 item（如 '<div class="trigger'）就按它切分，每段
+#            一条公告；item_title / item_date 指向该条自己的标题、日期标记，
+#            body_start ~ body_end 截它的正文。同一页的多条公告靠这两个字段生成
+#            的锚点区分，URL 仍是读者能打开的那一页。
 #            artist 填写后，页面一律归属该艺人，并按“日程页”解析：
 #            每个带日期的行都是一场演出，其下几行是时间、都道府县与场馆。
 #   api      官网页面在浏览器里加载的公开 JSON。目前支持 Sony Music 艺人接口：
@@ -109,9 +114,17 @@ sources:
     url: https://higedan.com/news/3/
     enabled: true
     interval: 6h
-    follow: '^https://event\.higedan\.com/feature/[A-Za-z0-9_]+$'
+    # 这个站没有单篇地址：列表页把每条的标题、日期、正文都内联在同一页（div.trigger），
+    # 所以按 item 切分而不是跟链接；巡演特设页（event.higedan.com）仍然单独打开。
+    feature: '^https://event\.higedan\.com/feature/[A-Za-z0-9_]+$'
     article:
-      max_per_sync: 3
+      item: '<div class="trigger'
+      item_title: '<p class="tit">'
+      item_date: '<p class="date">'
+      body_start: '<div class="block--body">'
+      max_per_sync: 4
+      # 站务维护类公告不是 Live 情报，挡在标题上。
+      exclude: [メンテナンス, グッズ, GOODS, 特典]
       delay: 2s
 
   # 官方站维护 / 改版时的备用：只读厂牌 NEWS，不替代官方 LIVE 日程与抽选。
@@ -206,9 +219,9 @@ sources:
 
   # ── Sony Music 艺人：官网的 LIVE / NEWS 页由浏览器从 Sony Music 公开接口加载，这里直接读同一份 JSON ──
   - id: official-ryokushaka
-    name: 緑黄色社会 官网 LIVE（Sony Music 接口）
-    name_ja: '緑黄色社会 公式 LIVE（Sony Music API）'
-    name_en: '緑黄色社会 Official LIVE (Sony Music API)'
+    name: 緑黄色社会 官网 LIVE
+    name_ja: '緑黄色社会 公式 LIVE'
+    name_en: '緑黄色社会 Official LIVE'
     kind: api
     layer: live
     artist: 緑黄色社会
@@ -217,9 +230,9 @@ sources:
     interval: 12h
 
   - id: official-ryokushaka-news
-    name: 緑黄色社会 官网 NEWS（Sony Music 接口）
-    name_ja: '緑黄色社会 公式 NEWS（Sony Music API）'
-    name_en: '緑黄色社会 Official NEWS (Sony Music API)'
+    name: 緑黄色社会 官网 NEWS
+    name_ja: '緑黄色社会 公式 NEWS'
+    name_en: '緑黄色社会 Official NEWS'
     kind: api
     layer: news
     artist: 緑黄色社会
@@ -231,9 +244,9 @@ sources:
       exclude: [グッズ, GOODS, 特典, 配信リリース, 放送, オンエア, 雑誌, 掲載, インタビュー, Blu-ray, DVD, 映像, 上映, キャンペーン, ドラマ, メディア情報, 生配信, リリース, アプリ, 返金受付]
 
   - id: official-yoasobi
-    name: YOASOBI 官网 LIVE（Sony Music 接口）
-    name_ja: 'YOASOBI 公式 LIVE（Sony Music API）'
-    name_en: 'YOASOBI Official LIVE (Sony Music API)'
+    name: YOASOBI 官网 LIVE
+    name_ja: 'YOASOBI 公式 LIVE'
+    name_en: 'YOASOBI Official LIVE'
     kind: api
     layer: live
     artist: YOASOBI
@@ -242,9 +255,9 @@ sources:
     interval: 12h
 
   - id: official-yoasobi-news
-    name: YOASOBI 官网 NEWS（Sony Music 接口）
-    name_ja: 'YOASOBI 公式 NEWS（Sony Music API）'
-    name_en: 'YOASOBI Official NEWS (Sony Music API)'
+    name: YOASOBI 官网 NEWS
+    name_ja: 'YOASOBI 公式 NEWS'
+    name_en: 'YOASOBI Official NEWS'
     kind: api
     layer: news
     artist: YOASOBI
@@ -256,9 +269,9 @@ sources:
       exclude: [グッズ, GOODS, 特典, 配信リリース, 放送, オンエア, 雑誌, 掲載, インタビュー, Blu-ray, DVD, 映像, 上映, キャンペーン, ドラマ, メディア情報, 生配信, リリース, アプリ, 返金受付]
 
   - id: official-yuuri
-    name: 優里 官网 LIVE（Sony Music 接口）
-    name_ja: '優里 公式 LIVE（Sony Music API）'
-    name_en: '優里 Official LIVE (Sony Music API)'
+    name: 優里 官网 LIVE
+    name_ja: '優里 公式 LIVE'
+    name_en: '優里 Official LIVE'
     kind: api
     layer: live
     artist: 優里
@@ -267,9 +280,9 @@ sources:
     interval: 12h
 
   - id: official-yuuri-news
-    name: 優里 官网 NEWS（Sony Music 接口）
-    name_ja: '優里 公式 NEWS（Sony Music API）'
-    name_en: '優里 Official NEWS (Sony Music API)'
+    name: 優里 官网 NEWS
+    name_ja: '優里 公式 NEWS'
+    name_en: '優里 Official NEWS'
     kind: api
     layer: news
     artist: 優里
@@ -281,9 +294,9 @@ sources:
       exclude: [グッズ, GOODS, 特典, 配信リリース, 放送, オンエア, 雑誌, 掲載, インタビュー, Blu-ray, DVD, 映像, 上映, キャンペーン, ドラマ, メディア情報, 生配信, リリース, アプリ, 返金受付]
 
   - id: official-aimer
-    name: Aimer 官网 LIVE（Sony Music 接口）
-    name_ja: 'Aimer 公式 LIVE（Sony Music API）'
-    name_en: 'Aimer Official LIVE (Sony Music API)'
+    name: Aimer 官网 LIVE
+    name_ja: 'Aimer 公式 LIVE'
+    name_en: 'Aimer Official LIVE'
     kind: api
     layer: live
     artist: Aimer
@@ -292,9 +305,9 @@ sources:
     interval: 12h
 
   - id: official-aimer-news
-    name: Aimer 官网 NEWS（Sony Music 接口）
-    name_ja: 'Aimer 公式 NEWS（Sony Music API）'
-    name_en: 'Aimer Official NEWS (Sony Music API)'
+    name: Aimer 官网 NEWS
+    name_ja: 'Aimer 公式 NEWS'
+    name_en: 'Aimer Official NEWS'
     kind: api
     layer: news
     artist: Aimer
@@ -306,9 +319,9 @@ sources:
       exclude: [グッズ, GOODS, 特典, 配信リリース, 放送, オンエア, 雑誌, 掲載, インタビュー, Blu-ray, DVD, 映像, 上映, キャンペーン, ドラマ, メディア情報, 生配信, リリース, アプリ, 返金受付]
 
   - id: official-natori
-    name: なとり LIVE/EVENT（Sony Music 接口）
-    name_ja: 'なとり LIVE/EVENT（Sony Music API）'
-    name_en: 'なとり LIVE/EVENT (Sony Music API)'
+    name: なとり LIVE/EVENT
+    name_ja: 'なとり LIVE/EVENT'
+    name_en: 'なとり LIVE/EVENT'
     kind: api
     layer: live
     artist: なとり
@@ -317,9 +330,9 @@ sources:
     interval: 12h
 
   - id: official-natori-news
-    name: なとり NEWS（Sony Music 接口）
-    name_ja: 'なとり NEWS（Sony Music API）'
-    name_en: 'なとり NEWS (Sony Music API)'
+    name: なとり NEWS
+    name_ja: 'なとり NEWS'
+    name_en: 'なとり NEWS'
     kind: api
     layer: news
     artist: なとり
@@ -331,9 +344,9 @@ sources:
       exclude: [グッズ, GOODS, 特典, 配信リリース, 放送, オンエア, 雑誌, 掲載, インタビュー, Blu-ray, DVD, 映像, 上映, キャンペーン, ドラマ, メディア情報, 生配信, リリース, アプリ, 返金受付]
 
   - id: official-milet
-    name: milet 官网 LIVE（Sony Music 接口）
-    name_ja: 'milet 公式 LIVE（Sony Music API）'
-    name_en: 'milet Official LIVE (Sony Music API)'
+    name: milet 官网 LIVE
+    name_ja: 'milet 公式 LIVE'
+    name_en: 'milet Official LIVE'
     kind: api
     layer: live
     artist: milet
@@ -342,9 +355,9 @@ sources:
     interval: 12h
 
   - id: official-milet-news
-    name: milet 官网 NEWS（Sony Music 接口）
-    name_ja: 'milet 公式 NEWS（Sony Music API）'
-    name_en: 'milet Official NEWS (Sony Music API)'
+    name: milet 官网 NEWS
+    name_ja: 'milet 公式 NEWS'
+    name_en: 'milet Official NEWS'
     kind: api
     layer: news
     artist: milet
@@ -356,9 +369,9 @@ sources:
       exclude: [グッズ, GOODS, 特典, 配信リリース, 放送, オンエア, 雑誌, 掲載, インタビュー, Blu-ray, DVD, 映像, 上映, キャンペーン, ドラマ, メディア情報, 生配信, リリース, アプリ, 返金受付]
 
   - id: official-kinggnu
-    name: King Gnu 官网 LIVE（Sony Music 接口）
-    name_ja: 'King Gnu 公式 LIVE（Sony Music API）'
-    name_en: 'King Gnu Official LIVE (Sony Music API)'
+    name: King Gnu 官网 LIVE
+    name_ja: 'King Gnu 公式 LIVE'
+    name_en: 'King Gnu Official LIVE'
     kind: api
     layer: live
     artist: King Gnu
@@ -367,9 +380,9 @@ sources:
     interval: 12h
 
   - id: official-kinggnu-news
-    name: King Gnu 官网 NEWS（Sony Music 接口）
-    name_ja: 'King Gnu 公式 NEWS（Sony Music API）'
-    name_en: 'King Gnu Official NEWS (Sony Music API)'
+    name: King Gnu 官网 NEWS
+    name_ja: 'King Gnu 公式 NEWS'
+    name_en: 'King Gnu Official NEWS'
     kind: api
     layer: news
     artist: King Gnu
@@ -550,8 +563,10 @@ sources:
       delay: 2s
 
   # ── ヨルシカ ──
-  # 只读 LIVE 分类（/news/11/）：/news/ 还包含上映会、媒体掲載、Blu-ray
-  # 等与 Live 无关的公告，按日程解析会生成假场次，因此不再接入。
+  # LIVE 分类（/news/11/）只放巡演与场次；出演决定、追加公演、票务变更
+  # 这类关键信息常常只出现在全分类 NEWS（/news/5/）里，因此再加一个
+  # 公告源：按关键词只打开与日历有关的详情页，上映会、媒体掲載、
+  # Blu-ray 等仍跳过。
   # 详情页已含完整日程与 OPEN/START，不再读 feature 专题页：旧专题页的
   # 场馆与时间分散在多行，会覆盖正确的开演时间。
   - id: official-yorushika
@@ -568,6 +583,27 @@ sources:
     article:
       max_per_sync: 2
       delay: 2s
+
+  # 全分类 NEWS：演出 / 抽选 / 变更公告的入口，与上面的 LIVE 分类互补。
+  - id: official-yorushika-news
+    name: ヨルシカ 官网 NEWS（全分类）
+    name_ja: 'ヨルシカ 公式 NEWS（全カテゴリ）'
+    name_en: 'ヨルシカ Official NEWS (all categories)'
+    kind: website
+    layer: news
+    artist: ヨルシカ
+    url: https://yorushika.com/news/5/
+    enabled: true
+    interval: 6h
+    follow: '^https://yorushika\.com/news/detail/\d+$'
+    article:
+      # 只取正文：导航、发布日期与作者行不是日程。
+      body_start: '<div class="text'
+      body_end: '<!-- text -->'
+      max_per_sync: 2
+      delay: 2s
+      keywords: [出演, 公演, ツアー, TOUR, チケット, 受付, 先行, 抽選, 開催, 追加, 振替, 中止, 延期, ライブ]
+      exclude: [グッズ, GOODS, 特典, 配信, リリース, 放送, 上映, 雑誌, 掲載, インタビュー, レポート, キャンペーン, Blu-ray, DVD, アプリ, メンテナンス, サポートミュージシャン]
 
   # 官方站维护 / 改版时的备用：只读 Universal 厂牌 NEWS，不替代官方 LIVE 日程与抽选。
   - id: official-yorushika-label-news
