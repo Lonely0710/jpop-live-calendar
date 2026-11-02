@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <a href="#changelog"><img src="https://img.shields.io/badge/version-1.1.0-E85A3A?style=flat-square&labelColor=2E2A28" alt="Version 1.1.0"></a>
+  <a href="#changelog"><img src="https://img.shields.io/badge/version-1.1.1-E85A3A?style=flat-square&labelColor=2E2A28" alt="Version 1.1.1"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-2E2A28?style=flat-square" alt="License MIT"></a>
   <a href="https://go.dev"><img src="https://img.shields.io/badge/Go-1.27+-00ADD8?style=flat-square&logo=go&logoColor=white" alt="Go 1.27+"></a>
   <a href="https://github.com/egoist/mygo"><img src="https://img.shields.io/badge/MyGo-v0.5.5-3D86F5?style=flat-square&labelColor=2E2A28&logo=go&logoColor=white" alt="MyGo v0.5.5"></a>
@@ -201,6 +201,7 @@ See [packages/spotlight-icons](packages/spotlight-icons/README.md) for adding or
 
 ## Changelog
 
+- **1.1.1** (2026-11-02): Grouped settings, service icons on the sources page, a Sunday/Monday week start, and better parsing of official announcements.
 - **1.1.0** (2026-10-25): UI in Simplified Chinese, Japanese and English, with new installers and website.
 - **1.0.2** (2026-10-23): added the map page with live counts by prefecture.
 - **1.0.1** (2026-10-22): Windows support; artist page grouped by tour; several parsing fixes; icon library expanded to 63 icons.

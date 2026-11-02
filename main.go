@@ -20,7 +20,7 @@ import (
 	"jpop-live-calendar/locales"
 )
 
-const version = "1.1.0"
+const version = "1.1.1"
 
 // trayIcon is the black-and-transparent menu bar icon; macOS tints it.
 //

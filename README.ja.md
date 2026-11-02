@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <a href="#更新履歴"><img src="https://img.shields.io/badge/version-1.1.0-E85A3A?style=flat-square&labelColor=2E2A28" alt="バージョン 1.1.0"></a>
+  <a href="#更新履歴"><img src="https://img.shields.io/badge/version-1.1.1-E85A3A?style=flat-square&labelColor=2E2A28" alt="バージョン 1.1.1"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-2E2A28?style=flat-square" alt="ライセンス MIT"></a>
   <a href="https://go.dev"><img src="https://img.shields.io/badge/Go-1.27+-00ADD8?style=flat-square&logo=go&logoColor=white" alt="Go 1.27+"></a>
   <a href="https://github.com/egoist/mygo"><img src="https://img.shields.io/badge/MyGo-v0.5.5-3D86F5?style=flat-square&labelColor=2E2A28&logo=go&logoColor=white" alt="MyGo v0.5.5"></a>
@@ -201,6 +201,7 @@ mygoicons.Mono(c, icons.Calendar, 18)  // 単色。文字色に追従
 
 ## 更新履歴
 
+- **1.1.1**（2026-11-02）：設定画面をグループ化、データソースにサービスのアイコンを表示、週の開始日を日曜／月曜から選択可、公式サイトの告知解析を改善。
 - **1.1.0**（2026-10-25）：UI を簡体字中国語 / 日本語 / English に対応、インストーラと公式サイトも更新。
 - **1.0.2**（2026-10-23）：地図ページを追加。都道府県別に公演数を集計。
 - **1.0.1**（2026-10-22）：Windows に対応。アーティストページをツアー別に整理。解析の不具合をいくつか修正。アイコンを 63 個に拡充。

@@ -14,7 +14,7 @@
 
 <!-- header -->
 <g font-family="'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="9.5" letter-spacing="1.7" fill="#5B544F">
-  <text x="32" y="29">LIVE CALENDAR · VOL 1.1.0</text>
+  <text x="32" y="29">LIVE CALENDAR · VOL 1.1.1</text>
   <text x="648" y="29" text-anchor="end">JAPANESE MUSIC LIVE CALENDAR</text>
 </g>
 <line x1="32" y1="42" x2="648" y2="42" stroke="#2E2A28" stroke-width="1"/>

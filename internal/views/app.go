@@ -234,7 +234,7 @@ func New(opt Options) *App {
 		opt.Scheduler.Now = opt.Now
 	}
 	if opt.Version == "" {
-		opt.Version = "1.1.0"
+		opt.Version = "1.1.1"
 	}
 	if opt.Avatars == nil {
 		opt.Avatars = avatar.NewStore()
