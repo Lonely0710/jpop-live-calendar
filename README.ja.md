@@ -17,6 +17,10 @@
 </p>
 
 <p align="center">
+  <a href="https://awesomemygo.dev/apps/live-calendar"><img src="https://awesomemygo.dev/badge.svg" alt="Listed on Awesome MyGo" height="28"></a>
+</p>
+
+<p align="center">
   <a href="README.md">简体中文</a> · <b>日本語</b> · <a href="README.en.md">English</a>
 </p>
 
