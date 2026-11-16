@@ -29,7 +29,7 @@ import (
 	"jpop-live-calendar/internal/geo"
 )
 
-const version = "1.1.1"
+const version = "1.2.0"
 
 type moment struct {
 	Date string `json:"date"`           // YYYY-MM-DD, Asia/Tokyo

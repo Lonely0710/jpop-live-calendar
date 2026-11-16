@@ -481,7 +481,7 @@ func (a *App) sourceList(c *ui.Context, annIDs []string) {
 				continue
 			}
 			c.Key(an.ID)
-			ui.Column(c).Gap(4).Padding(10, 12).Radius(theme.Radius).Background(theme.PaperIvory).Children(func() {
+			ui.Column(c).Gap(4).Padding(10, 12).Radius(theme.Radius).Material(theme.CardMaterial()).Border(1, theme.CardEdge).Children(func() {
 				ui.Row(c).Gap(6).AlignItems(ui.Center).Children(func() {
 					sourceMark(c, a.sourceConfig(an), 16)
 					caption(c, a.sourceName(an.SourceID)).Bold()

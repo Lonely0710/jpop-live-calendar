@@ -4,70 +4,71 @@ package spotlighticons
 
 // Icon names.
 const (
-	Add           Name = "add"
-	Remove        Name = "remove"
-	Edit          Name = "edit"
-	Delete        Name = "delete"
-	View          Name = "view"
-	ViewDisabled  Name = "view-disabled"
-	Flag          Name = "flag"
-	More          Name = "more"
-	Help          Name = "help"
-	Clear         Name = "clear"
-	Open          Name = "open"
-	Account       Name = "account"
-	RSS           Name = "rss"
-	Link          Name = "link"
-	API           Name = "api"
-	DataStatus    Name = "data-status"
-	Sync          Name = "sync"
-	Synced        Name = "synced"
-	SyncFailed    Name = "sync-failed"
-	UpdateLog     Name = "update-log"
-	ParseError    Name = "parse-error"
-	CrawlError    Name = "crawl-error"
-	Time          Name = "time"
-	ShowTime      Name = "show-time"
-	Venue         Name = "venue"
-	Artist        Name = "artist"
-	Category      Name = "category"
-	OfficialInfo  Name = "official-info"
-	Price         Name = "price"
-	Info          Name = "info"
-	SourceSite    Name = "source-site"
-	Live          Name = "live"
-	PreorderStart Name = "preorder-start"
-	PreorderEnd   Name = "preorder-end"
-	Result        Name = "result"
-	GeneralSale   Name = "general-sale"
-	Announcement  Name = "announcement"
-	Postponed     Name = "postponed"
-	Cancelled     Name = "cancelled"
-	Suspended     Name = "suspended"
-	Previous      Name = "previous"
-	Next          Name = "next"
-	Today         Name = "today"
-	AddToCalendar Name = "add-to-calendar"
-	ViewSwitch    Name = "view-switch"
-	Download      Name = "download"
-	Share         Name = "share"
-	MapRoute      Name = "map-route"
-	MapJapan      Name = "map-japan"
-	Globe         Name = "globe"
-	Home          Name = "home"
-	Calendar      Name = "calendar"
-	Month         Name = "month"
-	Week          Name = "week"
-	Day           Name = "day"
-	List          Name = "list"
-	Search        Name = "search"
-	Filter        Name = "filter"
-	Sort          Name = "sort"
-	Settings      Name = "settings"
-	SidebarLeft   Name = "sidebar-left"
-	SidebarRight  Name = "sidebar-right"
-	Pin           Name = "pin"
-	PinActive     Name = "pin-active"
+	Add            Name = "add"
+	Remove         Name = "remove"
+	Edit           Name = "edit"
+	Delete         Name = "delete"
+	View           Name = "view"
+	ViewDisabled   Name = "view-disabled"
+	Flag           Name = "flag"
+	More           Name = "more"
+	Help           Name = "help"
+	Clear          Name = "clear"
+	Open           Name = "open"
+	Account        Name = "account"
+	RSS            Name = "rss"
+	Link           Name = "link"
+	API            Name = "api"
+	DataStatus     Name = "data-status"
+	Sync           Name = "sync"
+	Synced         Name = "synced"
+	SyncFailed     Name = "sync-failed"
+	UpdateLog      Name = "update-log"
+	ParseError     Name = "parse-error"
+	CrawlError     Name = "crawl-error"
+	Time           Name = "time"
+	ShowTime       Name = "show-time"
+	Venue          Name = "venue"
+	Artist         Name = "artist"
+	Category       Name = "category"
+	OfficialInfo   Name = "official-info"
+	Price          Name = "price"
+	Info           Name = "info"
+	SourceSite     Name = "source-site"
+	Live           Name = "live"
+	PreorderStart  Name = "preorder-start"
+	PreorderEnd    Name = "preorder-end"
+	Result         Name = "result"
+	GeneralSale    Name = "general-sale"
+	Announcement   Name = "announcement"
+	Postponed      Name = "postponed"
+	Cancelled      Name = "cancelled"
+	Suspended      Name = "suspended"
+	Previous       Name = "previous"
+	Next           Name = "next"
+	Today          Name = "today"
+	AddToCalendar  Name = "add-to-calendar"
+	ViewSwitch     Name = "view-switch"
+	Download       Name = "download"
+	Share          Name = "share"
+	MapRoute       Name = "map-route"
+	MapRouteLinear Name = "map-route-linear"
+	MapJapan       Name = "map-japan"
+	Globe          Name = "globe"
+	Home           Name = "home"
+	Calendar       Name = "calendar"
+	Month          Name = "month"
+	Week           Name = "week"
+	Day            Name = "day"
+	List           Name = "list"
+	Search         Name = "search"
+	Filter         Name = "filter"
+	Sort           Name = "sort"
+	Settings       Name = "settings"
+	SidebarLeft    Name = "sidebar-left"
+	SidebarRight   Name = "sidebar-right"
+	Pin            Name = "pin"
+	PinActive      Name = "pin-active"
 )
 
 // All lists every icon in library order.
@@ -120,6 +121,7 @@ var All = []Name{
 	Download,
 	Share,
 	MapRoute,
+	MapRouteLinear,
 	MapJapan,
 	Globe,
 	Home,
@@ -139,68 +141,69 @@ var All = []Name{
 }
 
 var groups = map[Name]Group{
-	Add:           "actions",
-	Remove:        "actions",
-	Edit:          "actions",
-	Delete:        "actions",
-	View:          "actions",
-	ViewDisabled:  "actions",
-	Flag:          "actions",
-	More:          "actions",
-	Help:          "actions",
-	Clear:         "actions",
-	Open:          "actions",
-	Account:       "actions",
-	RSS:           "sources",
-	Link:          "sources",
-	API:           "sources",
-	DataStatus:    "sources",
-	Sync:          "sources",
-	Synced:        "sources",
-	SyncFailed:    "sources",
-	UpdateLog:     "sources",
-	ParseError:    "sources",
-	CrawlError:    "sources",
-	Time:          "details",
-	ShowTime:      "details",
-	Venue:         "details",
-	Artist:        "details",
-	Category:      "details",
-	OfficialInfo:  "details",
-	Price:         "details",
-	Info:          "details",
-	SourceSite:    "details",
-	Live:          "status",
-	PreorderStart: "status",
-	PreorderEnd:   "status",
-	Result:        "status",
-	GeneralSale:   "status",
-	Announcement:  "status",
-	Postponed:     "status",
-	Cancelled:     "status",
-	Suspended:     "status",
-	Previous:      "navigation",
-	Next:          "navigation",
-	Today:         "navigation",
-	AddToCalendar: "navigation",
-	ViewSwitch:    "navigation",
-	Download:      "navigation",
-	Share:         "navigation",
-	MapRoute:      "navigation",
-	MapJapan:      "navigation",
-	Globe:         "navigation",
-	Home:          "views",
-	Calendar:      "views",
-	Month:         "views",
-	Week:          "views",
-	Day:           "views",
-	List:          "views",
-	Search:        "views",
-	Filter:        "views",
-	Sort:          "views",
-	Settings:      "views",
-	SidebarLeft:   "views",
-	SidebarRight:  "views",
-	Pin:           "actions",
-	PinActive:     "actions",
+	Add:            "actions",
+	Remove:         "actions",
+	Edit:           "actions",
+	Delete:         "actions",
+	View:           "actions",
+	ViewDisabled:   "actions",
+	Flag:           "actions",
+	More:           "actions",
+	Help:           "actions",
+	Clear:          "actions",
+	Open:           "actions",
+	Account:        "actions",
+	RSS:            "sources",
+	Link:           "sources",
+	API:            "sources",
+	DataStatus:     "sources",
+	Sync:           "sources",
+	Synced:         "sources",
+	SyncFailed:     "sources",
+	UpdateLog:      "sources",
+	ParseError:     "sources",
+	CrawlError:     "sources",
+	Time:           "details",
+	ShowTime:       "details",
+	Venue:          "details",
+	Artist:         "details",
+	Category:       "details",
+	OfficialInfo:   "details",
+	Price:          "details",
+	Info:           "details",
+	SourceSite:     "details",
+	Live:           "status",
+	PreorderStart:  "status",
+	PreorderEnd:    "status",
+	Result:         "status",
+	GeneralSale:    "status",
+	Announcement:   "status",
+	Postponed:      "status",
+	Cancelled:      "status",
+	Suspended:      "status",
+	Previous:       "navigation",
+	Next:           "navigation",
+	Today:          "navigation",
+	AddToCalendar:  "navigation",
+	ViewSwitch:     "navigation",
+	Download:       "navigation",
+	Share:          "navigation",
+	MapRoute:       "navigation",
+	MapRouteLinear: "navigation",
+	MapJapan:       "navigation",
+	Globe:          "navigation",
+	Home:           "views",
+	Calendar:       "views",
+	Month:          "views",
+	Week:           "views",
+	Day:            "views",
+	List:           "views",
+	Search:         "views",
+	Filter:         "views",
+	Sort:           "views",
+	Settings:       "views",
+	SidebarLeft:    "views",
+	SidebarRight:   "views",
+	Pin:            "actions",
+	PinActive:      "actions",
 }

@@ -17,9 +17,13 @@ const (
 )
 
 // Prefs are the choices kept across launches that are not part of the
-// sources: the first column of the calendar's week.
+// sources: the first column of the calendar's week and the app icon.
 type Prefs struct {
 	WeekStart string `json:"week_start"`
+	// AppIcon is the key of the icon chosen in 设置 (resources/appicons);
+	// empty or unknown is the built-in icon. It is not checked here, so a
+	// key a later version drops falls back instead of failing the file.
+	AppIcon string `json:"app_icon,omitempty"`
 }
 
 // PrefsPath is the file of the preferences. It sits next to the user's
@@ -74,15 +78,29 @@ func SaveWeekStart(w time.Weekday) error {
 	if w == time.Sunday {
 		key = WeekStartSunday
 	}
+	return savePrefs(func(p *Prefs) { p.WeekStart = key })
+}
+
+// SaveAppIcon writes the key of the app icon, keeping the rest of the
+// preferences as they were.
+func SaveAppIcon(key string) error {
+	return savePrefs(func(p *Prefs) { p.AppIcon = key })
+}
+
+// savePrefs changes prefs.json with edit. The file is read as it is, not
+// through LoadPrefs: a value LoadPrefs refuses must not cost the others.
+func savePrefs(edit func(*Prefs)) error {
 	p, err := PrefsPath()
 	if err != nil {
 		return err
 	}
-	prefs, err := LoadPrefs()
-	if err != nil {
-		prefs = Prefs{}
+	var prefs Prefs
+	if b, err := os.ReadFile(p); err == nil {
+		if json.Unmarshal(b, &prefs) != nil {
+			prefs = Prefs{}
+		}
 	}
-	prefs.WeekStart = key
+	edit(&prefs)
 	b, err := json.MarshalIndent(prefs, "", "  ")
 	if err != nil {
 		return err

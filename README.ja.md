@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <a href="#更新履歴"><img src="https://img.shields.io/badge/version-1.1.1-E85A3A?style=flat-square&labelColor=2E2A28" alt="バージョン 1.1.1"></a>
+  <a href="#更新履歴"><img src="https://img.shields.io/badge/version-1.2.0-E85A3A?style=flat-square&labelColor=2E2A28" alt="バージョン 1.2.0"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-2E2A28?style=flat-square" alt="ライセンス MIT"></a>
   <a href="https://go.dev"><img src="https://img.shields.io/badge/Go-1.27+-00ADD8?style=flat-square&logo=go&logoColor=white" alt="Go 1.27+"></a>
   <a href="https://github.com/egoist/mygo"><img src="https://img.shields.io/badge/MyGo-v0.5.5-3D86F5?style=flat-square&labelColor=2E2A28&logo=go&logoColor=white" alt="MyGo v0.5.5"></a>
@@ -171,7 +171,7 @@ scripts/package.sh   パッケージ作成スクリプト
 本プロジェクト独自のアイコンセットです。24×24 の SVG を 63 個、6 グループに分け、線幅は 1.75–2、色は Spotlight テーマの 3 色のみ。メインモジュール内の通常パッケージなので、import するだけで使えます。
 
 <p align="center">
-  <img src="assets/readme/icons.svg" width="100%" alt="Spotlight Icons：63 個のアイコン">
+  <img src="assets/readme/icons.svg" width="100%" alt="Spotlight Icons：アイコン一覧">
 </p>
 
 ```go
@@ -201,6 +201,7 @@ mygoicons.Mono(c, icons.Calendar, 18)  // 単色。文字色に追従
 
 ## 更新履歴
 
+- **1.2.0**（2026-11-17）：サイドバー・詳細パネル・ツールバーを透過する Liquid Glass に刷新、件数はパタパタ表示、設定画面でアプリアイコンを切り替え可能に。
 - **1.1.1**（2026-11-02）：設定画面をグループ化、データソースにサービスのアイコンを表示、週の開始日を日曜／月曜から選択可、公式サイトの告知解析を改善。
 - **1.1.0**（2026-10-25）：UI を簡体字中国語 / 日本語 / English に対応、インストーラと公式サイトも更新。
 - **1.0.2**（2026-10-23）：地図ページを追加。都道府県別に公演数を集計。

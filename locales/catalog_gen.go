@@ -305,14 +305,44 @@ func (msgs Messages) DeadlineItemLabel(title string) string {
 	return Catalog.Format(msgs.locale, "deadline_item_label", map[string]any{"title": title})
 }
 
-// DeadlineIn says "{date} 截止 · 还有 {days, plural, other {# 天}}"
+// DeadlineDue says "{date} 截止"
 // in the language the app shows.
-func DeadlineIn(date string, days int) string { return In(i18n.Locale()).DeadlineIn(date, days) }
+func DeadlineDue(date string) string { return In(i18n.Locale()).DeadlineDue(date) }
 
-// DeadlineIn says "{date} 截止 · 还有 {days, plural, other {# 天}}"
+// DeadlineDue says "{date} 截止"
 // in the language of msgs.
-func (msgs Messages) DeadlineIn(date string, days int) string {
-	return Catalog.Format(msgs.locale, "deadline_in", map[string]any{"date": date, "days": days})
+func (msgs Messages) DeadlineDue(date string) string {
+	return Catalog.Format(msgs.locale, "deadline_due", map[string]any{"date": date})
+}
+
+// DeadlineInPrefix says "还有"
+// in the language the app shows.
+func DeadlineInPrefix() string { return In(i18n.Locale()).DeadlineInPrefix() }
+
+// DeadlineInPrefix says "还有"
+// in the language of msgs.
+func (msgs Messages) DeadlineInPrefix() string {
+	return Catalog.Format(msgs.locale, "deadline_in_prefix", nil)
+}
+
+// DeadlineInSuffix says "天"
+// in the language the app shows.
+func DeadlineInSuffix() string { return In(i18n.Locale()).DeadlineInSuffix() }
+
+// DeadlineInSuffix says "天"
+// in the language of msgs.
+func (msgs Messages) DeadlineInSuffix() string {
+	return Catalog.Format(msgs.locale, "deadline_in_suffix", nil)
+}
+
+// DeadlineInSuffixOne says "天"
+// in the language the app shows.
+func DeadlineInSuffixOne() string { return In(i18n.Locale()).DeadlineInSuffixOne() }
+
+// DeadlineInSuffixOne says "天"
+// in the language of msgs.
+func (msgs Messages) DeadlineInSuffixOne() string {
+	return Catalog.Format(msgs.locale, "deadline_in_suffix_one", nil)
 }
 
 // DeadlineToday says "今天截止"
@@ -2991,6 +3021,70 @@ func SettingsWeekStart() string { return In(i18n.Locale()).SettingsWeekStart() }
 // in the language of msgs.
 func (msgs Messages) SettingsWeekStart() string {
 	return Catalog.Format(msgs.locale, "settings_week_start", nil)
+}
+
+// SettingsAppIcon says "App 图标"
+// in the language the app shows.
+func SettingsAppIcon() string { return In(i18n.Locale()).SettingsAppIcon() }
+
+// SettingsAppIcon says "App 图标"
+// in the language of msgs.
+func (msgs Messages) SettingsAppIcon() string {
+	return Catalog.Format(msgs.locale, "settings_app_icon", nil)
+}
+
+// SettingsAppIconDefault says "默认"
+// in the language the app shows.
+func SettingsAppIconDefault() string { return In(i18n.Locale()).SettingsAppIconDefault() }
+
+// SettingsAppIconDefault says "默认"
+// in the language of msgs.
+func (msgs Messages) SettingsAppIconDefault() string {
+	return Catalog.Format(msgs.locale, "settings_app_icon_default", nil)
+}
+
+// SettingsAppIconSpotlightCalendar says "聚光日历"
+// in the language the app shows.
+func SettingsAppIconSpotlightCalendar() string {
+	return In(i18n.Locale()).SettingsAppIconSpotlightCalendar()
+}
+
+// SettingsAppIconSpotlightCalendar says "聚光日历"
+// in the language of msgs.
+func (msgs Messages) SettingsAppIconSpotlightCalendar() string {
+	return Catalog.Format(msgs.locale, "settings_app_icon_spotlight_calendar", nil)
+}
+
+// SettingsAppIconTicketSquare says "票根日历"
+// in the language the app shows.
+func SettingsAppIconTicketSquare() string { return In(i18n.Locale()).SettingsAppIconTicketSquare() }
+
+// SettingsAppIconTicketSquare says "票根日历"
+// in the language of msgs.
+func (msgs Messages) SettingsAppIconTicketSquare() string {
+	return Catalog.Format(msgs.locale, "settings_app_icon_ticket_square", nil)
+}
+
+// SettingsAppIconSpotlightLive10 says "LIVE 10"
+// in the language the app shows.
+func SettingsAppIconSpotlightLive10() string {
+	return In(i18n.Locale()).SettingsAppIconSpotlightLive10()
+}
+
+// SettingsAppIconSpotlightLive10 says "LIVE 10"
+// in the language of msgs.
+func (msgs Messages) SettingsAppIconSpotlightLive10() string {
+	return Catalog.Format(msgs.locale, "settings_app_icon_spotlight_live10", nil)
+}
+
+// SettingsAppIconFailed says "仅本次运行生效：未能写入系统图标"
+// in the language the app shows.
+func SettingsAppIconFailed() string { return In(i18n.Locale()).SettingsAppIconFailed() }
+
+// SettingsAppIconFailed says "仅本次运行生效：未能写入系统图标"
+// in the language of msgs.
+func (msgs Messages) SettingsAppIconFailed() string {
+	return Catalog.Format(msgs.locale, "settings_app_icon_failed", nil)
 }
 
 // SettingsMonday says "周一"

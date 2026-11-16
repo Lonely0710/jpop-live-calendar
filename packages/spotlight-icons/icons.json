@@ -192,6 +192,10 @@
     "group": "navigation"
   },
   {
+    "name": "map-route-linear",
+    "group": "navigation"
+  },
+  {
     "name": "map-japan",
     "group": "navigation"
   },

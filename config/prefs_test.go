@@ -59,3 +59,28 @@ func TestPrefsUnknownWeekStart(t *testing.T) {
 		t.Fatal("expected an error for an unknown week_start")
 	}
 }
+
+func TestPrefsAppIconKeepsWeekStart(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("XDG_CONFIG_HOME", home)
+	t.Setenv("AppData", home)
+
+	if err := SaveWeekStart(time.Sunday); err != nil {
+		t.Fatal(err)
+	}
+	if err := SaveAppIcon("ticket-square"); err != nil {
+		t.Fatal(err)
+	}
+	p, err := LoadPrefs()
+	if err != nil || p.AppIcon != "ticket-square" || p.Weekday() != time.Sunday {
+		t.Fatalf("loaded = %+v, %v", p, err)
+	}
+	// Changing the week keeps the icon.
+	if err := SaveWeekStart(time.Monday); err != nil {
+		t.Fatal(err)
+	}
+	if p, err = LoadPrefs(); err != nil || p.AppIcon != "ticket-square" {
+		t.Fatalf("loaded = %+v, %v", p, err)
+	}
+}

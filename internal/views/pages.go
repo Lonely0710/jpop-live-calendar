@@ -883,6 +883,9 @@ func (a *App) settingsPage(c *ui.Context) {
 				r.row(locales.SettingsPins(), func() { settingsValue(c, locales.SettingsPinsValue()) })
 			}).Grow(1)
 		})
+		// The app icons get a row of their own under General and Artists:
+		// big enough to see each design whole.
+		a.appIconCard(c)
 		settingsCard(c, locales.SettingsGroupData(), "", 2, func(r *settingsRows) {
 			r.row(locales.SettingsConfigFile(), func() { settingsValue(c, configPathText(a.opt.Config.Path)) })
 			r.row(locales.SettingsMapData(), func() { settingsValue(c, locales.MapSource()) })
@@ -916,7 +919,7 @@ func (a *App) settingsPage(c *ui.Context) {
 		})
 		card(c).FillWidth().Padding(12, 16, 14).Children(func() {
 			settingsHeading(c, locales.SettingsPrinciples(), icons.Announcement)
-			ui.Box(c).Height(1).FillWidth().Margin(10, 0, 8, 0).Background(theme.MistGray)
+			ui.Box(c).Height(1).FillWidth().Margin(10, 0, 8, 0).Background(theme.GridLine)
 			ui.Column(c).Gap(8).Children(func() {
 				for i, s := range []string{
 					locales.SettingsPrincipleRobots(),
@@ -1011,7 +1014,7 @@ func settingsCard(c *ui.Context, title string, icon icons.Name, cols int, rows f
 				list.aside()
 			}
 		})
-		ui.Box(c).Height(1).FillWidth().Margin(10, 0, 4, 0).Background(theme.MistGray)
+		ui.Box(c).Height(1).FillWidth().Margin(10, 0, 4, 0).Background(theme.GridLine)
 		ui.Row(c).Gap(0).AlignItems(ui.Stretch).Children(func() {
 			for i := 0; i < cols; i++ {
 				from, to := i*per, min((i+1)*per, len(list.fields))
@@ -1019,7 +1022,7 @@ func settingsCard(c *ui.Context, title string, icon icons.Name, cols int, rows f
 					continue
 				}
 				if i > 0 {
-					ui.Box(c).Width(1).AlignSelf(ui.Stretch).Background(theme.MistGray.Alpha(0.55))
+					ui.Box(c).Width(1).AlignSelf(ui.Stretch).Background(theme.GridLine)
 				}
 				ui.Column(c).Grow(1).Shrink(1).Padding(0, 12).Children(func() {
 					for _, f := range list.fields[from:to] {

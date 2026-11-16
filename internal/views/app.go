@@ -16,7 +16,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/egoist/mygo/plugins/glass"
 	"github.com/egoist/mygo/ui"
 
 	"jpop-live-calendar/config"
@@ -28,6 +27,7 @@ import (
 	"jpop-live-calendar/internal/domain"
 	"jpop-live-calendar/internal/theme"
 	"jpop-live-calendar/locales"
+	"jpop-live-calendar/resources/appicons"
 )
 
 // Section is the page the sidebar chose.
@@ -133,6 +133,13 @@ type Options struct {
 	// theme.WeekStart holds; nil keeps the choice in memory (tests).
 	SetWeekStart func(time.Weekday) error
 
+	// AppIcon is the key of the app icon chosen in 设置
+	// (resources/appicons). SetAppIcon applies a choice and keeps it;
+	// done gets whether the system's copy of the icon could be written,
+	// maybe on another goroutine. nil keeps the choice in memory (tests).
+	AppIcon    string
+	SetAppIcon func(key string, done func(error))
+
 	// CachePath is the JSON snapshot of the announcements from the last
 	// sync: loaded before the first frame and rewritten after each sync.
 	// Empty disables the cache (tests).
@@ -199,6 +206,10 @@ type App struct {
 	backdropBmp *ui.Bitmap
 	colors      map[string]ui.Color // configured theme colors by artist ID
 
+	appIcon       string                // the chosen app icon's key
+	appIconFailed bool                  // the icon shows, but the system's copy was not written
+	iconThumbs    map[string]*ui.Bitmap // the app icons' thumbnails, made once
+
 	notified   map[string]string // deadline notifications already shown
 	notifyBusy bool              // a batch is being shown on a goroutine
 	notifyOff  bool              // showing failed this run (denied, unsupported)
@@ -234,7 +245,7 @@ func New(opt Options) *App {
 		opt.Scheduler.Now = opt.Now
 	}
 	if opt.Version == "" {
-		opt.Version = "1.1.1"
+		opt.Version = "1.2.0"
 	}
 	if opt.Avatars == nil {
 		opt.Avatars = avatar.NewStore()
@@ -265,7 +276,8 @@ func New(opt Options) *App {
 		sourceOff: map[string]*bool{}, srcOn: map[string]*bool{}, rawOpen: map[string]*bool{}, tourOpen: map[string]*bool{}, tourPick: map[string]string{}, deleteOpen: map[string]*bool{}, showSources: true, showChanges: true,
 		bitmaps: map[string]*ui.Bitmap{}, avatarSVGs: map[string]*ui.SVG{}, colors: map[string]ui.Color{}, pins: map[string]bool{},
 		notified: notified, sourceForm: newSourceDraft(), region: allRegions, city: allCities,
-		sideWidth: theme.SidebarWidth, inspectWidth: theme.InspectorWidth, mapCam: mapView{zoom: mapMinZoom, hover: -1}}
+		sideWidth: theme.SidebarWidth, inspectWidth: theme.InspectorWidth, mapCam: mapView{zoom: mapMinZoom, hover: -1},
+		appIcon: appicons.Normalize(opt.AppIcon), iconThumbs: map[string]*ui.Bitmap{}}
 	for _, id := range opt.Pinned {
 		a.pins[id] = true
 	}
@@ -603,7 +615,7 @@ func (a *App) shortcuts(c *ui.Context) {
 
 // View builds the window: a warm backdrop under two floating panes of
 // Liquid Glass, the sidebar and the inspector, both collapsible, and the
-// content on a Cloud White sheet between them.
+// content on a sheet of warm paper between them, its cards of glass.
 func (a *App) View(c *ui.Context) {
 	a.snap = a.opt.Catalog.Snapshot()
 	c.SetTheme(theme.Spotlight())
@@ -631,7 +643,9 @@ func (a *App) View(c *ui.Context) {
 			a.toolbar(c, bar, theme.PaneInset+sideW+theme.PaneGap)
 			ui.Row(c).Grow(1).Shrink(1).AlignItems(ui.Stretch).Padding(0, theme.PaneInset, theme.PaneInset).
 				Gap(theme.PaneGap).Children(func() {
-				ui.Column(c).Width(sideW).Shrink(0).Radius(theme.PaneRadius).Material(glass.Glass{}).Clip().
+				ui.Column(c).Width(sideW).Shrink(0).Radius(theme.PaneRadius).
+					Material(theme.PaneMaterial()).Border(1, theme.PaneEdge).
+					Shadow(0, 10, 24, -10, theme.PaneShadow).Clip().
 					Children(func() {
 						if sideW > (a.sideWidth+theme.RailWidth)/2 {
 							ui.Column(c).Width(a.sideWidth).Grow(1).Shrink(0).Children(func() { a.sidebar(c) })
@@ -640,7 +654,7 @@ func (a *App) View(c *ui.Context) {
 						}
 					})
 				ui.Column(c).Grow(1).Shrink(1).MinWidth(0).Background(theme.CloudWhite).Radius(theme.SheetRadius).
-					Shadow(0, 1, 3, 0, theme.SheetShadow).Clip().Children(func() {
+					Shadow(0, 2, 10, -3, theme.SheetShadow).Clip().Children(func() {
 					switch a.section {
 					case SectionCalendar:
 						a.calendar(c)
@@ -661,10 +675,12 @@ func (a *App) View(c *ui.Context) {
 					ui.Row(c).Width(slot).Shrink(0).AlignItems(ui.Stretch).Margin(0, 0, 0, -theme.PaneGap).
 						Clip().Children(func() {
 						ui.Column(c).Width(a.inspectWidth).Shrink(0).Margin(0, 0, 0, theme.PaneGap).
-							Radius(theme.PaneRadius).Material(glass.Glass{}).Children(func() {
-							a.inspectorResizer(c)
-							a.inspectorPanel(c)
-						})
+							Radius(theme.PaneRadius).Material(theme.PaneMaterial()).
+							Border(1, theme.PaneEdge).Shadow(0, 10, 24, -10, theme.PaneShadow).
+							Children(func() {
+								a.inspectorResizer(c)
+								a.inspectorPanel(c)
+							})
 					})
 				}
 				a.sideResizer(c, sideW, shown)
@@ -681,7 +697,7 @@ func (a *App) inspectorShown() bool { return a.inspector && a.hasInspector() }
 // hasInspector reports whether the page has the inspector on its right.
 func (a *App) hasInspector() bool { return a.section == SectionCalendar || a.section == SectionMap }
 
-// sheetWidth is the width of the Cloud White sheet the page is drawn on,
+// sheetWidth is the width of the sheet the page is drawn on,
 // from the window's width as View lays it out.
 func (a *App) sheetWidth(c *ui.Context) float32 {
 	w, _ := c.Size()
@@ -742,12 +758,12 @@ func (a *App) inspectorResizer(c *ui.Context) {
 
 func clampWidth(v, lo, hi float32) float32 { return min(max(v, lo), hi) }
 
-// backdrop is the warm picture the glass shows through: Paper Ivory
-// lit by two soft glows of the brand colors. It is drawn once, small, and
-// scaled to the window: blurry by nature, it needs no detail.
+// backdrop is the picture the glass shows through: a light gray paper lit
+// by soft white glows. It is drawn once, small, and scaled to the window:
+// blurry by nature, it needs no detail.
 func (a *App) backdrop(c *ui.Context) {
 	if a.backdropBmp == nil {
-		a.backdropBmp = ui.NewBitmap(backdropImage(320, 205))
+		a.backdropBmp = ui.NewBitmap(backdropImage(480, 308))
 	}
 	ui.Image(c, a.backdropBmp).Fit(ui.Cover).Fill()
 }
@@ -759,28 +775,56 @@ func backdropImage(w, h int) *image.RGBA {
 		col     ui.Color
 		alpha   float64
 	}
+	// The glows sit where the panes are: warm amber behind the sidebar,
+	// coral and rose behind the inspector, paper white under the toolbar.
+	// Their colors are what a pane of glass shows through it.
 	glows := []glow{
-		{0.08, -0.05, 0.42, theme.WarmSpotlight, 0.85},
-		{0.98, 1.05, 0.45, theme.LiveCoral, 0.30},
-		{0.62, 0.15, 0.30, theme.CloudWhite, 0.55},
+		{-0.02, -0.12, 0.70, theme.WarmSpotlight, 0.22},
+		{0.55, -0.06, 0.50, ui.Hex("#FFFFFF"), 0.45},
+		{1.06, 0.55, 0.52, theme.LiveCoral, 0.07},
+		{1.04, 1.10, 0.55, ui.Hex("#FFFFFF"), 0.30},
+	}
+	// Two lights out of focus, white on the gray paper: what a pane of
+	// glass frosts, and what makes the lens at its rim visible.
+	bokeh := []glow{
+		{0.05, 0.25, 0.16, ui.Hex("#FFF3DE"), 0.26},
+		{0.13, 0.72, 0.13, ui.Hex("#FFFFFF"), 0.20},
+		{0.97, 0.30, 0.14, ui.Hex("#FFEDE4"), 0.22},
 	}
 	for y := 0; y < h; y++ {
 		base := theme.BackdropTop.Mix(theme.BackdropBottom, float32(y)/float32(h))
 		for x := 0; x < w; x++ {
 			r, g, b := float64(base.R), float64(base.G), float64(base.B)
+			fx, fy := float64(x)/float64(w), float64(y)/float64(h)
+			// Distances are in widths, so a glow stays a circle on any
+			// aspect of the picture.
 			for _, gl := range glows {
-				dx := float64(x)/float64(w) - gl.x
-				dy := (float64(y) - gl.y*float64(h)) / float64(w)
+				dx, dy := fx-gl.x, (fy-gl.y)*float64(h)/float64(w)
 				k := gl.alpha * math.Exp(-(dx*dx+dy*dy)/(gl.r*gl.r))
 				r += (float64(gl.col.R) - r) * k
 				g += (float64(gl.col.G) - g) * k
 				b += (float64(gl.col.B) - b) * k
 			}
-			img.SetRGBA(x, y, color.RGBA{uint8(r), uint8(g), uint8(b), 255})
+			for _, gl := range bokeh {
+				dx, dy := fx-gl.x, (fy-gl.y)*float64(h)/float64(w)
+				d := math.Sqrt(dx*dx+dy*dy) / gl.r
+				if d >= 1 {
+					continue
+				}
+				// A light has a soft body and a softer edge, as a disc out
+				// of focus does.
+				k := gl.alpha * (1 - d*d*d) * (1 - d)
+				r += (float64(gl.col.R) - r) * k
+				g += (float64(gl.col.G) - g) * k
+				b += (float64(gl.col.B) - b) * k
+			}
+			img.SetRGBA(x, y, color.RGBA{uint8(clamp255(r)), uint8(clamp255(g)), uint8(clamp255(b)), 255})
 		}
 	}
 	return img
 }
+
+func clamp255(v float64) float64 { return min(max(v, 0), 255) }
 
 func b2f(b bool) float32 {
 	if b {

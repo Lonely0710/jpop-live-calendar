@@ -2,10 +2,10 @@ package views
 
 import (
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/egoist/mygo/i18n"
-	"github.com/egoist/mygo/plugins/glass"
 	"github.com/egoist/mygo/ui"
 
 	icons "jpop-live-calendar/packages/spotlight-icons"
@@ -17,31 +17,36 @@ import (
 )
 
 type navItem struct {
-	id        string // the item's ID in the ui.Sidebar
-	icon      icons.Name
-	label     func() string // in the language the app shows
-	section   Section
-	mode      Mode // for calendar items
-	ownColors bool // the icon keeps its own colors instead of the sidebar's tint
+	id      string // the item's ID in the ui.Sidebar
+	icon    icons.Name
+	line    icons.Name    // drawn while the item is not chosen, when it has one
+	label   func() string // in the language the app shows
+	section Section
+	mode    Mode // for calendar items
+	// ownColors keeps the icon's own colors while the item is chosen; it
+	// is drawn in the sidebar's ink when it is not, as the others are.
+	ownColors bool
 }
 
 var navItems = []navItem{
-	{"calendar", icons.Calendar, locales.NavCalendar, SectionCalendar, ModeMonth, false},
-	{"list", icons.List, locales.NavList, SectionCalendar, ModeAgenda, false},
-	{"map", icons.MapRoute, locales.NavMap, SectionMap, 0, true},
-	{"artists", icons.Artist, locales.NavArtists, SectionArtists, 0, false},
-	{"sources", icons.DataStatus, locales.NavSources, SectionSources, 0, false},
+	{"calendar", icons.Calendar, "", locales.NavCalendar, SectionCalendar, ModeMonth, false},
+	{"list", icons.List, "", locales.NavList, SectionCalendar, ModeAgenda, false},
+	// The map's colored drawing is a solid shape in ink; its line drawing
+	// keeps the row as light as the others while it is not chosen.
+	{"map", icons.MapRoute, icons.MapRouteLinear, locales.NavMap, SectionMap, 0, true},
+	{"artists", icons.Artist, "", locales.NavArtists, SectionArtists, 0, false},
+	{"sources", icons.DataStatus, "", locales.NavSources, SectionSources, 0, false},
 }
 
-var settingsItem = navItem{"settings", icons.Settings, locales.NavSettings, SectionSettings, 0, false}
+var settingsItem = navItem{"settings", icons.Settings, "", locales.NavSettings, SectionSettings, 0, false}
 
 // languageItem is the language entry at the bottom of the sidebar: it
 // opens the language's popover instead of a page.
-var languageItem = navItem{"language", icons.Globe, locales.NavLanguage, -1, 0, false}
+var languageItem = navItem{"language", icons.Globe, "", locales.NavLanguage, -1, 0, false}
 
 // accountItem is the user's entry at the bottom of the sidebar, above the
 // settings: it opens the account's popover instead of a page.
-var accountItem = navItem{"account", icons.Account, locales.NavAccount, -1, 0, false}
+var accountItem = navItem{"account", icons.Account, "", locales.NavAccount, -1, 0, false}
 
 // footerItems are the items at the bottom of the sidebar and the rail.
 var footerItems = []navItem{languageItem, accountItem, settingsItem}
@@ -92,10 +97,8 @@ func (a *App) navigate(id string) {
 // show only their icons, their labels in tooltips: the rail.
 func (a *App) navList(c *ui.Context, items []navItem, title string, compact bool) {
 	sel := a.navID()
-	var chosen ui.Element
-	chosenIcon := icons.Calendar
-	chosenOwn := false
-	hasChosen := false
+	var rowItems []ui.Element
+	var rowNav []navItem
 	sb := ui.Sidebar(c, &sel, func() {
 		build := func() {
 			for _, it := range items {
@@ -103,16 +106,17 @@ func (a *App) navList(c *ui.Context, items []navItem, title string, compact bool
 				if compact {
 					label = ""
 				}
-				item := ui.SidebarItem(c, it.id, mygoicons.Get(it.icon), label).Height(32)
-				if it.ownColors {
-					icon := mygoicons.Get(it.icon)
-					item.DrawOver(func(p *ui.Painter, r ui.Rect) {
-						p.Image(icon, sidebarIconRect(r), ui.Contain)
-					})
+				// The icon is painted below rather than handed to MyGo,
+				// which draws it at 16: a sidebar that tightens into a rail
+				// wants it as large as the rail's own.
+				item := ui.SidebarItem(c, it.id, nil, label).Height(theme.NavRowH)
+				if compact {
+					item.Padding(0)
+				} else {
+					item.Padding(6, 10, 6, theme.NavTextLeft)
 				}
-				if it.id == sel {
-					chosen, chosenIcon, chosenOwn, hasChosen = item, it.icon, it.ownColors, true
-				}
+				rowItems = append(rowItems, item)
+				rowNav = append(rowNav, it)
 				if compact {
 					item.Label(it.label()).Tooltip(it.label())
 				}
@@ -147,30 +151,35 @@ func (a *App) navList(c *ui.Context, items []navItem, title string, compact bool
 	if compact {
 		sb.FillWidth()
 	}
-	// MyGo paints a chosen item coral while the sidebar has the focus and
-	// gray while it lacks it. Use the app's warm selection and its own icon
-	// color in both cases, so the item looks the same whether it was
-	// chosen by the pointer or by the keyboard.
-	if hasChosen {
-		chosen.Background(theme.SelectedBg).TextColor(theme.InkCharcoal)
-		if sb.Focused() {
-			// MyGo already painted the item's icon in the accent text color
-			// (white); paint the app's icon over it in the selection's warm
-			// background, then the focus ring MyGo would draw itself.
-			icon := mygoicons.Get(chosenIcon)
-			chosen.DrawOver(func(p *ui.Painter, r ui.Rect) {
-				ir := sidebarIconRect(r)
-				p.Fill(ir, theme.SelectedBg, 0)
-				if chosenOwn {
-					p.Image(icon, ir, ui.Contain)
-				} else {
-					p.Icon(icon, ir, theme.LiveCoral)
-				}
-				if sb.FocusVisible() {
-					p.FocusRing(r, [4]float32{theme.Radius, theme.Radius, theme.Radius, theme.Radius})
-				}
-			})
+	for i, item := range rowItems {
+		it := rowNav[i]
+		chosen := it.id == sel
+		icon := mygoicons.Get(it.icon)
+		line := icon
+		if it.line != "" {
+			line = mygoicons.Get(it.line)
 		}
+		// MyGo paints a chosen item coral while the sidebar has the focus
+		// and gray while it lacks it. Use the app's warm selection and its
+		// own icon color in both cases, so the item looks the same whether
+		// it was chosen by the pointer or by the keyboard.
+		if chosen {
+			item.Background(theme.SelectedBg).TextColor(theme.NavSelectedText)
+		}
+		item.DrawOver(func(p *ui.Painter, box ui.Rect) {
+			ir := navIconRect(box, compact)
+			switch {
+			case chosen && it.ownColors:
+				p.Image(icon, ir, ui.Contain)
+			case chosen:
+				p.Icon(icon, ir, theme.LiveCoral)
+			default:
+				p.Icon(line, ir, theme.NavIconColor)
+			}
+			if chosen && sb.FocusVisible() {
+				p.FocusRing(box, [4]float32{theme.Radius, theme.Radius, theme.Radius, theme.Radius})
+			}
+		})
 	}
 	switch {
 	case sel == languageItem.id:
@@ -182,22 +191,17 @@ func (a *App) navList(c *ui.Context, items []navItem, title string, compact bool
 	}
 }
 
-// The sidebar item's metrics, as MyGo's SidebarItem lays them out: a row
-// with 8 DIPs of horizontal and 6 of vertical padding holding its 16 DIP
-// icon, centered vertically in the 32 DIP row.
-const (
-	sidebarIconSize = 16
-	sidebarIconLeft = 8
-)
-
-// sidebarIconRect is where a sidebar item paints its icon inside r.
-func sidebarIconRect(r ui.Rect) ui.Rect {
-	return ui.Rect{
-		X: r.X + sidebarIconLeft,
-		Y: r.Y + (r.H-sidebarIconSize)/2,
-		W: sidebarIconSize,
-		H: sidebarIconSize,
+// navIconRect is where an item of the sidebar paints its icon: centered in
+// a row of the rail, past the row's left padding when the sidebar shows
+// its labels.
+func navIconRect(r ui.Rect, compact bool) ui.Rect {
+	size := float32(theme.NavIcon)
+	x := float32(12)
+	if compact {
+		size = theme.RailIcon
+		x = (r.W - size) / 2
 	}
+	return ui.Rect{X: r.X + x, Y: r.Y + (r.H-size)/2, W: size, H: size}
 }
 
 // userPanel is the account's popover: no sign-in yet.
@@ -237,9 +241,9 @@ func (a *App) languagePanel(c *ui.Context) {
 // window's top band.
 func (a *App) sidebar(c *ui.Context) {
 	ui.Column(c).Padding(14, 16, 8, 16).Gap(2).DragWindow().Children(func() {
-		ui.Row(c).Gap(6).AlignItems(ui.Center).Children(func() {
-			mygoicons.Image(c, icons.Live, 22)
-			ui.Text(c, "Jpop Calendar").Font("Pacifico").FontSize(21).SingleLine()
+		ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
+			mygoicons.Image(c, icons.Live, 24)
+			ui.Text(c, "Jpop Calendar").Font("PP Editorial New").FontSize(22).LetterSpacing(-0.4).SingleLine()
 		})
 	})
 	a.navList(c, navItems, locales.NavBrowse(), false)
@@ -259,10 +263,10 @@ func (a *App) sidebar(c *ui.Context) {
 // stays where it is in the full sidebar, so nothing jumps.
 func (a *App) rail(c *ui.Context) {
 	ui.Column(c).FillWidth().Padding(14, 0, 6).AlignItems(ui.Center).Children(func() {
-		ui.Box(c).Size(36, 32).Center().DragWindow().Tooltip("Live Calendar").Children(func() {
-			mygoicons.Image(c, icons.Live, 22)
+		ui.Box(c).Size(38, 36).Center().DragWindow().Tooltip("Live Calendar").Children(func() {
+			mygoicons.Image(c, icons.Live, 24)
 		})
-		ui.Box(c).Height(1).Width(24).Margin(6, 0, 4).Background(theme.GlassLine)
+		ui.Box(c).Height(1).Width(20).Margin(6, 0, 6).Background(theme.GlassLine)
 	})
 	a.navList(c, navItems, locales.NavBrowse(), true)
 	ui.Spacer(c).DragWindow()
@@ -307,16 +311,34 @@ func (a *App) deadlines(c *ui.Context) {
 		if b.Children(func() {
 			dot(c, theme.StatusWarning, 6)
 			ui.Column(c).Shrink(1).Gap(1).Children(func() {
-				ui.Text(c, e.Title).Lang("ja").FontSize(theme.CaptionSize).SingleLine()
+				ui.Text(c, e.Title).Lang("ja").FontSize(12.5).Bold().SingleLine()
 				left := today.DaysUntil(e.Date)
-				label := locales.DeadlineIn(shortDay(e.Date), left)
-				if left == 0 {
-					label = locales.DeadlineToday()
-					if e.At != nil {
-						label += " " + e.At.String()
+				ui.Row(c).Gap(4).AlignItems(ui.Center).Children(func() {
+					ui.Text(c, locales.DeadlineDue(shortDay(e.Date))).FontSize(11).
+						TextColor(theme.TextSecondary).Shrink(1).SingleLine()
+					ui.Text(c, "·").FontSize(11).TextColor(theme.TextFaint)
+					if left == 0 {
+						count := locales.DeadlineToday()
+						if e.At != nil {
+							count += " " + e.At.String()
+						}
+						ui.Text(c, count).Font("monospace").FontSize(11).Bold().
+							TextColor(theme.LiveCoral).Shrink(0).SingleLine()
+						return
 					}
-				}
-				ui.Text(c, label).FontSize(10.5).TextColor(theme.TextSecondary).SingleLine()
+					// The number alone carries the accent, as the one figure
+					// that changes from row to row.
+					ui.Text(c, locales.DeadlineInPrefix()).FontSize(11).
+						TextColor(theme.TextSecondary).Shrink(0).SingleLine()
+					ui.Text(c, strconv.Itoa(left)).Font("monospace").FontSize(12).Bold().
+						TextColor(theme.LiveCoral).Shrink(0).SingleLine()
+					suffix := locales.DeadlineInSuffix()
+					if left == 1 {
+						suffix = locales.DeadlineInSuffixOne()
+					}
+					ui.Text(c, suffix).FontSize(11).TextColor(theme.TextSecondary).
+						Shrink(0).SingleLine()
+				})
 			})
 		}).Clicked() {
 			a.showEntry(e.ID)
@@ -332,7 +354,7 @@ func (a *App) deadlines(c *ui.Context) {
 }
 
 func sectionLabel(c *ui.Context, s string) {
-	ui.Text(c, s).FontSize(theme.CaptionSize).Bold().TextColor(theme.TextSecondary).Padding(8, 8, 4, 8)
+	ui.Text(c, s).FontSize(12).Bold().TextColor(theme.TextSecondary).Padding(8, 8, 4, 8)
 }
 
 // syncSummary describes the sync state for the footer and the toolbar.
@@ -472,8 +494,8 @@ var modeIcons = []icons.Name{icons.Month, icons.Week, icons.Day, icons.List}
 // the arrows choosing among them while it has the focus.
 func (a *App) viewSwitch(c *ui.Context) {
 	seg := ui.SegmentedBase(c, &a.mode, len(modeIcons))
-	seg.Track.Height(theme.CapsuleH).Padding(2).AlignItems(ui.Center).Radius(theme.CapsuleH / 2).
-		Material(glass.Glass{}).Shrink(0).Label(locales.ToolbarView()).Children(func() {
+	seg.Track.Height(theme.CapsuleH).Padding(2).AlignItems(ui.Center).Radius(theme.CapsuleH/2).
+		Material(theme.CapsuleMaterial()).Border(1, theme.CapsuleEdge).Shrink(0).Label(locales.ToolbarView()).Children(func() {
 		for i := range modeIcons {
 			text := modeLabel(Mode(i))
 			s := float32(theme.CapsuleH - 4)
@@ -542,7 +564,7 @@ func (a *App) searchBox(c *ui.Context) {
 // capsule is a row of glass in the toolbar.
 func capsule(c *ui.Context) ui.Element {
 	return ui.Row(c).Height(theme.CapsuleH).Padding(2, 6).Gap(4).AlignItems(ui.Center).
-		Radius(theme.CapsuleH / 2).Material(glass.Glass{}).Shrink(0)
+		Radius(theme.CapsuleH/2).Material(theme.CapsuleMaterial()).Border(1, theme.CapsuleEdge).Shrink(0)
 }
 
 // capsuleIcon is a round icon button in a capsule. The round background

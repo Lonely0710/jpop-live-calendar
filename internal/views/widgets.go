@@ -134,9 +134,12 @@ func emptyState(c *ui.Context, name icons.Name, title, body string) ui.Element {
 	})
 }
 
-// card is a Cloud White panel with a hairline border.
+// card is a panel on the sheet: Cloud White inside a hairline so light it
+// only catches the edge, lifted a little by its shadow. A material of glass
+// would outline it with the dark rim MyGo draws along its sides.
 func card(c *ui.Context) ui.Element {
-	return ui.Column(c).Background(theme.CloudWhite).Border(1, theme.MistGray).Radius(theme.CardRadius)
+	return ui.Column(c).Background(theme.CloudWhite).Border(1, theme.CardLine).
+		Radius(theme.CardRadius).Shadow(0, 1, 4, 0, theme.SheetShadow)
 }
 
 // pageHeader is the heading of the non-calendar pages.

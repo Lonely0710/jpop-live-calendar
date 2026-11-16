@@ -27,7 +27,10 @@
   "common_tba": "未公布",
   "common_today": "今天",
   "deadline_item_label": "截止 {title}",
-  "deadline_in": "{date} 截止 · 还有 {days, plural, other {# 天}}",
+  "deadline_due": "{date} 截止",
+  "deadline_in_prefix": "还有",
+  "deadline_in_suffix": "天",
+  "deadline_in_suffix_one": "天",
   "deadline_today": "今天截止",
   "no_deadlines": "30 天内没有截止的受付",
   "sync_running": "同步中…",
@@ -292,6 +295,12 @@
   "settings_timezone": "时区",
   "settings_timezone_value": "`Asia/Tokyo`（固定）",
   "settings_week_start": "每周起始",
+  "settings_app_icon": "App 图标",
+  "settings_app_icon_default": "默认",
+  "settings_app_icon_spotlight_calendar": "聚光日历",
+  "settings_app_icon_ticket_square": "票根日历",
+  "settings_app_icon_spotlight_live10": "LIVE 10",
+  "settings_app_icon_failed": "仅本次运行生效：未能写入系统图标",
   "settings_monday": "周一",
   "settings_sunday": "周日",
   "settings_config_file": "配置文件",
@@ -472,16 +481,16 @@
       }
     }
   },
-  "@deadline_in": {
+  "@deadline_due": {
     "placeholders": {
       "date": {
         "type": "String"
-      },
-      "days": {
-        "type": "int"
       }
     }
   },
+  "@deadline_in_prefix": {},
+  "@deadline_in_suffix": {},
+  "@deadline_in_suffix_one": {},
   "@sync_updated_failed": {
     "placeholders": {
       "time": {

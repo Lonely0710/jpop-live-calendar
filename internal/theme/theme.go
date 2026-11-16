@@ -7,6 +7,7 @@ import (
 	"math"
 	"time"
 
+	"github.com/egoist/mygo/plugins/glass"
 	"github.com/egoist/mygo/ui"
 
 	"jpop-live-calendar/internal/domain"
@@ -36,12 +37,14 @@ var (
 var (
 	TextSecondary = InkCharcoal.Mix(SoftAsh, 0.45)
 	TextDisabled  = SoftAsh
-	StatNumber    = LiveCoral.Mix(InkCharcoal, 0.3) // 统计数字：与标题区分，且 ≥ 4.5:1
+	CoralText     = LiveCoral.Mix(InkCharcoal, 0.3) // 主色加深，用于暖底上的文字（≥ 4.5:1）
 	SidebarBg     = PaperIvory.Mix(MistGray, 0.22)
-	Hover         = PaperIvory.Mix(MistGray, 0.45)
+	Hover         = WarmSpotlight.Alpha(0.32).Over(CloudWhite)
 	Pressed       = PaperIvory.Mix(MistGray, 0.7)
-	SelectedBg    = WarmSpotlight.Alpha(0.55).Over(PaperIvory)
-	OutsideMonth  = PaperIvory
+	// SelectedBg is the warm wash of a chosen row and of a chosen app icon:
+	// a tint, not a fill, so the glass of a pane keeps showing through it.
+	SelectedBg   = WarmSpotlight.Alpha(0.55)
+	OutsideMonth = ui.Hex("#F6F5F2") // a day of another month: a neutral veil
 )
 
 // Layout metrics in DIPs.
@@ -61,12 +64,11 @@ const (
 	CardRadius     = 12
 	IconSize       = 18 // toolbar / sidebar; the library is drawn on 24×24
 	ToolButton     = 30
-
-	TitleSize   = 18
-	BodySize    = 13
-	CaptionSize = 11.5
-	HourHeight  = 44 // week / day views
-	TimeGutter  = 76
+	TitleSize      = 18
+	BodySize       = 13
+	CaptionSize    = 11.5
+	HourHeight     = 44 // week / day views
+	TimeGutter     = 76
 )
 
 // WeekStart is the first column of the month and week views: Monday, or
@@ -108,7 +110,7 @@ func Spotlight() *ui.Theme {
 	// The sidebar's item metrics and the icon the app repaints over a
 	// focused item assume MyGo's 4 DIP spacing unit.
 	t.Spacing = 4
-	t.FontSize = BodySize
+	t.FontSize = BodySize + 1 // the sidebar and MyGo’s own controls read a size up
 	return &t
 }
 
@@ -143,33 +145,104 @@ var Legend = []ui.Color{LiveCoral, StatusWarning, StatusInfo, StatusSuccess, Sta
 const (
 	PaneInset    = 8  // gap between a pane and the window's edge
 	PaneGap      = 6  // gap between the panes and the sheet
-	RailWidth    = 58 // the collapsed sidebar: a rail of icons
-	NavInset     = 13 // the sidebar's lists from its edges: icons centered in the rail
+	RailWidth    = 56 // the collapsed sidebar: a rail of icons
+	NavInset     = 11 // the sidebar's lists from its edges: icons centered in the rail
 	PaneRadius   = 18 // the panes' corners, close to macOS 26's sidebar
 	SheetRadius  = 14 // the content sheet's corners
 	CapsuleH     = 32 // toolbar capsules
 	ToggleButton = 28
+
+	// The rows of the sidebar's lists, as tall as a rail item is square,
+	// so a collapsing sidebar neither jumps nor slides its icons.
+	NavRowH     = 34
+	NavIcon     = 19 // an item's icon, in the expanded sidebar
+	RailIcon    = 20 // an item's icon, in the rail
+	NavTextLeft = 37 // where an item's label starts: past its icon
 )
 
-// The backdrop the glass shows: Paper Ivory warmed by two soft glows, so
-// the frosted panes read as glass rather than flat gray.
+// The backdrop the glass shows: Paper Ivory warmed by soft glows of the
+// brand colors, so the panes read as glass rather than flat paper. The
+// glows sit where the panes are, so what shows through them has color.
 var (
-	BackdropTop    = ui.Hex("#F6EEDF")
-	BackdropBottom = ui.Hex("#EFE3CF")
-	GlowWarm       = WarmSpotlight.Alpha(0.75)
-	GlowCoral      = LiveCoral.Alpha(0.22)
-	GlassText      = InkCharcoal
-	SheetShadow    = InkCharcoal.Alpha(0.10)
+	BackdropTop    = ui.Hex("#F8F5EF")
+	BackdropBottom = ui.Hex("#EEE7DB")
+	SheetShadow    = InkCharcoal.Alpha(0.12)
 	TodayTint      = LiveCoral.Alpha(0.07).Over(CloudWhite)
-	GlassHover     = InkCharcoal.Alpha(0.07)
+	GlassHover     = WarmSpotlight.Alpha(0.35)
 	GlassPressed   = InkCharcoal.Alpha(0.12)
 	GlassSelected  = WarmSpotlight.Alpha(0.7)
 	GlassLine      = InkCharcoal.Alpha(0.08)
+	// GridLine is the hairline of the calendar's grid: light enough to sit
+	// under a month of entries without ruling the page. CardLine frames a
+	// card just as lightly, so a page reads as panels, not as boxes.
+	GridLine = ui.Hex("#E8E4DC")
+	CardLine = InkCharcoal.Alpha(0.05)
+	// CardEdge is the hairline over a card of glass: white, so the dark rim
+	// MyGo draws along its sides reads as light instead.
+	CardEdge = ui.Hex("#FFFFFF").Alpha(0.75)
+	// The panes of glass: a light tint that keeps the backdrop's color
+	// showing through while text stays readable on it, and a bright
+	// hairline along their edge, as the glass of macOS 26 has. The hairline
+	// also covers the dark rim MyGo draws along a pane's sides.
+	PaneTint   = CloudWhite.Alpha(0.10)
+	PaneEdge   = ui.Hex("#FFFFFF").Alpha(0.90)
+	PaneShadow = InkCharcoal.Alpha(0.14)
+	// The glass inside the window: the cards the pages are built of and the
+	// toolbar's capsules, each a heavier tint than the panes'. Glass only
+	// lifts what is under it, never darkens it, so a card shows as a
+	// frosted tile on the warm sheet rather than as a second pane.
+	CardTint    = CloudWhite.Alpha(0.40)
+	CapsuleTint = CloudWhite.Alpha(0.30)
+	// CapsuleEdge is the hairline of the toolbar's capsules: white, so it
+	// reads as light rather than as a border, and covers the dark rim MyGo
+	// draws along their rounded ends.
+	CapsuleEdge = ui.Hex("#FFFFFF").Alpha(0.55)
+	// NavIconColor is the ink of an icon of the sidebar that is not chosen:
+	// a little lighter than text, as a rail of icons reads better so.
+	NavIconColor = InkCharcoal.Alpha(0.85)
+	// TextFaint is the dot between two parts of a line, as the date and the
+	// countdown of a deadline: a mark, not a word.
+	TextFaint = SoftAsh
+	// The split-flap board of the summary's figures: the upper flap lit a
+	// little by the room, the lower one in its shadow, the digits warm white
+	// on the ink.
+	FlapLit   = InkCharcoal.Mix(SoftAsh, 0.12)
+	FlapShade = InkCharcoal.Mix(ui.Hex("#000000"), 0.30)
+	FlapDigit = CloudWhite
+	// FlapSeam is the gap between the two flaps.
+	FlapSeam = ui.Hex("#000000").Alpha(0.55)
+	// NavSelectedText is the label of the sidebar's chosen item: the brand's
+	// coral, deepened until it reads at body size on the selection's warm
+	// wash (≥ 4.5:1).
+	NavSelectedText = CoralText
 	// EndedVeil is the light gray laid over a show or round that is over:
 	// it washes the card's colors out, as an inactive layer instead of a
 	// darker one.
 	EndedVeil = SoftAsh.Alpha(0.55)
 )
+
+// PaneMaterial is the material of the sidebar and the inspector: Liquid
+// Glass in its clear style, so the backdrop's color and glow show through
+// the pane and the lens at its edges bends them, tinted enough for text to
+// keep its contrast. The regular style lifts light colors to near white,
+// which is why a pane of it reads as flat paper here.
+func PaneMaterial() glass.Glass {
+	return glass.Glass{Style: glass.Clear, Tint: PaneTint}
+}
+
+// CardMaterial is the material of the cards inside the sheet: the regular
+// glass, which frosts and lifts what shows through, so a card reads as a
+// tile of frosted glass laid on the page rather than as a printed
+// rectangle.
+func CardMaterial() glass.Glass {
+	return glass.Glass{Style: glass.Regular, Tint: CardTint}
+}
+
+// CapsuleMaterial is the material of the toolbar's capsules: clear glass
+// tinted lightly, so the band of the window shows through them.
+func CapsuleMaterial() glass.Glass {
+	return glass.Glass{Style: glass.Clear, Tint: CapsuleTint}
+}
 
 // ArtistPalette is how an artist's theme color shows on the calendar.
 type ArtistPalette struct {

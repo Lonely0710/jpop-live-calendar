@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <a href="#更新记录"><img src="https://img.shields.io/badge/version-1.1.1-E85A3A?style=flat-square&labelColor=2E2A28" alt="版本 1.1.1"></a>
+  <a href="#更新记录"><img src="https://img.shields.io/badge/version-1.2.0-E85A3A?style=flat-square&labelColor=2E2A28" alt="版本 1.2.0"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-2E2A28?style=flat-square" alt="MIT"></a>
   <a href="https://go.dev"><img src="https://img.shields.io/badge/Go-1.27+-00ADD8?style=flat-square&logo=go&logoColor=white" alt="Go 1.27+"></a>
   <a href="https://github.com/egoist/mygo"><img src="https://img.shields.io/badge/MyGo-v0.5.5-3D86F5?style=flat-square&labelColor=2E2A28&logo=go&logoColor=white" alt="MyGo v0.5.5"></a>
@@ -171,7 +171,7 @@ scripts/package.sh   打包脚本
 项目自带的图标库：63 个 24×24 SVG，分 6 组，线宽 1.75–2，只使用 Spotlight 主题的三种颜色。它是主 module 中的普通包，直接 import 即可使用。
 
 <p align="center">
-  <img src="assets/readme/icons.svg" width="100%" alt="Spotlight Icons：63 个图标">
+  <img src="assets/readme/icons.svg" width="100%" alt="Spotlight Icons：图标总览">
 </p>
 
 ```go
@@ -201,6 +201,7 @@ mygoicons.Mono(c, icons.Calendar, 18)  // 单色，跟随文字颜色
 
 ## 更新记录
 
+- **1.2.0**（2026-11-17）：界面换成通透的 Liquid Glass（侧栏、详情面板、工具栏），统计数字改成翻牌，设置页可切换 App 图标。
 - **1.1.1**（2026-11-02）：设置页分组重构、数据源显示服务品牌图标、日历支持周日/周一起始，官网公告解析更完整。
 - **1.1.0**（2026-10-25）：界面支持简体中文 / 日本語 / English，安装包与官网同步更新。
 - **1.0.2**（2026-10-23）：新增地图页，按都道府县统计 Live。

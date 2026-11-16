@@ -87,11 +87,12 @@ func (a *App) summaryBar(c *ui.Context) {
 func (a *App) statsLine(c *ui.Context) ui.Element {
 	lives, tickets := a.visibleCounts()
 	return ui.Row(c).Gap(8).Shrink(0).AlignItems(ui.Center).Tooltip(locales.CalendarStatsTooltip()).Children(func() {
+		// The zone the figures are counted in comes first, then the figures.
+		zone(c)
+		divider(c)
 		stat(c, fmt.Sprint(lives), "Live")
 		divider(c)
 		stat(c, fmt.Sprint(tickets), locales.CalendarStatTickets())
-		divider(c)
-		zone(c)
 		if a.filtersActive() {
 			tag(c, locales.CalendarFiltered(), theme.StatusInfo)
 		}
@@ -109,8 +110,11 @@ func (a *App) visibleCounts() (lives, tickets int) {
 	return lives, len(evs) - lives
 }
 
+// zone is the zone the calendar's times are in, named as the configuration
+// file names it: "Tokyo" alone read as another filter. It is set in the
+// serif, as a note under the figures rather than one of them.
 func zone(c *ui.Context) ui.Element {
-	return ui.Text(c, "Tokyo").Font("monospace").FontSize(theme.CaptionSize).
+	return ui.Text(c, "Asia/Tokyo").Font("serif").FontSize(theme.CaptionSize + 0.5).
 		TextColor(theme.TextSecondary).SingleLine().Shrink(0)
 }
 
@@ -145,19 +149,73 @@ func (a *App) statsWidth(c *ui.Context) float32 {
 		w, _ := c.MeasureText(0, ui.Span{Text: text, Font: "monospace", Size: size, Weight: weight})
 		return w
 	}
+	measureFont := func(text, font string, size float32, weight int) float32 {
+		w, _ := c.MeasureText(0, ui.Span{Text: text, Font: font, Size: size, Weight: weight})
+		return w
+	}
 	statW := func(n int, unit string) float32 {
-		return measure(fmt.Sprint(n), 13, 700) + 4 + measure(unit, float32(theme.CaptionSize), 400)
+		return flipBoardWidth(fmt.Sprint(n)) + flipUnitGap + measure(unit, float32(theme.CaptionSize), 400)
 	}
 	tagText := measure(locales.CalendarFiltered(), 10, 700) + 8 // tag's padding
 	return statW(lives, "Live") + statW(tickets, locales.CalendarStatTickets()) +
-		measure("Tokyo", float32(theme.CaptionSize), 400) + 1 + 1 + tagText + 8*5
+		measureFont("Asia/Tokyo", "EB Garamond", float32(theme.CaptionSize)+1.5, 400) + 1 + 1 + tagText + 8*5
 }
 
-// stat is a count in the summary: a monospaced number and its unit.
+// The figures of the summary are split-flap boards: one ink tile a digit,
+// as the counter of a venue turns.
+const (
+	flipTileW   = 15
+	flipTileH   = 21
+	flipTileGap = 2
+	flipUnitGap = 5
+	flipRadius  = 3
+)
+
+// flipBoardWidth is the room a board of n digits takes.
+func flipBoardWidth(text string) float32 {
+	n := float32(len([]rune(text)))
+	if n == 0 {
+		return 0
+	}
+	return n*flipTileW + (n-1)*flipTileGap
+}
+
+// stat is a count in the summary: its digits on a split-flap board, and its
+// unit after them.
 func stat(c *ui.Context, value, unit string) ui.Element {
-	return ui.Row(c).Gap(4).Shrink(0).AlignItems(ui.Center).Children(func() {
-		ui.Text(c, value).Font("monospace").FontSize(13).Bold().TextColor(theme.StatNumber)
+	return ui.Row(c).Gap(flipUnitGap).Shrink(0).AlignItems(ui.Center).Children(func() {
+		flipBoard(c, value)
 		ui.Text(c, unit).Font("monospace").FontSize(theme.CaptionSize).TextColor(theme.TextSecondary).SingleLine()
+	})
+}
+
+// flipBoard draws a number as a board of split-flap tiles: an ink tile per
+// digit, lit above the seam where the two flaps meet and shaded below it.
+func flipBoard(c *ui.Context, value string) ui.Element {
+	return ui.Row(c).Gap(flipTileGap).Shrink(0).AlignItems(ui.Center).Children(func() {
+		for _, d := range value {
+			tile := ui.Box(c).Size(flipTileW, flipTileH).Radius(flipRadius).Center().
+				Background(theme.InkCharcoal)
+			tile.Draw(func(p *ui.Painter, r ui.Rect) {
+				mid := r.Y + float32(int(r.H/2))
+				p.Clip(r, flipRadius, func() {
+					p.Fill(ui.Rect{X: r.X, Y: r.Y, W: r.W, H: mid - r.Y}, theme.FlapLit, 0)
+					p.Fill(ui.Rect{X: r.X, Y: mid, W: r.W, H: r.Y + r.H - mid}, theme.FlapShade, 0)
+				})
+			})
+			// The seam is painted over the digit, so each figure is split in
+			// two as a turned flap is.
+			tile.DrawOver(func(p *ui.Painter, r ui.Rect) {
+				mid := r.Y + float32(int(r.H/2))
+				p.Clip(r, flipRadius, func() {
+					p.Fill(ui.Rect{X: r.X, Y: mid, W: r.W, H: 1}, theme.FlapSeam, 0)
+				})
+			})
+			tile.Children(func() {
+				ui.Text(c, string(d)).Font("monospace").FontSize(12.5).Bold().
+					TextColor(theme.FlapDigit)
+			})
+		}
 	})
 }
 
@@ -248,8 +306,8 @@ func (a *App) monthView(c *ui.Context) {
 		}
 	})
 	// Hairlines: the grid's background shows through 1-DIP gaps.
-	ui.Grid(c).Columns(7).GridRows(6).Gap(1).Grow(1).Shrink(1).Background(theme.MistGray).
-		Border(1, theme.MistGray).Radius(theme.CardRadius).Clip().Children(func() {
+	ui.Grid(c).Columns(7).GridRows(6).Gap(1).Grow(1).Shrink(1).Background(theme.GridLine).
+		Radius(theme.CardRadius).Clip().Children(func() {
 		for _, d := range days {
 			c.Key(d)
 			a.dayCell(c, d, d.Month == a.cursor.Month, d == today, entries[d])
@@ -560,7 +618,7 @@ func (a *App) timeGrid(c *ui.Context, first domain.Date, n int) {
 	}
 	scrollTo := min(lastH, firstH+12, 23)
 	card(c).Grow(1).Shrink(1).Clip().Children(func() {
-		ui.Grid(c).ColumnTracks(tracks...).BorderWidth(0, 0, 1, 0).BorderColor(theme.MistGray).Children(func() {
+		ui.Grid(c).ColumnTracks(tracks...).BorderWidth(0, 0, 1, 0).BorderColor(theme.GridLine).Children(func() {
 			ui.Box(c)
 			for i := range n {
 				d := first.AddDays(i)
@@ -579,7 +637,7 @@ func (a *App) timeGrid(c *ui.Context, first domain.Date, n int) {
 				}
 			}
 		})
-		ui.Grid(c).ColumnTracks(tracks...).BorderWidth(0, 0, 1, 0).BorderColor(theme.MistGray).Children(func() {
+		ui.Grid(c).ColumnTracks(tracks...).BorderWidth(0, 0, 1, 0).BorderColor(theme.GridLine).Children(func() {
 			ui.Column(c).Padding(8, 8, 8, 0).AlignItems(ui.End).Children(func() {
 				caption(c, locales.CalendarAllDay())
 				caption(c, locales.CalendarTimeTba())
@@ -587,7 +645,7 @@ func (a *App) timeGrid(c *ui.Context, first domain.Date, n int) {
 			for i := range n {
 				d := first.AddDays(i)
 				c.Key(d)
-				ui.Column(c).MinHeight(44).Padding(4).Gap(3).BorderWidth(0, 0, 0, 1).BorderColor(theme.MistGray).Children(func() {
+				ui.Column(c).MinHeight(44).Padding(4).Gap(3).BorderWidth(0, 0, 0, 1).BorderColor(theme.GridLine).Children(func() {
 					for _, e := range entries[d] {
 						if e.At == nil {
 							c.Key(e.ID)
@@ -609,7 +667,7 @@ func (a *App) timeGrid(c *ui.Context, first domain.Date, n int) {
 						d := first.AddDays(i)
 						c.Key(hourKey{h, d})
 						ui.Column(c).MinHeight(theme.HourHeight).Padding(3).Gap(2).
-							BorderWidth(0, 0, 1, 1).BorderColor(theme.MistGray.Alpha(0.7)).Children(func() {
+							BorderWidth(0, 0, 1, 1).BorderColor(theme.GridLine).Children(func() {
 							for _, e := range entries[d] {
 								if e.At != nil && e.At.Hour == h || (e.At != nil && h == 23 && e.At.Hour > 23) {
 									c.Key(e.ID)
@@ -635,7 +693,7 @@ func (a *App) entryRow(c *ui.Context, e domain.Entry) {
 	col := theme.KindColor(e.Kind, e.Status)
 	ended := a.endedEntry(e)
 	b := ui.ButtonBase(c).FillWidth().Padding(10, 12).Gap(12).Radius(theme.Radius).Justify(ui.Start).
-		Label(chipLabel(e)).Border(1, theme.MistGray)
+		Label(chipLabel(e))
 	switch {
 	case a.entryID == e.ID:
 		b.Background(theme.SelectedBg)

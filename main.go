@@ -12,6 +12,7 @@ import (
 	"github.com/egoist/mygo/ui"
 
 	"jpop-live-calendar/config"
+	"jpop-live-calendar/internal/appicon"
 	"jpop-live-calendar/internal/avatar"
 	"jpop-live-calendar/internal/cache"
 	"jpop-live-calendar/internal/domain"
@@ -20,7 +21,7 @@ import (
 	"jpop-live-calendar/locales"
 )
 
-const version = "1.1.1"
+const version = "1.2.0"
 
 // trayIcon is the black-and-transparent menu bar icon; macOS tints it.
 //
@@ -38,6 +39,19 @@ var trayIconWindows []byte
 //
 //go:embed resources/Pacifico-Regular.ttf
 var pacificoFont []byte
+
+// editorialFont is the wordmark's face, PP Editorial New Ultrabold: the
+// licensed commercial serif of Pangram Pangram, embedded so the wordmark
+// looks the same on a machine that has never installed it.
+//
+//go:embed resources/PPEditorialNew-Ultrabold.otf
+var editorialFont []byte
+
+// garamondFont is the serif of the calendar's notes, the zone of its times.
+// EB Garamond, under the SIL Open Font License (resources/EBGaramond-OFL.txt).
+//
+//go:embed resources/EBGaramond-Regular.ttf
+var garamondFont []byte
 
 func main() {
 	cfg, err := config.Load()
@@ -75,6 +89,12 @@ func main() {
 	if err := ui.RegisterFont(pacificoFont, "Pacifico"); err != nil {
 		log.Printf("Pacifico: %v", err)
 	}
+	if err := ui.RegisterFont(garamondFont, "EB Garamond"); err != nil {
+		log.Printf("EB Garamond: %v", err)
+	}
+	if err := ui.RegisterFont(editorialFont, "PP Editorial New"); err != nil {
+		log.Printf("PP Editorial New: %v", err)
+	}
 	avatarPath, avatarErr := config.AvatarCachePath()
 	var avatarStore = avatar.NewStore()
 	if avatarErr != nil {
@@ -94,9 +114,18 @@ func main() {
 		SavePins:  config.SavePins,
 		// 每周起始日（周日 / 周一）：改了之后写进 prefs.json，下次启动照旧。
 		SetWeekStart: config.SaveWeekStart,
-		LocalePref:   localePref,
-		SetLocale:    mygo.App.SetLocale,
-		SaveLocale:   config.SaveLocale,
+		// App 图标：立即生效，并写进系统（macOS 的 .app、Windows 的快捷方式），
+		// 退出后也是这个；选择记在 prefs.json，启动时再核对一遍。
+		AppIcon: prefs.AppIcon,
+		SetAppIcon: func(key string, done func(error)) {
+			if err := config.SaveAppIcon(key); err != nil {
+				log.Printf("prefs.json: %v", err)
+			}
+			appicon.Apply(key, done)
+		},
+		LocalePref: localePref,
+		SetLocale:  mygo.App.SetLocale,
+		SaveLocale: config.SaveLocale,
 		// 上次同步的公告快照：启动时先显示，之后每次同步完成再写回。
 		CachePath: cachePath,
 		// 抽选截止提醒：系统通知；同一截止只提醒一次（notified.json）。
@@ -189,6 +218,13 @@ func main() {
 			opts.TrafficLightPosition = &mygo.Point{X: theme.TrafficLightX, Y: theme.TrafficLightY}
 		}
 		win = mygo.NewWindow(opts)
+		// The chosen app icon, written back if an update or a reinstall
+		// put the built-in one in its place.
+		appicon.Reconcile(prefs.AppIcon, func(err error) {
+			if err != nil && !errors.Is(err, appicon.ErrNotInstalled) {
+				log.Printf("app icon: %v", err)
+			}
+		})
 		// Sync every enabled source now, then on each one's interval.
 		app.Start(ctx)
 		setupMenuBar(app, win)
