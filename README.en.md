@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <a href="#changelog"><img src="https://img.shields.io/badge/version-1.2.0-E85A3A?style=flat-square&labelColor=2E2A28" alt="Version 1.2.0"></a>
+  <a href="#changelog"><img src="https://img.shields.io/badge/version-1.2.1-E85A3A?style=flat-square&labelColor=2E2A28" alt="Version 1.2.1"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-2E2A28?style=flat-square" alt="License MIT"></a>
   <a href="https://go.dev"><img src="https://img.shields.io/badge/Go-1.27+-00ADD8?style=flat-square&logo=go&logoColor=white" alt="Go 1.27+"></a>
   <a href="https://github.com/egoist/mygo"><img src="https://img.shields.io/badge/MyGo-v0.5.5-3D86F5?style=flat-square&labelColor=2E2A28&logo=go&logoColor=white" alt="MyGo v0.5.5"></a>
@@ -83,6 +83,36 @@ Live Calendar is a native desktop app for macOS and Windows that turns official 
 
 Ships with 21 followed artists and 34 enabled sources.
 
+## Download and install
+
+<p align="center">
+  <a href="https://github.com/Lonely0710/jpop-live-calendar/releases/latest"><img src="https://img.shields.io/badge/Download-macOS%20.dmg-000000?style=for-the-badge&logo=apple&logoColor=white" alt="Download for macOS" height="36"></a>
+  &nbsp;
+  <a href="https://github.com/Lonely0710/jpop-live-calendar/releases/latest"><img src="https://img.shields.io/badge/Download-Windows%20.exe-0078D4?style=for-the-badge&logo=windows&logoColor=white" alt="Download for Windows" height="36"></a>
+</p>
+
+<table>
+<tr>
+<td width="50%" valign="top">
+<b>macOS</b> · 13 or later · Apple Silicon / Intel
+<ol>
+<li>Open the <code>.dmg</code> and drag <code>Live Calendar</code> into Applications</li>
+<li>On first launch, hold <kbd>Control</kbd> while clicking the icon and choose Open</li>
+<li>If macOS says the app is damaged, click "Open Anyway" in System Settings → Privacy &amp; Security</li>
+</ol>
+</td>
+<td width="50%" valign="top">
+<b>Windows</b> · 10 / 11 x64
+<ol>
+<li>Run <code>-setup.exe</code> and follow the installer</li>
+<li>If "Windows protected your PC" appears, click More info → Run anyway</li>
+</ol>
+</td>
+</tr>
+</table>
+
+> **Why the system stops it once:** the installers are not code signed (an Apple Developer ID and a Windows code signing certificate are both paid subscriptions). Check the files against `SHA256SUMS.txt` in the release. Later versions update from "Check for Updates…" in the menu bar / tray: the archive is verified against the public key built into the app, and a failed check installs nothing.
+
 ## Getting started
 
 | Requirement | Version |
@@ -99,11 +129,17 @@ go tool mygo dev                  # dev mode, restarts on save
 go test ./...                     # tests
 go vet ./... && go tool mygo vet .
 
-scripts/package.sh darwin/arm64   # → build/jpop-live-calendar-darwin-arm64-<version>.dmg
-scripts/package.sh windows/amd64  # → build/jpop-live-calendar-windows-amd64-<version>.zip
+scripts/package.sh all            # → build/release/<version>/: macOS .dmg, Windows -setup.exe
 ```
 
-On Windows, unzip the package and run `Live Calendar.exe`; keep the resource files next to it.
+Releases that carry auto-updates also take the signing key, which puts the update archives and manifests in the same folder:
+
+```bash
+MYGO_UPDATER_PRIVATE_KEY="$(cat ~/Library/Application\ Support/mygo/update-keys/mygo-update.key)" \
+  scripts/package.sh all
+```
+
+Upload everything in `build/release/<version>/` to one GitHub Release (tagged `v<version>`), or the app cannot read `update-<platform>.json`. Keep the secret key on your machine and in CI secrets, never in the repository.
 
 ## Keyboard shortcuts
 
@@ -205,6 +241,7 @@ See [packages/spotlight-icons](packages/spotlight-icons/README.md) for adding or
 
 ## Changelog
 
+- **1.2.1** (2026-11-17): In-app auto-updates: "Check for Updates…" in the menu bar and tray shows the release notes and installs after verifying the signature. The installers are unsigned; see "Download and install" for the first-launch steps.
 - **1.2.0** (2026-11-17): Liquid Glass throughout the sidebar, inspector and toolbar, split-flap counts, and a switchable app icon in Settings.
 - **1.1.1** (2026-11-02): Grouped settings, service icons on the sources page, a Sunday/Monday week start, and better parsing of official announcements.
 - **1.1.0** (2026-10-25): UI in Simplified Chinese, Japanese and English, with new installers and website.

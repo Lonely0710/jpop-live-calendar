@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <a href="#更新履歴"><img src="https://img.shields.io/badge/version-1.2.0-E85A3A?style=flat-square&labelColor=2E2A28" alt="バージョン 1.2.0"></a>
+  <a href="#更新履歴"><img src="https://img.shields.io/badge/version-1.2.1-E85A3A?style=flat-square&labelColor=2E2A28" alt="バージョン 1.2.1"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-2E2A28?style=flat-square" alt="ライセンス MIT"></a>
   <a href="https://go.dev"><img src="https://img.shields.io/badge/Go-1.27+-00ADD8?style=flat-square&logo=go&logoColor=white" alt="Go 1.27+"></a>
   <a href="https://github.com/egoist/mygo"><img src="https://img.shields.io/badge/MyGo-v0.5.5-3D86F5?style=flat-square&labelColor=2E2A28&logo=go&logoColor=white" alt="MyGo v0.5.5"></a>
@@ -83,6 +83,36 @@ Live Calendar は、日本の音楽ライブの公演、抽選・先行受付、
 
 初期設定では 21 組のアーティストをフォローし、34 のソースが有効です。
 
+## ダウンロードとインストール
+
+<p align="center">
+  <a href="https://github.com/Lonely0710/jpop-live-calendar/releases/latest"><img src="https://img.shields.io/badge/Download-macOS%20.dmg-000000?style=for-the-badge&logo=apple&logoColor=white" alt="macOS 版をダウンロード" height="36"></a>
+  &nbsp;
+  <a href="https://github.com/Lonely0710/jpop-live-calendar/releases/latest"><img src="https://img.shields.io/badge/Download-Windows%20.exe-0078D4?style=for-the-badge&logo=windows&logoColor=white" alt="Windows 版をダウンロード" height="36"></a>
+</p>
+
+<table>
+<tr>
+<td width="50%" valign="top">
+<b>macOS</b> · 13 以降 · Apple Silicon / Intel
+<ol>
+<li><code>.dmg</code> を開き、<code>Live Calendar</code> を「アプリケーション」へドラッグ</li>
+<li>初回は <kbd>Control</kbd> キーを押しながらアイコンをクリックし、「開く」を選択</li>
+<li>「壊れているため開けません」と出たら「システム設定 → プライバシーとセキュリティ」で「このまま開く」</li>
+</ol>
+</td>
+<td width="50%" valign="top">
+<b>Windows</b> · 10 / 11 x64
+<ol>
+<li><code>-setup.exe</code> を実行し、画面の指示に従う</li>
+<li>「Windows によって PC が保護されました」と出たら「詳細情報」→「実行」を選択</li>
+</ol>
+</td>
+</tr>
+</table>
+
+> **なぜ一度止められるのか** インストーラにコード署名がないためです（Apple Developer ID と Windows のコード署名証明書はいずれも有償）。ファイルは Release の `SHA256SUMS.txt` で検証できます。以降のバージョンはメニューバー / タスクトレイの「アップデートを確認…」から更新でき、更新パッケージは内蔵の公開鍵で署名を検証し、通らないものはインストールしません。
+
 ## はじめに
 
 | 必要なもの | バージョン |
@@ -99,11 +129,17 @@ go tool mygo dev                  # 開発モード（保存すると自動で�
 go test ./...                     # テスト
 go vet ./... && go tool mygo vet .
 
-scripts/package.sh darwin/arm64   # → build/jpop-live-calendar-darwin-arm64-<バージョン>.dmg
-scripts/package.sh windows/amd64  # → build/jpop-live-calendar-windows-amd64-<バージョン>.zip
+scripts/package.sh all            # → build/release/<バージョン>/：macOS .dmg、Windows -setup.exe
 ```
 
-Windows ではパッケージを展開して `Live Calendar.exe` を実行します。同じフォルダーのリソースファイルも残しておいてください。
+自動更新を含むリリースでは署名用の秘密鍵を渡すと、更新パッケージとマニフェストも同じフォルダーに揃います。
+
+```bash
+MYGO_UPDATER_PRIVATE_KEY="$(cat ~/Library/Application\ Support/mygo/update-keys/mygo-update.key)" \
+  scripts/package.sh all
+```
+
+`build/release/<バージョン>/` のファイルをまとめて同じ GitHub Release（タグ `v<バージョン>`）へアップロードすると、アプリが `update-<プラットフォーム>.json` を読めるようになります。秘密鍵はローカルと CI の secret にだけ置き、リポジトリには入れません。
 
 ## ショートカット
 
@@ -205,6 +241,7 @@ mygoicons.Mono(c, icons.Calendar, 18)  // 単色。文字色に追従
 
 ## 更新履歴
 
+- **1.2.1**（2026-11-17）：アプリ内自動更新。メニューバーとタスクトレイの「アップデートを確認…」から更新内容を表示し、署名を検証してインストールします。インストーラは未署名のため、初回の手順は「ダウンロードとインストール」に記載しています。
 - **1.2.0**（2026-11-17）：サイドバー・詳細パネル・ツールバーを透過する Liquid Glass に刷新、件数はパタパタ表示、設定画面でアプリアイコンを切り替え可能に。
 - **1.1.1**（2026-11-02）：設定画面をグループ化、データソースにサービスのアイコンを表示、週の開始日を日曜／月曜から選択可、公式サイトの告知解析を改善。
 - **1.1.0**（2026-10-25）：UI を簡体字中国語 / 日本語 / English に対応、インストーラと公式サイトも更新。

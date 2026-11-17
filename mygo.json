@@ -1,10 +1,15 @@
 {
   "name": "Live Calendar",
   "identifier": "com.lonely.jpoplivecalendar",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "out": "build",
   "i18n": {
     "dir": "locales",
     "source": "zh-Hans"
+  },
+  "updates": {
+    "publicKey": "11HumB0JWFT8fie12gBdhRvxgE504SmLCzrxF0idHnc=",
+    "github": "Lonely0710/jpop-live-calendar",
+    "changelog": "CHANGELOG.md"
   }
 }

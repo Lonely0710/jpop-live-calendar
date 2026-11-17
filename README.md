@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <a href="#更新记录"><img src="https://img.shields.io/badge/version-1.2.0-E85A3A?style=flat-square&labelColor=2E2A28" alt="版本 1.2.0"></a>
+  <a href="#更新记录"><img src="https://img.shields.io/badge/version-1.2.1-E85A3A?style=flat-square&labelColor=2E2A28" alt="版本 1.2.1"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-2E2A28?style=flat-square" alt="MIT"></a>
   <a href="https://go.dev"><img src="https://img.shields.io/badge/Go-1.27+-00ADD8?style=flat-square&logo=go&logoColor=white" alt="Go 1.27+"></a>
   <a href="https://github.com/egoist/mygo"><img src="https://img.shields.io/badge/MyGo-v0.5.5-3D86F5?style=flat-square&labelColor=2E2A28&logo=go&logoColor=white" alt="MyGo v0.5.5"></a>
@@ -83,6 +83,36 @@ Live Calendar 是一款 macOS / Windows 原生桌面应用，把日本音乐的 
 
 默认关注 21 位艺人，启用 34 个数据源。
 
+## 下载安装
+
+<p align="center">
+  <a href="https://github.com/Lonely0710/jpop-live-calendar/releases/latest"><img src="https://img.shields.io/badge/Download-macOS%20.dmg-000000?style=for-the-badge&logo=apple&logoColor=white" alt="下载 macOS 版" height="36"></a>
+  &nbsp;
+  <a href="https://github.com/Lonely0710/jpop-live-calendar/releases/latest"><img src="https://img.shields.io/badge/Download-Windows%20.exe-0078D4?style=for-the-badge&logo=windows&logoColor=white" alt="下载 Windows 版" height="36"></a>
+</p>
+
+<table>
+<tr>
+<td width="50%" valign="top">
+<b>macOS</b> · 13 及以上 · Apple Silicon / Intel
+<ol>
+<li>打开 <code>.dmg</code>，把 <code>Live Calendar</code> 拖进「应用程序」</li>
+<li>第一次打开时按住 <kbd>Control</kbd> 点按图标，选「打开」</li>
+<li>若提示「已损坏」，到「系统设置 → 隐私与安全性」点「仍要打开」</li>
+</ol>
+</td>
+<td width="50%" valign="top">
+<b>Windows</b> · 10 / 11 x64
+<ol>
+<li>运行 <code>-setup.exe</code>，按提示完成安装</li>
+<li>若出现「Windows 已保护你的电脑」，点「更多信息」→「仍要运行」</li>
+</ol>
+</td>
+</tr>
+</table>
+
+> **为什么会被系统拦一次？** 安装包没有代码签名（Apple Developer ID 与 Windows 代码签名证书都是付费订阅）。文件可用 Release 里的 `SHA256SUMS.txt` 校验；之后的版本在菜单栏 / 系统托盘的「检查更新…」里升级，更新包用内置公钥验签，验签不通过不会安装。
+
 ## 快速开始
 
 | 依赖 | 版本 |
@@ -99,11 +129,17 @@ go tool mygo dev                  # 开发模式，保存后自动重启
 go test ./...                     # 测试
 go vet ./... && go tool mygo vet .
 
-scripts/package.sh darwin/arm64   # → build/jpop-live-calendar-darwin-arm64-<版本>.dmg
-scripts/package.sh windows/amd64  # → build/jpop-live-calendar-windows-amd64-<版本>.zip
+scripts/package.sh all            # → build/release/<版本>/：macOS .dmg、Windows -setup.exe
 ```
 
-Windows 安装包解压后运行 `Live Calendar.exe`，同目录下的资源文件需一并保留。
+发布带自动更新的版本时提供签名私钥，更新包与清单会一并归集：
+
+```bash
+MYGO_UPDATER_PRIVATE_KEY="$(cat ~/Library/Application\ Support/mygo/update-keys/mygo-update.key)" \
+  scripts/package.sh all
+```
+
+把 `build/release/<版本>/` 里的文件整批传到同一个 GitHub Release（tag 为 `v<版本>`），应用才读得到 `update-<平台>.json`。私钥只放在本机与 CI 的 secret 里，不进仓库。
 
 ## 快捷键
 
@@ -205,6 +241,7 @@ mygoicons.Mono(c, icons.Calendar, 18)  // 单色，跟随文字颜色
 
 ## 更新记录
 
+- **1.2.1**（2026-11-17）：应用内自动更新，菜单栏与系统托盘的「检查更新…」显示更新说明并验签安装；安装包未签名，首次打开的放行步骤见「下载安装」。
 - **1.2.0**（2026-11-17）：界面换成通透的 Liquid Glass（侧栏、详情面板、工具栏），统计数字改成翻牌，设置页可切换 App 图标。
 - **1.1.1**（2026-11-02）：设置页分组重构、数据源显示服务品牌图标、日历支持周日/周一起始，官网公告解析更完整。
 - **1.1.0**（2026-10-25）：界面支持简体中文 / 日本語 / English，安装包与官网同步更新。

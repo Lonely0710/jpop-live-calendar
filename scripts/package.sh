@@ -53,6 +53,26 @@ sizeof() {
   du -h "$1" | cut -f1 | tr -d ' '
 }
 
+# collect_updates copies the signed update files of a build, when it had
+# MYGO_UPDATER_PRIVATE_KEY: the archive installed apps download, the deltas
+# from earlier versions and the manifest that names them. Their names stay
+# as mygo wrote them, because the manifest's URLs name the assets of the
+# release, so they sit beside the installers under mygo's naming, not this
+# script's.
+collect_updates() {
+  local built=$1 f name found=0
+  for f in "$built"/*.tar.gz "$built"/*.delta "$built"/update-*.json; do
+    [[ -f "$f" ]] || continue
+    name=$(basename "$f")
+    cp "$f" "$release/$name"
+    add_artifact
+    found=1
+  done
+  if [[ $found -eq 0 ]]; then
+    echo "package: no update files: set MYGO_UPDATER_PRIVATE_KEY, or installed apps cannot update themselves" >&2
+  fi
+}
+
 # package_platform goos/goarch builds one platform and moves its artifact
 # into the release folder.
 package_platform() {
@@ -152,6 +172,12 @@ package_platform() {
       exit 2
       ;;
   esac
+
+  # Only the platforms this app ships: Linux's install archive already went
+  # to the release folder under this script's name.
+  case "$goos" in
+    darwin|windows) collect_updates "$built" ;;
+  esac
 }
 
 # finish writes the checksums of every package in the release folder — from
@@ -162,7 +188,7 @@ finish() {
 
   local f
   local parts=()
-  for f in "$release"/jpop-live-calendar-*; do
+  for f in "$release"/jpop-live-calendar-* "$release"/live-calendar-* "$release"/update-*.json; do
     [[ -f "$f" ]] || continue
     parts[${#parts[@]}]=$(basename "$f")
   done

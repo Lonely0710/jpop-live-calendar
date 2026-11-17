@@ -9,6 +9,8 @@ import (
 	"runtime"
 
 	"github.com/egoist/mygo"
+	"github.com/egoist/mygo/plugins/updater"
+	"github.com/egoist/mygo/plugins/updater/native"
 	"github.com/egoist/mygo/ui"
 
 	"jpop-live-calendar/config"
@@ -21,7 +23,7 @@ import (
 	"jpop-live-calendar/locales"
 )
 
-const version = "1.2.0"
+const version = "1.2.1"
 
 // trayIcon is the black-and-transparent menu bar icon; macOS tints it.
 //
@@ -54,6 +56,10 @@ var editorialFont []byte
 var garamondFont []byte
 
 func main() {
+	// Signed auto-updates: the plugin checks once a day, and shows its
+	// window in native UI, so the app needs no webview for it.
+	mygo.Use(native.Plugin)
+
 	cfg, err := config.Load()
 	cfgErr := err
 	if err != nil {
@@ -262,6 +268,8 @@ func trayMenu(app *views.App, win *mygo.Window) *mygo.Menu {
 	return mygo.NewMenu([]*mygo.MenuItem{
 		{Label: locales.TrayOpen(), Click: func(*mygo.MenuItem, *mygo.Window) { show() }},
 		{Label: locales.TraySync(), Click: func(*mygo.MenuItem, *mygo.Window) { app.Refresh() }},
+		{Type: mygo.MenuItemSeparator},
+		updater.MenuItem(),
 		{Type: mygo.MenuItemSeparator},
 		{Label: locales.TrayQuit(), Role: mygo.RoleQuit, Click: func(*mygo.MenuItem, *mygo.Window) { mygo.App.Quit() }},
 	})
